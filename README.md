@@ -1,4 +1,4 @@
-# 🧊 Ice-TEMBOX
+# Ice-TEMBOX
 
 Alat monitoring suhu palka/coolbox kapal nelayan berbasis IoT biar es batu nggak keburu cair dan ikan tetap segar sampai pelelangan.
 
