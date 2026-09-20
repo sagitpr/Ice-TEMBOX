@@ -1,0 +1,10 @@
+{
+  "name": "@ice-tembox/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web Dashboard Pengepul & Pengelola TPI - Ice-TEMBOX",
+  "scripts": {
+    "start": "echo 'Framework belum diinisialisasi'",
+    "build": "echo 'Framework belum diinisialisasi'"
+  }
+}

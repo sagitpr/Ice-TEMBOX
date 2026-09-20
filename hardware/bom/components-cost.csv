@@ -1,0 +1,8 @@
+Item,Component,Designator,Quantity,Estimated Unit Cost (IDR),Vendor,Notes
+1,ESP32-WROOM-32D,U1,1,45000,Espressif/Local,Mikrokontroler BLE + Wi-Fi
+2,DS18B20 Waterproof Probe,S1,1,25000,Dallas/Maxim,Kabel probe 1m tahan air asin
+3,Resistor 4.7k Ohm 1/4W,R1,1,500,Generic,Pull-up resistor OneWire
+4,Baterai Li-ion 18650 3.7V 2600mAh,BT1,1,35000,Samsung/LG,Catu daya portabel
+5,TP4056 Battery Charger + Protection,M1,1,7500,Generic,Modul charging USB type C
+6,LDO Voltage Regulator 3.3V (ME6211),U2,1,3000,Microne,Low quiescent current LDO
+7,Waterproof Enclosure IP67/IP68,ENC1,1,30000,Custom 3D/Local,Casing tahan air laut & bantingan

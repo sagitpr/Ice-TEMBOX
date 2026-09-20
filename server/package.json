@@ -1,0 +1,14 @@
+{
+  "name": "@ice-tembox/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend REST API & Event Engine - Ice-TEMBOX",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "echo 'Framework belum diinisialisasi'",
+    "dev": "echo 'Framework belum diinisialisasi'",
+    "build": "echo 'Framework belum diinisialisasi'",
+    "lint": "echo 'Framework belum diinisialisasi'",
+    "test": "echo 'Framework belum diinisialisasi'"
+  }
+}

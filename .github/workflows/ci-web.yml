@@ -1,0 +1,27 @@
+name: CI Web
+
+on:
+  push:
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci || npm install
+      - name: Build Web
+        working-directory: apps/web
+        run: npm run build --if-present

@@ -1,0 +1,10 @@
+{
+  "name": "@ice-tembox/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mobile App Nelayan (Offline-first + BLE) - Ice-TEMBOX",
+  "scripts": {
+    "start": "echo 'Framework belum diinisialisasi'",
+    "build": "echo 'Framework belum diinisialisasi'"
+  }
+}
