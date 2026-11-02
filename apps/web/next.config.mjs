@@ -1,36 +1,30 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Auto-sync optimized assets during Next.js initialization
-const sourceHeroImg = 'C:\\Users\\ThinkPad\\.gemini\\antigravity\\brain\\b7931393-0445-4c26-b05c-d441be92bba2\\hero_boat_1793644680249.jpg';
+// Asset synchronization for public directory
 const publicDir = path.resolve(process.cwd(), 'public');
 const assetsDir = path.resolve(process.cwd(), 'src/assets');
 
 try {
-  if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
-
-  if (fs.existsSync(sourceHeroImg)) {
-    fs.copyFileSync(sourceHeroImg, path.join(publicDir, 'hero-boat.jpg'));
-    
-    if (fs.existsSync(assetsDir)) {
-      fs.copyFileSync(sourceHeroImg, path.join(assetsDir, 'hero-boat.jpg'));
-    }
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
   }
-  
+
+  // Ensure Favicon.png exists in public
   const faviconSrc = path.join(assetsDir, 'Favicon.png');
   const faviconDest = path.join(publicDir, 'Favicon.png');
   if (fs.existsSync(faviconSrc) && !fs.existsSync(faviconDest)) {
     fs.copyFileSync(faviconSrc, faviconDest);
   }
 
-  // Also sync video to public for direct streaming
+  // Ensure Nelayan-kapal-Horizontal.mp4 exists in public
   const videoSrc = path.join(assetsDir, 'Video', 'Nelayan-kapal-Horizontal.mp4');
   const videoDest = path.join(publicDir, 'Nelayan-kapal-Horizontal.mp4');
   if (fs.existsSync(videoSrc) && !fs.existsSync(videoDest)) {
     fs.copyFileSync(videoSrc, videoDest);
   }
-} catch (err) {
-  // Silent fallback
+} catch {
+  // Silent fallback for restricted environments
 }
 
 /** @type {import('next').NextConfig} */

@@ -1,0 +1,21 @@
+{
+  "name": "ice-tembox",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ice-TEMBOX Smart Cold Storage IoT & Web Dashboard",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@ice-tembox/web",
+    "build": "npm run build --workspace=@ice-tembox/web",
+    "start": "npm run start --workspace=@ice-tembox/web",
+    "lint": "npm run lint --workspace=@ice-tembox/web"
+  },
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}
+
