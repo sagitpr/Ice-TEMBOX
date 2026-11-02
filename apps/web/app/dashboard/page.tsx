@@ -1,18 +1,44 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import DashboardCards from '../components/DashboardCards';
-import SensorChart from '../components/SensorChart';
-import MonitoringView from '../components/MonitoringView';
-import NotifikasiView from '../components/NotifikasiView';
-import AktivitasView from '../components/AktivitasView';
-import PengaturanView from '../components/PengaturanView';
 import SkeletonLoader from '../components/SkeletonLoader';
 
-export default function DashboardPage() {
-  const [currentTab, setCurrentTab] = useState('dashboard');
+// Dynamic imports for chart and heavy views (SSR false to minimize main-thread blocking)
+const SensorChart = dynamic(() => import('../components/SensorChart'), {
+  ssr: false,
+  loading: () => <SkeletonLoader type="chart" />,
+});
+
+const MonitoringView = dynamic(() => import('../components/MonitoringView'), {
+  ssr: false,
+  loading: () => <SkeletonLoader type="chart" />,
+});
+
+const NotifikasiView = dynamic(() => import('../components/NotifikasiView'), {
+  ssr: false,
+  loading: () => <SkeletonLoader type="table" />,
+});
+
+const AktivitasView = dynamic(() => import('../components/AktivitasView'), {
+  ssr: false,
+  loading: () => <SkeletonLoader type="table" />,
+});
+
+const PengaturanView = dynamic(() => import('../components/PengaturanView'), {
+  ssr: false,
+  loading: () => <SkeletonLoader type="table" />,
+});
+
+interface DashboardPageProps {
+  initialTab?: string;
+}
+
+export default function DashboardPage({ initialTab = 'dashboard' }: DashboardPageProps) {
+  const [currentTab, setCurrentTab] = useState(initialTab);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -93,4 +119,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

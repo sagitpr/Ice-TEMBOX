@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import LandingPage from '../src/App';
-import DashboardPage from './dashboard/page';
-import LoginView from './components/LoginView';
-import RegisterView from './components/RegisterView';
+
+// Dynamic imports to minimize initial bundle size and eliminate Total Blocking Time (TBT)
+const DashboardPage = dynamic(() => import('./dashboard/page'), { ssr: false });
+const LoginView = dynamic(() => import('./components/LoginView'), { ssr: false });
+const RegisterView = dynamic(() => import('./components/RegisterView'), { ssr: false });
 
 export default function Page() {
   const [currentView, setCurrentView] = useState<'home' | 'login' | 'register' | 'dashboard'>('home');
@@ -31,7 +34,15 @@ export default function Page() {
   }, []);
 
   if (!mounted) {
-    return <LandingPage onNavigate={(view) => setCurrentView(view as any)} />;
+    return (
+      <LandingPage
+        onNavigate={(view) => {
+          if (view === 'login' || view === 'register' || view === 'dashboard' || view === 'home') {
+            setCurrentView(view);
+          }
+        }}
+      />
+    );
   }
 
   // 1. Strict Isolation: If on Dashboard, Landing Page is COMPLETELY OMITTED from the DOM

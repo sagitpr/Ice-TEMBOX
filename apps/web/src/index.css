@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+/* Plus Jakarta Sans is self-hosted & optimized via Next.js next/font/google in layout.tsx */
 
 :root {
   --color-ocean: #0B2D42;
@@ -248,7 +248,8 @@ button {
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 0;
+  pointer-events: none;
   overflow: hidden;
 }
 
@@ -468,7 +469,8 @@ button {
     transparent 16px
   );
   opacity: 0.45;
-  z-index: 1;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .how-step-card {
@@ -746,7 +748,8 @@ button {
   height: 360px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(125, 220, 232, 0.35) 0%, rgba(234, 248, 255, 0.4) 50%, rgba(255, 255, 255, 0) 70%);
-  z-index: 1;
+  z-index: 0;
+  pointer-events: none;
   pointer-events: none;
 }
 
@@ -783,7 +786,8 @@ button {
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 0;
+  pointer-events: none;
   opacity: 0.32;
   overflow: hidden;
 }
