@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#0B2D42"/>
+  <!-- Top fish body & head -->
+  <path d="M14 32C18 24 28 20 40 26C35 29 30 33 24 35C19 36 16 34 14 32Z" fill="#FFFFFF"/>
+  <!-- Bottom dynamic cold wave -->
+  <path d="M17 34C24 33 30 30 36 27C38 31 35 37 28 40C22 42 18 38 17 34Z" fill="#7DDCE8"/>
+  <!-- Tail fin upper -->
+  <path d="M39 26C43 23 48 24 51 27C47 29 44 29 41 28Z" fill="#7DDCE8"/>
+  <!-- Tail fin lower -->
+  <path d="M38 29C42 32 46 35 49 39C46 38 42 36 39 33Z" fill="#7DDCE8"/>
+  <!-- Eye -->
+  <circle cx="21" cy="27" r="2.2" fill="#0B2D42"/>
+</svg>

@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEMBOX — Monitoring Application</title>
+  <meta name="description" content="Aplikasi pemantauan suhu dan kondisi penyimpanan ikan palka kapal nelayan TEMBOX secara real-time.">
+  <link rel="icon" type="image/svg+xml" href="./src/assets/favicon.svg">
+  <link rel="alternate icon" type="image/png" href="./src/assets/Favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/index.css">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ==================================================
+       VIEW 1: MONITORING APPLICATION SHELL
+       ================================================== -->
+  <div id="appView" class="app-view-container" style="display: flex;">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <a href="/dashboard" onclick="navigateToRoute('/dashboard', event)" class="sidebar-brand-link">
+          <img src="./src/assets/LogoTembox-Horizontal.png" alt="TEMBOX" class="sidebar-logo">
+        </a>
+        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="/dashboard" onclick="navigateToRoute('/dashboard', event)" class="sidebar-nav-item active" data-nav="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="/monitoring" onclick="navigateToRoute('/monitoring', event)" class="sidebar-nav-item" data-nav="monitoring">
+          <i data-lucide="thermometer"></i>
+          <span>Monitoring Suhu</span>
+        </a>
+        <a href="/notifikasi" onclick="navigateToRoute('/notifikasi', event)" class="sidebar-nav-item" data-nav="notifikasi">
+          <i data-lucide="bell"></i>
+          <span>Notifikasi</span>
+
+        </a>
+        <a href="/aktivitas" onclick="navigateToRoute('/aktivitas', event)" class="sidebar-nav-item" data-nav="aktivitas">
+          <i data-lucide="clipboard-list"></i>
+          <span>Log Aktivitas</span>
+        </a>
+        <a href="/pengaturan" onclick="navigateToRoute('/pengaturan', event)" class="sidebar-nav-item" data-nav="pengaturan">
+          <i data-lucide="settings"></i>
+          <span>Pengaturan</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      
+      <!-- Topbar Header -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="topbar-title-wrap">
+            <h1 class="topbar-greeting" id="topbarGreeting">Halo, Nelayan</h1>
+            <p class="topbar-subtitle" id="topbarSubtitle">Berikut ringkasan kondisi penyimpanan ikan Anda hari ini.</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Notification Bell & Dropdown Pop-up -->
+          <div class="topbar-notif-wrap" id="topbarNotifWrap">
+            <button type="button" class="topbar-icon-btn" id="topbarBellBtn" aria-label="Lihat Notifikasi" aria-expanded="false" aria-haspopup="true">
+              <i data-lucide="bell" style="width:18px;height:18px;"></i>
+              <span class="topbar-badge-dot has-unread" id="topbarBellDot"></span>
+            </button>
+
+            <!-- Notification Dropdown Pop-up -->
+            <div class="notif-dropdown-menu" id="notifDropdownMenu">
+              <div class="notif-dropdown-header">
+                <div class="notif-dropdown-title-row">
+                  <span class="notif-dropdown-title">Notifikasi</span>
+                  <button type="button" class="notif-mark-read-btn" id="notifMarkReadBtn" onclick="markAllNotificationsAsRead(event)">
+                    Tandai dibaca
+                  </button>
+                </div>
+              </div>
+              <div class="notif-dropdown-list" id="notifDropdownList">
+                <div class="notif-dropdown-empty" id="notifDropdownEmpty">
+                  <i data-lucide="bell-off" style="width:24px;height:24px;color:#94A3B8;"></i>
+                  <span>Tidak ada notifikasi baru</span>
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifikasi" onclick="navigateToRoute('/notifikasi', event); closeNotifDropdown(); return false;" class="notif-view-all-link">
+                  <span>Buka Halaman Notifikasi</span>
+                  <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Profile Dropdown Pill -->
+          <div class="topbar-user-pill" id="topbarUserPill">
+            <div class="topbar-avatar">
+              <i data-lucide="user" style="width:16px;height:16px;"></i>
+            </div>
+            <span class="topbar-username">Nelayan</span>
+            <i data-lucide="chevron-down" style="width:14px;height:14px;color:#64748B;"></i>
+
+            <div class="topbar-user-menu" id="topbarUserMenu">
+              <a href="/dashboard" onclick="navigateToRoute('/dashboard', event)" class="user-menu-item">
+                <i data-lucide="layout-dashboard" style="width:15px;height:15px;"></i>
+                <span>Dashboard</span>
+              </a>
+              <a href="/pengaturan" onclick="navigateToRoute('/pengaturan', event)" class="user-menu-item">
+                <i data-lucide="settings" style="width:15px;height:15px;"></i>
+                <span>Pengaturan Akun</span>
+              </a>
+              <a href="/" onclick="navigateToRoute('/', event)" class="user-menu-item">
+                <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+                <span>Kembali ke TEMBOX</span>
+              </a>
+              <hr style="border:none;border-top:1px solid #E2EDF4;margin:4px 0;">
+              <button type="button" class="user-menu-item" style="color:#DC2626;background:none;border:none;width:100%;text-align:left;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;" onclick="navigateToRoute('/login', event)">
+                <i data-lucide="log-out" style="width:15px;height:15px;"></i>
+                <span>Keluar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- App Content Container -->
+      <div class="app-content">
+
+        <!-- ==============================================
+             SCREEN 3: MAIN DASHBOARD
+             ============================================== -->
+        <section class="app-page active" id="page-dashboard">
+          
+          <!-- 4 Overview Metric Cards -->
+          <div class="metrics-row">
+            <!-- Suhu Sekarang -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon-clean">
+                  <i data-lucide="thermometer" style="width:20px;height:20px;"></i>
+                </div>
+                <span class="metric-label">Suhu Sekarang</span>
+              </div>
+              <div class="metric-main-value" id="dashTempCurrent">-- °C</div>
+              <div class="metric-footer">
+                <span class="badge-status neutral" id="dashTempBadge">
+                  <span class="status-dot offline"></span>
+                  <span id="dashTempBadgeText">Menunggu data</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Kondisi Es -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon-clean">
+                  <i data-lucide="snowflake" style="width:20px;height:20px;"></i>
+                </div>
+                <span class="metric-label">Kondisi Es</span>
+              </div>
+              <div class="metric-main-value" id="dashIceCondition">Belum tersedia</div>
+              <div class="metric-footer">
+                <span class="badge-status neutral" id="dashIceBadge">
+                  <span id="dashIceSubtext"></span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Status Sistem -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon-clean">
+                  <i data-lucide="shield" style="width:20px;height:20px;"></i>
+                </div>
+                <span class="metric-label">Status Sistem</span>
+              </div>
+              <div class="metric-main-value" id="dashSysStatus">Belum terhubung</div>
+              <div class="metric-footer">
+                <span class="badge-status neutral" id="dashSysBadge">
+                  <span class="status-dot offline"></span>
+                  <span id="dashSysBadgeText">Offline</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Waktu Terakhir -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon-clean">
+                  <i data-lucide="clock" style="width:20px;height:20px;"></i>
+                </div>
+                <span class="metric-label">Waktu Terakhir</span>
+              </div>
+              <div class="metric-main-value" id="dashLastUpdate">--</div>
+              <div class="metric-footer">
+                <span style="color:#64748B;font-size:11.5px;" id="dashLastUpdateDate"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split Grid: Chart + Notifications -->
+          <div class="dashboard-grid-split">
+            <!-- Left: Real-time Chart -->
+            <div class="dashboard-panel-card">
+              <div class="panel-header">
+                <h2 class="panel-title">Grafik Suhu Real-Time</h2>
+                <div class="chart-filter-dropdown-wrap" id="dashChartFilterWrap">
+                  <button type="button" class="chart-filter-btn" id="dashChartFilterBtn" aria-expanded="false" aria-haspopup="true">
+                    <i data-lucide="clock" style="width:14px;height:14px;color:#0284C7;"></i>
+                    <span id="dashChartFilterLabel">Hari ini</span>
+                    <i data-lucide="chevron-down" style="width:14px;height:14px;color:#64748B;" class="filter-chevron"></i>
+                  </button>
+                  <div class="chart-filter-menu" id="dashChartFilterMenu">
+                    <div class="filter-menu-header">Rentang Waktu</div>
+                    <button type="button" class="filter-menu-item active" data-range="today" onclick="selectChartFilterRange('today', 'Hari ini')">
+                      <i data-lucide="check" style="width:14px;height:14px;"></i>
+                      <span>Hari ini</span>
+                    </button>
+                    <button type="button" class="filter-menu-item" data-range="24h" onclick="selectChartFilterRange('24h', '24 Jam Terakhir')">
+                      <i data-lucide="check" style="width:14px;height:14px;"></i>
+                      <span>24 Jam Terakhir</span>
+                    </button>
+                    <button type="button" class="filter-menu-item" data-range="7d" onclick="selectChartFilterRange('7d', 'Seminggu Terakhir')">
+                      <i data-lucide="check" style="width:14px;height:14px;"></i>
+                      <span>Seminggu Terakhir</span>
+                    </button>
+                    <button type="button" class="filter-menu-item" data-range="30d" onclick="selectChartFilterRange('30d', '30 Hari Terakhir')">
+                      <i data-lucide="check" style="width:14px;height:14px;"></i>
+                      <span>30 Hari Terakhir</span>
+                    </button>
+                  </div>
+                </div>
+                <select class="panel-select" id="dashChartFilter" style="display:none;" aria-label="Filter rentang waktu">
+                  <option value="today">Hari ini</option>
+                  <option value="24h">24 Jam</option>
+                  <option value="7d">Seminggu</option>
+                </select>
+              </div>
+
+              <div class="chart-container-box" id="dashChartBox">
+                <!-- Honest Empty State -->
+                <div class="empty-state-card" id="dashChartEmpty">
+                  <div class="empty-state-icon">
+                    <i data-lucide="line-chart" style="width:24px;height:24px;"></i>
+                  </div>
+                  <h3 class="empty-state-title">Belum ada data suhu</h3>
+                  <p class="empty-state-desc">Menunggu data telemetri dari sensor palka kapal melalui server real-time...</p>
+                </div>
+                <!-- SVG Chart Layer (Rendered ONLY on real data) -->
+                <svg id="dashChartSvg" class="chart-svg-layer" style="display:none;"></svg>
+              </div>
+            </div>
+
+            <!-- Right: Recent Notifications Widget -->
+            <div class="dashboard-panel-card">
+              <div class="panel-header">
+                <h2 class="panel-title">Notifikasi Terbaru</h2>
+                <a href="#/notifikasi" class="panel-link">Lihat Semua <i data-lucide="arrow-right" style="width:13px;height:13px;"></i></a>
+              </div>
+
+              <div id="dashNotifContainer">
+                <!-- Honest Empty State -->
+                <div class="empty-state-card" id="dashNotifEmpty">
+                  <div class="empty-state-icon">
+                    <i data-lucide="bell" style="width:24px;height:24px;"></i>
+                  </div>
+                  <h3 class="empty-state-title">Belum ada notifikasi</h3>
+                  <p class="empty-state-desc">Pemberitahuan perubahan suhu dan status sistem akan muncul di sini.</p>
+                </div>
+                <!-- Notifications List -->
+                <div id="dashNotifList" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==============================================
+             SCREEN 4: MONITORING SUHU
+             ============================================== -->
+        <section class="app-page" id="page-monitoring">
+          
+          <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;">
+            <div class="monitoring-date-wrap" id="monitoringDateWrap">
+              <button type="button" class="topbar-date-btn" id="monitoringDateBtn" aria-expanded="false" aria-haspopup="true">
+                <i data-lucide="calendar" style="width:14px;height:14px;color:#0284C7;"></i><span id="currentDateLabel">24 Sep 2026</span>
+  
+                <i data-lucide="chevron-down" style="width:13px;height:13px;color:#64748B;" class="calendar-chevron"></i>
+              </button>
+
+              <!-- Interactive Date Picker Pop-up -->
+              <div class="date-picker-popup" id="monitoringDatePickerPopup">
+                <div class="date-presets-row">
+                  <button type="button" class="date-preset-pill active" onclick="selectDatePreset('today', event)">Hari Ini</button>
+                  <button type="button" class="date-preset-pill" onclick="selectDatePreset('yesterday', event)">Kemarin</button>
+                  <button type="button" class="date-preset-pill" onclick="selectDatePreset('prev_month', event)">Bulan Lalu</button>
+                </div>
+
+                <div class="calendar-nav-header">
+                  <button type="button" class="cal-nav-btn" id="calPrevMonthBtn" onclick="navCalendarMonth(-1, event)" aria-label="Bulan sebelumnya">
+                    <i data-lucide="chevron-left" style="width:14px;height:14px;"></i>
+                  </button>
+                  <span class="cal-month-title" id="calMonthTitle">September 2026</span>
+                  <button type="button" class="cal-nav-btn" id="calNextMonthBtn" onclick="navCalendarMonth(1, event)" aria-label="Bulan berikutnya">
+                    <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+                  </button>
+                </div>
+
+                <div class="calendar-weekdays-grid">
+                  <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+                </div>
+
+                <div class="calendar-days-grid" id="calDaysGrid">
+                </div>
+              </div>
+            </div>
+            <div style="display:none;">
+              <i data-lucide="calendar" style="width:14px;height:14px;"></i>
+
+            </button>
+          </div>
+
+          <!-- 4 Boxes Temperature Cards -->
+          <div class="boxes-cards-grid">
+            <div class="box-temp-card">
+              <span class="box-temp-label">Suhu Box 01</span>
+              <div class="box-temp-val" id="box1Temp"></div>
+              <div>
+                <span class="badge-status neutral" id="box1Badge" style="display:none;"></span>
+              </div>
+            </div>
+
+            <div class="box-temp-card">
+              <span class="box-temp-label">Suhu Box 02</span>
+              <div class="box-temp-val" id="box2Temp"></div>
+              <div>
+                <span class="badge-status neutral" id="box2Badge" style="display:none;"></span>
+              </div>
+            </div>
+
+            <div class="box-temp-card">
+              <span class="box-temp-label">Suhu Box 03</span>
+              <div class="box-temp-val" id="box3Temp"></div>
+              <div>
+                <span class="badge-status neutral" id="box3Badge" style="display:none;"></span>
+              </div>
+            </div>
+
+            <div class="box-temp-card">
+              <span class="box-temp-label">Suhu Box 04</span>
+              <div class="box-temp-val" id="box4Temp"></div>
+              <div>
+                <span class="badge-status neutral" id="box4Badge" style="display:none;"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Multi-box Temperature History Chart Card -->
+          <div class="dashboard-panel-card" style="margin-bottom:24px;">
+            <div class="panel-header">
+              <h2 class="panel-title">Grafik Perubahan Suhu</h2>
+              <div style="display:flex;align-items:center;gap:12px;font-size:12px;">
+                <span style="display:flex;align-items:center;gap:4px;color:#0284C7;"><span style="width:8px;height:8px;border-radius:50%;background:#0284C7;display:inline-block;"></span> Box 01</span>
+                <span style="display:flex;align-items:center;gap:4px;color:#0EA5E9;"><span style="width:8px;height:8px;border-radius:50%;background:#0EA5E9;display:inline-block;"></span> Box 02</span>
+                <span style="display:flex;align-items:center;gap:4px;color:#F59E0B;"><span style="width:8px;height:8px;border-radius:50%;background:#F59E0B;display:inline-block;"></span> Box 03</span>
+                <span style="display:flex;align-items:center;gap:4px;color:#14B8A6;"><span style="width:8px;height:8px;border-radius:50%;background:#14B8A6;display:inline-block;"></span> Box 04</span>
+              </div>
+            </div>
+
+            <div class="chart-container-box" id="multiChartBox">
+              <!-- Honest Empty State -->
+              <div class="empty-state-card" id="multiChartEmpty">
+                <div class="empty-state-icon">
+                  <i data-lucide="trending-up" style="width:24px;height:24px;"></i>
+                </div>
+                <h3 class="empty-state-title">Belum ada data suhu</h3>
+                <p class="empty-state-desc">Hubungkan perangkat sensor untuk memulai pemantauan grafik perubahan suhu.</p>
+              </div>
+              <svg id="multiChartSvg" class="chart-svg-layer" style="display:none;"></svg>
+            </div>
+          </div>
+
+          <!-- Detail Data Table Card -->
+          <div class="dashboard-panel-card">
+            <div class="panel-header">
+              <h2 class="panel-title">Detail Data</h2>
+            </div>
+
+            <div class="data-table-container">
+              <table class="tembox-table">
+                <thead>
+                  <tr>
+                    <th>Waktu</th>
+                    <th>Suhu</th>
+                    <th>Kondisi Es</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="detailDataTableBody">
+                  <tr class="table-empty-row">
+                    <td colspan="4">Belum ada data suhu.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==============================================
+             SCREEN 5: NOTIFIKASI
+             ============================================== -->
+        <section class="app-page" id="page-notifikasi">
+          
+          <div class="notif-filter-tabs">
+            <button class="notif-tab active" data-filter="all">Semua</button>
+            <button class="notif-tab" data-filter="warning">Peringatan</button>
+            <button class="notif-tab" data-filter="info">Informasi</button>
+            <button class="notif-tab" data-filter="system">Sistem</button>
+          </div>
+
+          <div id="notifListContainer">
+            <!-- Honest Empty State -->
+            <div class="empty-state-card" id="notifPageEmpty" style="padding:60px 20px;background:#FFFFFF;border-radius:14px;border:1px solid var(--color-card-border);">
+              <div class="empty-state-icon" style="width:56px;height:56px;">
+                <i data-lucide="bell-off" style="width:26px;height:26px;"></i>
+              </div>
+              <h3 class="empty-state-title" style="font-size:16px;">Belum ada notifikasi</h3>
+              <p class="empty-state-desc">Notifikasi akan muncul ketika sistem menerima kondisi atau perubahan dari perangkat TEMBOX.</p>
+            </div>
+
+            <div id="notifPageList" style="display:none;"></div>
+          </div>
+
+        </section>
+
+        <!-- ==============================================
+             SCREEN 6: LOG AKTIVITAS
+             ============================================== -->
+        <section class="app-page" id="page-aktivitas">
+          
+          <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;">
+            <button class="topbar-date-btn">
+              <i data-lucide="calendar" style="width:14px;height:14px;"></i>
+              <span id="activityDateLabel">24 Sep 2026</span>
+            </button>
+          </div>
+
+          <div class="dashboard-panel-card">
+            <div class="data-table-container">
+              <table class="tembox-table">
+                <thead>
+                  <tr>
+                    <th>Waktu</th>
+                    <th>Suhu</th>
+                    <th>Kondisi Es</th>
+                    <th>Status</th>
+                    <th>Aktivitas</th>
+                  </tr>
+                </thead>
+                <tbody id="activityTableBody">
+                  <tr class="table-empty-row">
+                    <td colspan="5">Belum ada aktivitas tercatat.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination-wrap">
+              <button class="page-btn" disabled>&lt;</button>
+              <button class="page-btn active" disabled>1</button>
+              <button class="page-btn" disabled>&gt;</button>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==============================================
+             SCREEN 7: PENGATURAN
+             ============================================== -->
+        <section class="app-page" id="page-pengaturan">
+          
+          <!-- Persistence Notice -->
+          <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;color:#0369A1;font-size:13px;">
+            <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
+            <span>Backend persistence belum diaktifkan. Mode tampilan frontend.</span>
+          </div>
+
+          <!-- Section 1: Perangkat -->
+          <div class="settings-section-card">
+            <div class="settings-section-header">
+              <div class="settings-icon-wrap">
+    
+              </div>
+              <div>
+                <h3 class="settings-section-title">Perangkat</h3>
+                <p class="settings-section-desc">Kelola perangkat TEMBOX Anda.</p>
+              </div>
+            </div>
+
+            <div class="device-config-item">
+              <div class="device-config-left">
+                <i data-lucide="box" style="color:#0284C7;width:22px;height:22px;"></i>
+                <div>
+                  <div class="device-config-name" id="settingsDeviceId">TEMBOX-001</div>
+                  <div class="device-config-ip" id="settingsDeviceStatus">
+                    <span class="status-dot offline"></span> Belum terhubung &bull; 192.168.1.18
+                  </div>
+                </div>
+              </div>
+              <button class="btn-secondary" onclick="handleSettingsAction('Detail Perangkat')">Detail</button>
+            </div>
+
+            <button class="btn-primary-outline" onclick="handleSettingsAction('Tambah Perangkat')">
+              <i data-lucide="plus" style="width:14px;height:14px;"></i>
+              <span>Tambah Perangkat</span>
+            </button>
+          </div>
+
+          <!-- Section 2: Akun -->
+          <div class="settings-section-card">
+            <div class="settings-section-header">
+              <div class="settings-icon-wrap">
+                <i data-lucide="user" style="width:18px;height:18px;"></i>
+              </div>
+              <div>
+                <h3 class="settings-section-title">Akun</h3>
+                <p class="settings-section-desc">Kelola informasi akun Anda.</p>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div class="topbar-avatar" style="width:42px;height:42px;font-size:16px;">
+                  <i data-lucide="user" style="width:20px;height:20px;"></i>
+                </div>
+                <div>
+                  <div style="font-weight:700;color:var(--color-ocean);font-size:14px;">Nelayan</div>
+                  <div style="font-size:12px;color:#64748B;">nelayan@example.com</div>
+                </div>
+              </div>
+              <button class="btn-secondary" onclick="handleSettingsAction('Ubah Akun')">Ubah</button>
+            </div>
+          </div>
+
+          <!-- Section 3: Informasi Sistem -->
+          <div class="settings-section-card">
+            <div class="settings-section-header">
+              <div class="settings-icon-wrap">
+                <i data-lucide="server" style="width:18px;height:18px;"></i>
+              </div>
+              <div>
+                <h3 class="settings-section-title">Informasi Sistem</h3>
+              </div>
+            </div>
+
+            <div>
+              <div class="info-table-row">
+                <span class="info-table-label">Versi Perangkat</span>
+                <span class="info-table-val">1.0.0</span>
+              </div>
+              <div class="info-table-row">
+                <span class="info-table-label">Versi Aplikasi</span>
+                <span class="info-table-val">1.0.0</span>
+              </div>
+              <div class="info-table-row">
+                <span class="info-table-label">Terakhir diperbarui</span>
+                <span class="info-table-val" id="settingsLastUpdateDate">24 Sep 2026</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Koneksi Real-Time (Hardware & Ingest Diagnostics) -->
+          <div class="settings-section-card">
+            <div class="settings-section-header">
+              <div class="settings-icon-wrap">
+                <i data-lucide="wifi" style="width:18px;height:18px;"></i>
+              </div>
+              <div>
+                <h3 class="settings-section-title">Koneksi Real-Time</h3>
+                <p class="settings-section-desc">Konfigurasi endpoint sensor palka dan pemantauan transmisi data IoT.</p>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;max-width:540px;">
+              <div class="info-table-row">
+                <span class="info-table-label">Status Koneksi</span>
+                <span class="info-table-val" id="settingsConnStateLabel">Belum terhubung</span>
+              </div>
+              <div class="info-table-row">
+                <span class="info-table-label">Status Sensor</span>
+                <span class="info-table-val" id="settingsSensorStatus">Belum terhubung</span>
+              </div>
+
+              <div class="form-group" style="margin-top:8px;">
+                <label class="form-label" for="wsUrlInput">WebSocket Stream Endpoint</label>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" id="wsUrlInput" class="form-input" value="ws://localhost:8000/ws" style="padding-left:14px;">
+                  <button class="btn-secondary" onclick="updateWebSocketEndpoint()">Hubungkan</button>
+                </div>
+                <span style="font-size:11.5px;color:#64748B;margin-top:4px;">
+                  Total Paket Diterima: <strong id="settingsPacketsCount">0</strong>
+                </span>
+              </div>
+
+              <!-- Hardware Developer Real Telemetry Ingest Tool -->
+              <details style="margin-top:8px;background:#F8FAFC;border:1px solid #E2EDF4;border-radius:10px;padding:12px;">
+                <summary style="font-size:12.5px;font-weight:600;color:var(--color-ocean);cursor:pointer;">
+                  Hardware Testing Ingest (Uji Kirim Paket Sensor Asli)
+                </summary>
+                <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+                  <p style="font-size:11.5px;color:#64748B;">
+                    Kirimkan paket JSON telemetri nyata dari sensor/ESP32 untuk memverifikasi penerimaan data palka tanpa generator otomatis.
+                  </p>
+                  <textarea id="samplePayloadInput" class="form-input" style="height:90px;font-family:monospace;font-size:11.5px;" aria-label="JSON Payload Sensor">{
+  "type": "temperature",
+  "device_id": "TEMBOX-001",
+  "box_id": "box_01",
+  "temperature": -1.2,
+  "ice_condition": "Normal",
+  "status": "Aman"
+}</textarea>
+                  <button class="btn-secondary" style="align-self:flex-start;" onclick="ingestManualPacket()">
+                    Kirimkan Paket Sensor
+                  </button>
+                </div>
+              </details>
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ==================================================
+       SCREEN 1: SIGN IN PAGE (SPLIT SCREEN LAYOUT)
+       ================================================== -->
+  <div id="loginView" class="login-view-wrapper" style="display: none;">
+    
+    <!-- Left Hero Pane -->
+    <div class="login-left-pane">
+      <video class="login-media-backdrop" autoplay loop muted playsinline preload="auto">
+        <source src="./src/assets/Video/Nelayan-kapal-Horizontal.mp4" type="video/mp4">
+      </video>
+      <div class="login-overlay-gradient"></div>
+
+      <!-- Left Top Branding -->
+      <div class="login-left-content">
+        <img src="./src/assets/LogoTembox-Horizontal.png" alt="TEMBOX" class="login-brand-logo" style="filter:brightness(0) invert(1);">
+        <p class="login-brand-tagline">
+          Pantau kondisi penyimpanan ikan Anda secara real-time.
+        </p>
+      </div>
+
+      <!-- Left Bottom Quote -->
+      <div class="login-left-footer">
+        "Ikan tetap segar, nelayan lebih tenang."
+      </div>
+    </div>
+
+    <!-- Right Form Pane -->
+    <div class="login-right-pane">
+      <div class="login-form-box">
+        <h2 class="login-title">Selamat Datang</h2>
+        <p class="login-desc">Masuk untuk melanjutkan ke sistem TEMBOX.</p>
+
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+          <div class="form-group">
+            <label class="form-label" for="loginEmail">Email / Username</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="user" class="input-icon"></i>
+              <input type="text" id="loginEmail" class="form-input" placeholder="Email / Username" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Password</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input type="password" id="loginPassword" class="form-input" placeholder="Password" required autocomplete="current-password">
+              <button type="button" class="input-toggle-pwd" id="togglePasswordBtn" aria-label="Toggle password visibility" onclick="togglePasswordVisibility('loginPassword', 'eyeIconLogin')">
+                <i data-lucide="eye" id="eyeIconLogin" style="width:16px;height:16px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-row-between">
+            <label class="checkbox-label">
+              <input type="checkbox" id="rememberMe">
+              <span>Ingat saya</span>
+            </label>
+            <a href="javascript:void(0)" class="form-link" onclick="showToast('Backend persistence belum diaktifkan.', 'info')">Lupa password?</a>
+          </div>
+
+          <button type="submit" id="loginSubmitBtn" class="btn-primary-block">
+            <span>Masuk</span>
+            <i data-lucide="log-in" style="width:16px;height:16px;"></i>
+          </button>
+        </form>
+
+        <p class="login-footer-text">
+          Belum punya akun? <a href="/register" onclick="navigateToRoute('/register', event)" class="form-link">Daftar</a>
+        </p>
+
+        <div style="margin-top:20px;text-align:center;">
+          <a href="/" onclick="navigateToRoute('/', event)" style="font-size:12.5px;color:#64748B;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+            <i data-lucide="arrow-left" style="width:14px;height:14px;"></i>
+            <span>Kembali ke TEMBOX</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================================================
+       SCREEN 2: SIGN UP PAGE (SPLIT SCREEN LAYOUT)
+       ================================================== -->
+  <div id="registerView" class="login-view-wrapper" style="display: none;">
+    
+    <!-- Left Hero Pane -->
+    <div class="login-left-pane">
+      <video class="login-media-backdrop" autoplay loop muted playsinline preload="auto">
+        <source src="./src/assets/Video/Nelayan-kapal-Horizontal.mp4" type="video/mp4">
+      </video>
+      <div class="login-overlay-gradient"></div>
+
+      <!-- Left Top Branding -->
+      <div class="login-left-content">
+        <img src="./src/assets/LogoTembox-Horizontal.png" alt="TEMBOX" class="login-brand-logo" style="filter:brightness(0) invert(1);">
+        <p class="login-brand-tagline">
+          Pantau kondisi penyimpanan ikan Anda secara real-time.
+        </p>
+      </div>
+
+      <!-- Left Bottom Quote -->
+      <div class="login-left-footer">
+        "Ikan tetap segar, nelayan lebih tenang."
+      </div>
+    </div>
+
+    <!-- Right Form Pane -->
+    <div class="login-right-pane">
+      <div class="login-form-box">
+        <div id="registerFormContainer">
+          <h2 class="login-title">Buat Akun</h2>
+          <p class="login-desc">Mulai menggunakan sistem monitoring TEMBOX.</p>
+
+          <form id="registerForm" onsubmit="handleRegisterSubmit(event)">
+            <div class="form-group">
+              <label class="form-label" for="regFullName">Nama Lengkap</label>
+              <div class="input-icon-wrap">
+                <i data-lucide="user" class="input-icon"></i>
+                <input type="text" id="regFullName" class="form-input" placeholder="Nama Lengkap" required autocomplete="name">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regEmail">Email</label>
+              <div class="input-icon-wrap">
+                <i data-lucide="mail" class="input-icon"></i>
+                <input type="email" id="regEmail" class="form-input" placeholder="alamat@email.com" required autocomplete="email">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regPassword">Password</label>
+              <div class="input-icon-wrap">
+                <i data-lucide="lock" class="input-icon"></i>
+                <input type="password" id="regPassword" class="form-input" placeholder="Minimal 8 karakter" required autocomplete="new-password">
+                <button type="button" class="input-toggle-pwd" aria-label="Toggle password visibility" onclick="togglePasswordVisibility('regPassword', 'eyeIconReg')">
+                  <i data-lucide="eye" id="eyeIconReg" style="width:16px;height:16px;"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regConfirmPassword">Konfirmasi Password</label>
+              <div class="input-icon-wrap">
+                <i data-lucide="lock" class="input-icon"></i>
+                <input type="password" id="regConfirmPassword" class="form-input" placeholder="Ulangi password" required autocomplete="new-password">
+                <button type="button" class="input-toggle-pwd" aria-label="Toggle confirm password visibility" onclick="togglePasswordVisibility('regConfirmPassword', 'eyeIconRegConfirm')">
+                  <i data-lucide="eye" id="eyeIconRegConfirm" style="width:16px;height:16px;"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row-between" style="margin-bottom:18px;">
+              <label class="checkbox-label" style="font-size:12px;">
+                <input type="checkbox" id="regTerms" required>
+                <span>Saya menyetujui syarat & ketentuan TEMBOX</span>
+              </label>
+            </div>
+
+            <button type="submit" id="regSubmitBtn" class="btn-primary-block">
+              <span>Buat Akun</span>
+              <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
+            </button>
+          </form>
+
+          <p class="login-footer-text">
+            Sudah punya akun? <a href="/login" onclick="navigateToRoute('/login', event)" class="form-link">Masuk</a>
+          </p>
+
+          <div style="margin-top:20px;text-align:center;">
+            <a href="/" onclick="navigateToRoute('/', event)" style="font-size:12.5px;color:#64748B;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+              <i data-lucide="arrow-left" style="width:14px;height:14px;"></i>
+              <span>Kembali ke TEMBOX</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Section 9: Sign Up Clean Frontend Success State -->
+        <div id="registerSuccessState" style="display:none;text-align:center;padding:20px 0;">
+          <div style="width:58px;height:58px;border-radius:50%;background:#EAF8FF;color:#0284C7;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+            <i data-lucide="check-circle" style="width:30px;height:30px;"></i>
+          </div>
+          <h3 style="font-size:22px;font-weight:800;color:var(--color-ocean);margin-bottom:6px;">Akun siap digunakan</h3>
+          <p style="font-size:13.5px;color:#64748B;margin-bottom:24px;">Silakan masuk untuk melanjutkan.</p>
+          <button type="button" class="btn-primary-block" onclick="navigateToRoute('/login', event)">
+            <span>Masuk ke TEMBOX</span>
+            <i data-lucide="log-in" style="width:16px;height:16px;"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================================================
+       CORE JAVASCRIPT: ROUTING, REAL-TIME SERVICE & STATE
+       ================================================== -->
+  <script>
+    // Connection State Enum
+    const ConnectionState = {
+      CONNECTING: 'CONNECTING',
+      CONNECTED: 'CONNECTED',
+      DISCONNECTED: 'DISCONNECTED',
+      ERROR: 'ERROR'
+    };
+
+    // Real-Time Telemetry Service (Zero dummy data, strict real data only)
+    class TemboxRealtimeService {
+      constructor() {
+        this.ws = null;
+        this.wsUrl = localStorage.getItem('tembox_ws_url') || 'ws://localhost:8000/ws';
+        this.connectionState = ConnectionState.DISCONNECTED;
+        this.reconnectTimer = null;
+        this.listeners = new Set();
+        this.store = {
+          hasReceivedData: false,
+          serverConnected: false,
+          lastPacketTime: null,
+          packetsCount: 0,
+          currentTemperature: null,
+          iceCondition: null,
+          systemStatus: null,
+          lastUpdateTimestamp: null,
+          boxes: {
+            box_01: null,
+            box_02: null,
+            box_03: null,
+            box_04: null
+          },
+          temperatureHistory: [],
+          notifications: [],
+          activityLogs: [],
+          device: {
+            id: null,
+            status: 'Belum terhubung',
+            ip: null
+          }
+        };
+      }
+
+      subscribe(callback) {
+        this.listeners.add(callback);
+        callback(this.getState());
+        return () => this.listeners.delete(callback);
+      }
+
+      notify() {
+        const state = this.getState();
+        this.listeners.forEach(cb => {
+          try { cb(state); } catch (err) { console.error('Error in listener:', err); }
+        });
+      }
+
+      getState() {
+        return {
+          connectionState: this.connectionState,
+          store: this.store,
+          stats: this.calculateRealStats()
+        };
+      }
+
+      calculateRealStats() {
+        const history = this.store.temperatureHistory;
+        if (!history || history.length === 0) {
+          return { current: null, lowest: null, highest: null, average: null };
+        }
+        const temps = history.map(item => item.temperature).filter(t => typeof t === 'number' && !isNaN(t));
+        if (temps.length === 0) return { current: null, lowest: null, highest: null, average: null };
+        const current = temps[temps.length - 1];
+        const lowest = Math.min(...temps);
+        const highest = Math.max(...temps);
+        const sum = temps.reduce((acc, val) => acc + val, 0);
+        const average = (sum / temps.length).toFixed(1);
+        return { current, lowest, highest, average };
+      }
+
+      connect(customUrl) {
+        if (customUrl) {
+          this.wsUrl = customUrl;
+          localStorage.setItem('tembox_ws_url', customUrl);
+        }
+        if (this.ws) {
+          try { this.ws.close(); } catch (e) {}
+        }
+        this.connectionState = ConnectionState.CONNECTING;
+        this.store.serverConnected = false;
+        this.notify();
+
+        try {
+          this.ws = new WebSocket(this.wsUrl);
+          this.ws.onopen = () => {
+            this.connectionState = ConnectionState.CONNECTED;
+            this.store.serverConnected = true;
+            this.notify();
+          };
+          this.ws.onmessage = (event) => {
+            try {
+              const payload = JSON.parse(event.data);
+              this.handleIncomingPayload(payload);
+            } catch (err) {}
+          };
+          this.ws.onclose = () => {
+            this.connectionState = ConnectionState.DISCONNECTED;
+            this.store.serverConnected = false;
+            this.notify();
+            this.scheduleReconnect();
+          };
+          this.ws.onerror = () => {
+            this.connectionState = ConnectionState.ERROR;
+            this.notify();
+          };
+        } catch (err) {
+          this.connectionState = ConnectionState.DISCONNECTED;
+          this.notify();
+          this.scheduleReconnect();
+        }
+      }
+
+      scheduleReconnect() {
+        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = setTimeout(() => {
+          if (this.connectionState !== ConnectionState.CONNECTED) {
+            this.connect();
+          }
+        }, 8000);
+      }
+
+      handleIncomingPayload(payload) {
+        if (!payload || typeof payload !== 'object') return;
+        this.store.packetsCount += 1;
+        this.store.lastPacketTime = new Date().toLocaleTimeString();
+
+        if (payload.type === 'connection') {
+          this.notify();
+          return;
+        }
+
+        if (payload.type === 'temperature' || payload.temperature !== undefined || payload.temperatureCelsius !== undefined) {
+          const tempVal = Number(payload.temperature ?? payload.temperatureCelsius);
+          if (isNaN(tempVal)) return;
+
+          this.store.hasReceivedData = true;
+          this.store.currentTemperature = tempVal;
+          this.store.iceCondition = payload.ice_condition || (tempVal <= 2.0 ? 'Normal' : tempVal <= 4.4 ? 'Mulai Mencair' : 'Es Mencair');
+          this.store.systemStatus = payload.status || (tempVal <= 2.0 ? 'Aman' : 'Waspada');
+          this.store.lastUpdateTimestamp = payload.timestamp || new Date().toISOString();
+
+          if (payload.device_id) {
+            this.store.device.id = payload.device_id;
+            this.store.device.status = 'Online';
+          }
+
+          const boxId = payload.box_id || 'box_01';
+          if (this.store.boxes.hasOwnProperty(boxId)) {
+            this.store.boxes[boxId] = {
+              temperature: tempVal,
+              iceCondition: this.store.iceCondition,
+              status: this.store.systemStatus,
+              timestamp: this.store.lastUpdateTimestamp
+            };
+          }
+
+          this.store.temperatureHistory.push({
+            box_id: boxId,
+            timestamp: this.store.lastUpdateTimestamp,
+            temperature: tempVal
+          });
+          if (this.store.temperatureHistory.length > 50) this.store.temperatureHistory.shift();
+
+          this.store.activityLogs.unshift({
+            waktu: new Date(this.store.lastUpdateTimestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            suhu: `${tempVal > 0 ? '+' : ''}${tempVal.toFixed(1)}°C`,
+            kondisiEs: this.store.iceCondition,
+            status: this.store.systemStatus,
+            aktivitas: `Pembaruan data telemetri ${boxId}`
+          });
+          if (this.store.activityLogs.length > 30) this.store.activityLogs.pop();
+
+          if (payload.is_anomaly || tempVal > 4.4 || payload.type === 'notification') {
+            this.store.notifications.unshift({
+              id: 'notif_' + Date.now(),
+              type: tempVal > 4.4 ? 'danger' : 'warning',
+              title: tempVal > 4.4 ? 'Suhu Melebihi Batas Aman!' : 'Peringatan Fluktuasi Suhu',
+              message: `Suhu tercatat ${tempVal.toFixed(1)}°C pada ${boxId}. Periksa palka penyimpanan.`,
+              time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+            });
+          }
+
+          this.notify();
+        }
+      }
+
+      ingestRealPayload(payload) {
+        this.handleIncomingPayload(payload);
+      }
+    }
+
+    const temboxRealtime = new TemboxRealtimeService();
+    window.temboxRealtime = temboxRealtime;
+
+    // Toast notification helper
+    window.showToast = function(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = `toast-message ${type}`;
+      toast.innerHTML = `
+        <i data-lucide="${type === 'warning' ? 'alert-triangle' : 'info'}" style="width:16px;height:16px;flex-shrink:0;"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+      }, 3500);
+    };
+
+    // Unified Route Resolution
+    window.getActiveRoute = function() {
+      const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+      if (['login', 'signin'].includes(rawHash)) return 'login';
+      if (['register', 'signup'].includes(rawHash)) return 'register';
+      if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(rawHash)) return rawHash;
+
+      const pathname = window.location.pathname.replace(/^\/|\/$/g, '').trim().toLowerCase();
+      const segments = pathname.split('/');
+      const last = segments[segments.length - 1];
+      if (['login', 'signin'].includes(last)) return 'login';
+      if (['register', 'signup'].includes(last)) return 'register';
+      if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(last)) return last;
+
+      return 'dashboard';
+    };
+
+    // Client-side Router
+    window.navigateToRoute = function(path, event) {
+      if (event && event.preventDefault) event.preventDefault();
+
+      const clean = (path || '').replace(/^(\/|#\/?)/, '').trim().toLowerCase();
+      if (!clean || clean === 'home' || clean === 'index.html') {
+        window.location.href = './index.html';
+        return;
+      }
+
+      let targetRoute = clean;
+      try {
+        if (window.location.protocol.startsWith('http')) {
+          window.history.pushState({ route: targetRoute }, '', '/' + targetRoute);
+        } else {
+          window.location.hash = '/' + targetRoute;
+        }
+      } catch (err) {
+        window.location.hash = '/' + targetRoute;
+      }
+
+      renderRoute();
+    };
+
+    window.navigateTo = window.navigateToRoute;
+
+    function renderRoute() {
+      const route = getActiveRoute();
+
+      const appView = document.getElementById('appView');
+      const loginView = document.getElementById('loginView');
+      const registerView = document.getElementById('registerView');
+
+      // 1. SCREEN 1: SIGN IN (/login)
+      if (route === 'login') {
+        document.title = 'TEMBOX — Masuk';
+        appView.style.display = 'none';
+        loginView.style.display = 'flex';
+        registerView.style.display = 'none';
+        window.scrollTo(0, 0);
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      // 2. SCREEN 2: SIGN UP (/register)
+      if (route === 'register') {
+        document.title = 'TEMBOX — Daftar Akun';
+        const formContainer = document.getElementById('registerFormContainer');
+        const successState = document.getElementById('registerSuccessState');
+        if (formContainer) formContainer.style.display = 'block';
+        if (successState) successState.style.display = 'none';
+
+        appView.style.display = 'none';
+        loginView.style.display = 'none';
+        registerView.style.display = 'flex';
+        window.scrollTo(0, 0);
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      // 3. APPLICATION SCREENS (Dashboard, Monitoring, Notifikasi, Aktivitas, Pengaturan)
+      appView.style.display = 'flex';
+      loginView.style.display = 'none';
+      registerView.style.display = 'none';
+
+      const pageMap = {
+        'dashboard': 'page-dashboard',
+        'monitoring': 'page-monitoring',
+        'notifikasi': 'page-notifikasi',
+        'aktivitas': 'page-aktivitas',
+        'pengaturan': 'page-pengaturan'
+      };
+
+      const activePageId = pageMap[route] || 'page-dashboard';
+
+      document.querySelectorAll('.app-page').forEach(page => {
+        page.classList.toggle('active', page.id === activePageId);
+      });
+
+      document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+        const itemNav = item.getAttribute('data-nav');
+        item.classList.toggle('active', itemNav === route || (route === 'dashboard' && itemNav === 'dashboard'));
+      });
+
+      // Update Topbar Title and Subtitle dynamically (NO EMOJIS)
+      const greetingEl = document.getElementById('topbarGreeting');
+      const subtitleEl = document.getElementById('topbarSubtitle');
+      if (route === 'monitoring') {
+        document.title = 'TEMBOX — Monitoring Suhu';
+        greetingEl.innerText = 'Monitoring Suhu';
+        subtitleEl.innerText = 'Pantau kondisi suhu penyimpanan ikan secara real-time.';
+      } else if (route === 'notifikasi') {
+        document.title = 'TEMBOX — Notifikasi';
+        greetingEl.innerText = 'Notifikasi';
+        subtitleEl.innerText = 'Informasi penting terkait kondisi penyimpanan ikan Anda.';
+      } else if (route === 'aktivitas') {
+        document.title = 'TEMBOX — Log Aktivitas';
+        greetingEl.innerText = 'Log Aktivitas';
+        subtitleEl.innerText = 'Riwayat aktivitas sistem dan perangkat TEMBOX.';
+      } else if (route === 'pengaturan') {
+        document.title = 'TEMBOX — Pengaturan';
+        greetingEl.innerText = 'Pengaturan';
+        subtitleEl.innerText = 'Kelola perangkat, akun, dan preferensi sistem.';
+      } else {
+        document.title = 'TEMBOX — Dashboard';
+        greetingEl.innerText = 'Halo, Nelayan';
+        subtitleEl.innerText = 'Berikut ringkasan kondisi penyimpanan ikan Anda hari ini.';
+      }
+
+      // Close mobile sidebar on navigation
+      const sidebar = document.getElementById('appSidebar');
+      if (sidebar) sidebar.classList.remove('open');
+
+      window.scrollTo(0, 0);
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Set up Notifikasi Tab Switching
+    document.querySelectorAll('.notif-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.notif-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    window.addEventListener('popstate', renderRoute);
+    window.addEventListener('hashchange', renderRoute);
+    window.addEventListener('DOMContentLoaded', () => {
+      renderRoute();
+      if (window.lucide) lucide.createIcons();
+      // Initialize real-time connection
+      temboxRealtime.connect();
+    });
+
+    // Topbar Notification Pop-up Handler
+    const bellBtn = document.getElementById('topbarBellBtn');
+    const notifDropdown = document.getElementById('notifDropdownMenu');
+    let hasUnreadNotifications = true;
+
+    if (bellBtn && notifDropdown) {
+      bellBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notifDropdown.classList.toggle('open');
+        bellBtn.classList.toggle('open');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#topbarNotifWrap')) {
+          closeNotifDropdown();
+        }
+      });
+    }
+
+    window.closeNotifDropdown = function() {
+      if (notifDropdown) notifDropdown.classList.remove('open');
+      if (bellBtn) bellBtn.classList.remove('open');
+    };
+
+    window.markAllNotificationsAsRead = function(e) {
+      if (e) e.stopPropagation();
+      hasUnreadNotifications = false;
+      const bellDot = document.getElementById('topbarBellDot');
+      if (bellDot) bellDot.classList.remove('has-unread');
+      document.querySelectorAll('.notif-dropdown-item').forEach(item => {
+        item.classList.remove('unread');
+      });
+      showToast("Semua notifikasi ditandai sudah dibaca.", "info");
+    };
+
+    window.updateTopbarNotifDropdown = function(notifications) {
+      const bellDot = document.getElementById('topbarBellDot');
+      const listEl = document.getElementById('notifDropdownList');
+      if (!listEl) return;
+
+      if (!notifications || notifications.length === 0) {
+        listEl.innerHTML = `
+          <div class="notif-dropdown-empty" id="notifDropdownEmpty">
+            <i data-lucide="bell-off" style="width:24px;height:24px;color:#94A3B8;"></i>
+            <span>Tidak ada notifikasi baru</span>
+          </div>
+        `;
+        if (bellDot && !hasUnreadNotifications) bellDot.classList.remove('has-unread');
+      } else {
+        if (bellDot && hasUnreadNotifications) bellDot.classList.add('has-unread');
+        listEl.innerHTML = notifications.slice(0, 5).map(n => `
+          <div class="notif-dropdown-item ${hasUnreadNotifications ? 'unread' : ''}" onclick="navigateToRoute('/notifikasi', event); closeNotifDropdown();">
+            <div class="notif-dropdown-icon" style="background:${n.type === 'danger' ? '#FEF2F2' : '#FFFBEB'};color:${n.type === 'danger' ? '#DC2626' : '#D97706'};">
+              <i data-lucide="${n.type === 'danger' ? 'alert-triangle' : 'info'}" style="width:14px;height:14px;"></i>
+            </div>
+            <div class="notif-dropdown-body">
+              <div class="notif-dropdown-item-title">${n.title}</div>
+              <div class="notif-dropdown-item-text">${n.message}</div>
+              <span class="notif-dropdown-item-time">${n.time}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+      if (window.lucide) lucide.createIcons();
+    };
+
+    // Real-Time Chart Filter Pop-up Handler
+    const chartFilterBtn = document.getElementById('dashChartFilterBtn');
+    const chartFilterMenu = document.getElementById('dashChartFilterMenu');
+
+    if (chartFilterBtn && chartFilterMenu) {
+      chartFilterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chartFilterMenu.classList.toggle('open');
+        chartFilterBtn.classList.toggle('open');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#dashChartFilterWrap')) {
+          chartFilterMenu.classList.remove('open');
+          chartFilterBtn.classList.remove('open');
+        }
+      });
+    }
+
+    window.selectChartFilterRange = function(range, label) {
+      const labelEl = document.getElementById('dashChartFilterLabel');
+      if (labelEl) labelEl.innerText = label;
+      document.querySelectorAll('#dashChartFilterMenu .filter-menu-item').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-range') === range);
+      });
+      if (chartFilterMenu) chartFilterMenu.classList.remove('open');
+      if (chartFilterBtn) chartFilterBtn.classList.remove('open');
+      showToast(`Filter grafik: ${label}`, "info");
+      if (window.lucide) lucide.createIcons();
+    };
+
+    // Monitoring Calendar Date Picker Pop-up
+    const monitoringDateBtn = document.getElementById('monitoringDateBtn');
+    const datePickerPopup = document.getElementById('monitoringDatePickerPopup');
+    window.currentCalYear = 2026;
+    window.currentCalMonth = 8; // September (0-indexed)
+    window.selectedCalDay = 24;
+
+    const MONTH_NAMES = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    if (monitoringDateBtn && datePickerPopup) {
+      monitoringDateBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = datePickerPopup.classList.contains('open');
+        datePickerPopup.classList.toggle('open');
+        monitoringDateBtn.classList.toggle('open');
+        if (!isOpen) renderCalendar();
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#monitoringDateWrap')) {
+          datePickerPopup.classList.remove('open');
+          monitoringDateBtn.classList.remove('open');
+        }
+      });
+    }
+
+    window.renderCalendar = function() {
+      const titleEl = document.getElementById('calMonthTitle');
+      const gridEl = document.getElementById('calDaysGrid');
+      if (!titleEl || !gridEl) return;
+
+      titleEl.innerText = `${MONTH_NAMES[window.currentCalMonth]} ${window.currentCalYear}`;
+
+      const firstDayIndex = new Date(window.currentCalYear, window.currentCalMonth, 1).getDay();
+      const lastDay = new Date(window.currentCalYear, window.currentCalMonth + 1, 0).getDate();
+
+      let html = '';
+      for (let i = 0; i < firstDayIndex; i++) {
+        html += '<div class="cal-day-cell empty"></div>';
+      }
+
+      for (let day = 1; day <= lastDay; day++) {
+        const isSelected = (day === window.selectedCalDay && window.currentCalMonth === 8 && window.currentCalYear === 2026);
+        html += `<button type="button" class="cal-day-cell ${isSelected ? 'selected' : ''}" onclick="selectCalendarDay(${day}, event)">${day}</button>`;
+      }
+
+      gridEl.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+    };
+
+    window.navCalendarMonth = function(dir, e) {
+      if (e) e.stopPropagation();
+      window.currentCalMonth += dir;
+      if (window.currentCalMonth < 0) {
+        window.currentCalMonth = 11;
+        window.currentCalYear -= 1;
+      } else if (window.currentCalMonth > 11) {
+        window.currentCalMonth = 0;
+        window.currentCalYear += 1;
+      }
+      renderCalendar();
+    };
+
+    window.selectCalendarDay = function(day, e) {
+      if (e) e.stopPropagation();
+      window.selectedCalDay = day;
+      const monthStr = MONTH_SHORT[window.currentCalMonth];
+      const formatted = `${day} ${monthStr} ${window.currentCalYear}`;
+      const labelEl = document.getElementById('currentDateLabel');
+      if (labelEl) labelEl.innerText = formatted;
+      if (datePickerPopup) datePickerPopup.classList.remove('open');
+      if (monitoringDateBtn) monitoringDateBtn.classList.remove('open');
+      showToast(`Data ditampilkan untuk tanggal: ${formatted}`, "info");
+    };
+
+    window.selectDatePreset = function(preset, e) {
+      if (e) e.stopPropagation();
+      let d = new Date();
+      if (preset === 'yesterday') {
+        d.setDate(d.getDate() - 1);
+      } else if (preset === 'prev_month') {
+        d.setMonth(d.getMonth() - 1);
+      }
+      window.currentCalYear = d.getFullYear();
+      window.currentCalMonth = d.getMonth();
+      window.selectedCalDay = d.getDate();
+      const formatted = `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+      const labelEl = document.getElementById('currentDateLabel');
+      if (labelEl) labelEl.innerText = formatted;
+      if (datePickerPopup) datePickerPopup.classList.remove('open');
+      if (monitoringDateBtn) monitoringDateBtn.classList.remove('open');
+      showToast(`Rentang tanggal: ${formatted}`, "info");
+    };
+
+    // Real-Time Telemetry Subscription & UI Re-rendering
+    temboxRealtime.subscribe(state => {
+      const { connectionState, store, stats } = state;
+
+      // 1. Update Connection Badges
+      const connPill = document.getElementById('connectionPill');
+      const connDot = document.getElementById('connectionDot');
+      const connText = document.getElementById('connectionText');
+      const devDot = document.getElementById('deviceStatusDot');
+      const devLabel = document.getElementById('deviceStatusLabel');
+      const settingsWsStatus = document.getElementById('settingsWsStatus');
+      const settingsPacketsCount = document.getElementById('settingsPacketsCount');
+      const settingsConnStateLabel = document.getElementById('settingsConnStateLabel');
+      const settingsSensorStatus = document.getElementById('settingsSensorStatus');
+
+      if (settingsPacketsCount) settingsPacketsCount.innerText = store.packetsCount;
+
+      if (connectionState === ConnectionState.CONNECTED) {
+        if (connPill) connPill.className = 'connection-pill connected';
+        if (connDot) connDot.className = 'status-dot online';
+        if (connText) connText.innerText = 'Server: Terhubung';
+        if (settingsWsStatus) settingsWsStatus.innerText = 'Terhubung';
+        if (settingsConnStateLabel) settingsConnStateLabel.innerText = 'Terhubung';
+
+        if (store.hasReceivedData) {
+          devDot.className = 'status-dot online';
+          devLabel.innerText = 'Online';
+          if (settingsSensorStatus) settingsSensorStatus.innerText = 'Online (Aktif)';
+        } else {
+          devDot.className = 'status-dot offline';
+          devLabel.innerText = 'Menunggu data';
+          if (settingsSensorStatus) settingsSensorStatus.innerText = 'Menunggu data';
+        }
+      } else if (connectionState === ConnectionState.CONNECTING) {
+        if (connPill) connPill.className = 'connection-pill warning';
+        if (connDot) connDot.className = 'status-dot warning';
+        if (connText) connText.innerText = 'Menghubungkan...';
+        if (settingsWsStatus) settingsWsStatus.innerText = 'Menghubungkan...';
+        if (settingsConnStateLabel) settingsConnStateLabel.innerText = 'Menghubungkan...';
+        if (settingsSensorStatus) settingsSensorStatus.innerText = 'Belum terhubung';
+        devDot.className = 'status-dot offline';
+        devLabel.innerText = 'Belum terhubung';
+      } else {
+        if (connPill) connPill.className = 'connection-pill disconnected';
+        if (connDot) connDot.className = 'status-dot offline';
+        if (connText) connText.innerText = 'Server: Belum Terhubung';
+        if (settingsWsStatus) settingsWsStatus.innerText = 'Terputus';
+        if (settingsConnStateLabel) settingsConnStateLabel.innerText = 'Belum terhubung';
+        if (settingsSensorStatus) settingsSensorStatus.innerText = 'Belum terhubung';
+        devDot.className = 'status-dot offline';
+        devLabel.innerText = 'Belum terhubung';
+      }
+
+      // 2. DASHBOARD STATS - HONEST EMPTY STATE RULE
+      const tempCurrentEl = document.getElementById('dashTempCurrent');
+      const tempBadgeText = document.getElementById('dashTempBadgeText');
+      const tempBadge = document.getElementById('dashTempBadge');
+      const iceCondEl = document.getElementById('dashIceCondition');
+      const iceSubtextEl = document.getElementById('dashIceSubtext');
+      const sysStatusEl = document.getElementById('dashSysStatus');
+      const sysBadgeText = document.getElementById('dashSysBadgeText');
+      const lastUpdateEl = document.getElementById('dashLastUpdate');
+      const lastUpdateDateEl = document.getElementById('dashLastUpdateDate');
+
+      if (!store.hasReceivedData) {
+        // Honest Empty State
+        tempCurrentEl.innerText = '-- °C';
+        tempBadgeText.innerText = 'Menunggu data';
+        tempBadge.className = 'badge-status neutral';
+        iceCondEl.innerText = 'Belum tersedia';
+        if (iceSubtextEl) iceSubtextEl.innerText = '';
+        sysStatusEl.innerText = store.serverConnected ? 'Terhubung (Menunggu Data)' : 'Belum terhubung';
+        sysBadgeText.innerText = store.serverConnected ? 'Siap Menerima Data' : 'Offline';
+        if (lastUpdateEl) lastUpdateEl.innerText = 'Belum ada';
+        if (lastUpdateDateEl) lastUpdateDateEl.innerText = '';
+      } else {
+        // Real Values populated strictly from received packet
+        const t = store.currentTemperature;
+        tempCurrentEl.innerText = `${t > 0 ? '+' : ''}${t.toFixed(1)}°C`;
+        tempBadgeText.innerText = store.systemStatus;
+        tempBadge.className = `badge-status ${store.systemStatus === 'Aman' ? 'safe' : 'warning'}`;
+        iceCondEl.innerText = store.iceCondition;
+        iceSubtextEl.innerText = store.iceCondition === 'Normal' ? 'Kualitas Baik' : 'Perlu Perhatian';
+        sysStatusEl.innerText = store.systemStatus;
+        sysBadgeText.innerText = 'Online';
+        lastUpdateEl.innerText = new Date(store.lastUpdateTimestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        lastUpdateDateEl.innerText = new Date(store.lastUpdateTimestamp).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+
+      // 3. REAL-TIME CHART RENDERING (Honest Empty State vs Real Points)
+      const chartEmpty = document.getElementById('dashChartEmpty');
+      const chartSvg = document.getElementById('dashChartSvg');
+      if (store.temperatureHistory.length === 0) {
+        chartEmpty.style.display = 'flex';
+        chartSvg.style.display = 'none';
+      } else {
+        chartEmpty.style.display = 'none';
+        chartSvg.style.display = 'block';
+        renderSplineChart(chartSvg, store.temperatureHistory);
+      }
+
+      // 4. NOTIFICATIONS
+      const navBadge = document.getElementById('navNotifBadge');
+      const bellDot = document.getElementById('topbarBellDot');
+      const dashNotifEmpty = document.getElementById('dashNotifEmpty');
+      const dashNotifList = document.getElementById('dashNotifList');
+      const notifPageEmpty = document.getElementById('notifPageEmpty');
+      const notifPageList = document.getElementById('notifPageList');
+
+      const notifsCount = store.notifications.length;
+      if (navBadge) navBadge.remove();
+      updateTopbarNotifDropdown(store.notifications);
+      if (notifsCount > 0) {
+        bellDot.classList.add('has-unread');
+        dashNotifEmpty.style.display = 'none';
+        dashNotifList.style.display = 'block';
+        dashNotifList.innerHTML = store.notifications.slice(0, 3).map(n => `
+          <div class="notif-item">
+            <div class="notif-item-icon" style="background:${n.type === 'danger' ? '#FEF2F2' : '#FFFBEB'};color:${n.type === 'danger' ? '#DC2626' : '#D97706'};">
+              <i data-lucide="${n.type === 'danger' ? 'alert-circle' : 'alert-triangle'}" style="width:16px;height:16px;"></i>
+            </div>
+            <div class="notif-item-body">
+              <div class="notif-item-title">${n.title}</div>
+              <div class="notif-item-text">${n.message}</div>
+            </div>
+            <span class="notif-item-time">${n.time}</span>
+          </div>
+        `).join('');
+
+        notifPageEmpty.style.display = 'none';
+        notifPageList.style.display = 'block';
+        notifPageList.innerHTML = store.notifications.map(n => `
+          <div class="notif-detail-card">
+            <div class="notif-item-icon" style="background:${n.type === 'danger' ? '#FEF2F2' : '#FFFBEB'};color:${n.type === 'danger' ? '#DC2626' : '#D97706'};">
+              <i data-lucide="${n.type === 'danger' ? 'alert-circle' : 'alert-triangle'}" style="width:18px;height:18px;"></i>
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;color:var(--color-ocean);font-size:13.5px;">${n.title}</div>
+              <div style="font-size:12px;color:#64748B;margin-top:2px;">${n.message}</div>
+            </div>
+            <span style="font-size:11.5px;color:#94A3B8;">${n.time}</span>
+            <i data-lucide="chevron-right" style="width:16px;height:16px;color:#CBD5E1;"></i>
+          </div>
+        `).join('');
+      } else {
+        bellDot.classList.remove('has-unread');
+        dashNotifEmpty.style.display = 'flex';
+        dashNotifList.style.display = 'none';
+        notifPageEmpty.style.display = 'flex';
+        notifPageList.style.display = 'none';
+      }
+
+      // 5. MONITORING SUHU: BOX OVERVIEW & TABLES
+      ['box_01', 'box_02', 'box_03', 'box_04'].forEach((bid, idx) => {
+        const num = idx + 1;
+        const tempEl = document.getElementById(`box${num}Temp`);
+        const badgeEl = document.getElementById(`box${num}Badge`);
+        const boxData = store.boxes[bid];
+
+        if (!boxData) {
+          tempEl.innerText = '';
+          badgeEl.innerText = '';
+          badgeEl.style.display = 'none';
+          badgeEl.className = 'badge-status neutral';
+        } else {
+          tempEl.innerText = `${boxData.temperature > 0 ? '+' : ''}${boxData.temperature.toFixed(1)}°C`;
+          badgeEl.innerText = boxData.status;
+          badgeEl.className = `badge-status ${boxData.status === 'Aman' ? 'safe' : 'warning'}`;
+          badgeEl.style.display = 'inline-flex';
+        }
+      });
+
+      // Multi-line chart
+      const multiEmpty = document.getElementById('multiChartEmpty');
+      const multiSvg = document.getElementById('multiChartSvg');
+      if (store.temperatureHistory.length === 0) {
+        multiEmpty.style.display = 'flex';
+        multiSvg.style.display = 'none';
+      } else {
+        multiEmpty.style.display = 'none';
+        multiSvg.style.display = 'block';
+        renderSplineChart(multiSvg, store.temperatureHistory);
+      }
+
+      // Detail Data Table
+      const detailBody = document.getElementById('detailDataTableBody');
+      if (store.activityLogs.length === 0) {
+        detailBody.innerHTML = '<tr class="table-empty-row"><td colspan="4">Belum ada data suhu.</td></tr>';
+      } else {
+        detailBody.innerHTML = store.activityLogs.map(row => `
+          <tr>
+            <td style="font-weight:600;">${row.waktu}</td>
+            <td style="font-weight:700;color:var(--color-ocean);">${row.suhu}</td>
+            <td>${row.kondisiEs}</td>
+            <td>
+              <span class="badge-status ${row.status === 'Aman' ? 'safe' : 'warning'}">
+                <span class="status-dot ${row.status === 'Aman' ? 'online' : 'warning'}"></span> ${row.status}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // 6. LOG AKTIVITAS TABLE
+      const actBody = document.getElementById('activityTableBody');
+      if (store.activityLogs.length === 0) {
+        actBody.innerHTML = '<tr class="table-empty-row"><td colspan="5">Belum ada aktivitas tercatat.</td></tr>';
+      } else {
+        actBody.innerHTML = store.activityLogs.map(row => `
+          <tr>
+            <td style="font-weight:600;">${row.waktu}</td>
+            <td style="font-weight:700;color:var(--color-ocean);">${row.suhu}</td>
+            <td>${row.kondisiEs}</td>
+            <td>
+              <span class="badge-status ${row.status === 'Aman' ? 'safe' : 'warning'}">
+                <span class="status-dot ${row.status === 'Aman' ? 'online' : 'warning'}"></span> ${row.status}
+              </span>
+            </td>
+            <td>${row.aktivitas}</td>
+          </tr>
+        `).join('');
+      }
+
+      lucide.createIcons();
+    });
+
+    // Clean SVG Spline Chart Renderer for Real Telemetry Points
+    function renderSplineChart(svgEl, data) {
+      if (!data || data.length === 0) return;
+
+      const w = svgEl.clientWidth || 500;
+      const h = svgEl.clientHeight || 220;
+      const padding = { top: 20, right: 30, bottom: 30, left: 45 };
+
+      const temps = data.map(d => d.temperature);
+      let minTemp = Math.min(...temps);
+      let maxTemp = Math.max(...temps);
+      if (minTemp === maxTemp) {
+        minTemp -= 2;
+        maxTemp += 2;
+      }
+
+      const plotW = w - padding.left - padding.right;
+      const plotH = h - padding.top - padding.bottom;
+
+      // Coordinate scaling
+      const getX = (idx) => padding.left + (idx / Math.max(1, data.length - 1)) * plotW;
+      const getY = (val) => padding.top + plotH - ((val - minTemp) / (maxTemp - minTemp)) * plotH;
+
+      // Generate points
+      const points = data.map((d, i) => ({ x: getX(i), y: getY(d.temperature), val: d.temperature, time: d.timestamp }));
+
+      // Create SVG Path
+      let pathD = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const cpX1 = prev.x + (curr.x - prev.x) / 2;
+        const cpX2 = curr.x - (curr.x - prev.x) / 2;
+        pathD += ` C ${cpX1} ${prev.y}, ${cpX2} ${curr.y}, ${curr.x} ${curr.y}`;
+      }
+
+      const areaD = `${pathD} L ${points[points.length - 1].x} ${padding.top + plotH} L ${points[0].x} ${padding.top + plotH} Z`;
+
+      svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      svgEl.innerHTML = `
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7DDCE8" stop-opacity="0.32"/>
+            <stop offset="100%" stop-color="#7DDCE8" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <!-- Horizontal Grid Lines -->
+        <line x1="${padding.left}" y1="${padding.top}" x2="${w - padding.right}" y2="${padding.top}" stroke="#F1F5F9" stroke-width="1"/>
+        <line x1="${padding.left}" y1="${padding.top + plotH / 2}" x2="${w - padding.right}" y2="${padding.top + plotH / 2}" stroke="#F1F5F9" stroke-width="1"/>
+        <line x1="${padding.left}" y1="${padding.top + plotH}" x2="${w - padding.right}" y2="${padding.top + plotH}" stroke="#E2E8F0" stroke-width="1"/>
+        
+        <!-- Y Axis Labels -->
+        <text x="${padding.left - 8}" y="${padding.top + 4}" fill="#94A3B8" font-size="10" text-anchor="end">${maxTemp.toFixed(1)}°C</text>
+        <text x="${padding.left - 8}" y="${padding.top + plotH + 4}" fill="#94A3B8" font-size="10" text-anchor="end">${minTemp.toFixed(1)}°C</text>
+
+        <!-- Area Fill -->
+        <path d="${areaD}" fill="url(#chartGrad)"/>
+        <!-- Line Path -->
+        <path d="${pathD}" fill="none" stroke="#00A3C4" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Data Circles -->
+        ${points.map(p => `
+          <circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#FFFFFF" stroke="#00A3C4" stroke-width="2">
+            <title>${p.val}°C (${new Date(p.time).toLocaleTimeString()})</title>
+          </circle>
+        `).join('')}
+      `;
+    }
+
+    // Interactive Handlers (Frontend Demo Flow Only)
+    window.handleLoginSubmit = function(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const pwd = document.getElementById('loginPassword').value.trim();
+      if (!email || !pwd) {
+        showToast("Silakan isi Email / Username dan Password.", "warning");
+        return;
+      }
+
+      const btn = document.getElementById('loginSubmitBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Memuat...</span>';
+      }
+
+      setTimeout(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>Masuk</span><i data-lucide="log-in" style="width:16px;height:16px;"></i>';
+        }
+        navigateToRoute('/dashboard');
+      }, 400);
+    };
+
+    window.handleRegisterSubmit = function(e) {
+      e.preventDefault();
+      const name = document.getElementById('regFullName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const pwd = document.getElementById('regPassword').value;
+      const confirmPwd = document.getElementById('regConfirmPassword').value;
+
+      if (!name || !email || !pwd) {
+        showToast("Silakan lengkapi semua bidang yang wajib diisi.", "warning");
+        return;
+      }
+
+      if (pwd !== confirmPwd) {
+        showToast("Password dan Konfirmasi Password tidak cocok!", "warning");
+        return;
+      }
+
+      const btn = document.getElementById('regSubmitBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Memproses...</span>';
+      }
+
+      setTimeout(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>Buat Akun</span><i data-lucide="user-plus" style="width:16px;height:16px;"></i>';
+        }
+        const formContainer = document.getElementById('registerFormContainer');
+        const successState = document.getElementById('registerSuccessState');
+        if (formContainer) formContainer.style.display = 'none';
+        if (successState) successState.style.display = 'block';
+        if (window.lucide) lucide.createIcons();
+      }, 400);
+    };
+
+    window.togglePasswordVisibility = function(inputId, iconId) {
+      const pwdInput = document.getElementById(inputId);
+      const iconEl = document.getElementById(iconId);
+      if (!pwdInput) return;
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        if (iconEl) iconEl.setAttribute('data-lucide', 'eye-off');
+      } else {
+        pwdInput.type = 'password';
+        if (iconEl) iconEl.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    };
+
+    window.handleSettingsAction = function(actionName) {
+      // Enforce: DO NOT pretend settings are saved to backend
+      showToast("Backend persistence belum diaktifkan.", "info");
+    };
+
+    window.updateWebSocketEndpoint = function() {
+      const url = document.getElementById('wsUrlInput').value.trim();
+      if (!url) return;
+      temboxRealtime.connect(url);
+      showToast(`Menghubungkan ke ${url}...`, "info");
+    };
+
+    window.ingestManualPacket = function() {
+      try {
+        const text = document.getElementById('samplePayloadInput').value;
+        const payload = JSON.parse(text);
+        temboxRealtime.ingestRealPayload(payload);
+        showToast("Paket telemetri sensor palka berhasil diproses!", "info");
+      } catch (err) {
+        showToast("Format JSON telemetri tidak valid: " + err.message, "warning");
+      }
+    };
+
+    // UI Menu Toggles
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
+    const sidebar = document.getElementById('appSidebar');
+    if (toggleBtn) toggleBtn.addEventListener('click', () => sidebar.classList.add('open'));
+    if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+
+    const userPill = document.getElementById('topbarUserPill');
+    const userMenu = document.getElementById('topbarUserMenu');
+    if (userPill) {
+      userPill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        userMenu.classList.toggle('open');
+      });
+      document.addEventListener('click', () => userMenu.classList.remove('open'));
+    }
+  </script>
+</body>
+</html>
