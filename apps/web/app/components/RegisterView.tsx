@@ -26,12 +26,14 @@ interface RegisterViewProps {
   onSuccess?: () => void;
   onNavigateLogin?: () => void;
   onBackHome?: () => void;
+  hideLeftPane?: boolean;
 }
 
 export const RegisterView: React.FC<RegisterViewProps> = ({
   onSuccess,
   onNavigateLogin,
   onBackHome,
+  hideLeftPane = false,
 }) => {
   // Step 1: 'form' -> Step 2: 'otp' -> Step 3: 'success'
   const [step, setStep] = useState<'form' | 'otp' | 'success'>('form');
@@ -91,65 +93,67 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   };
 
   return (
-    <div className="login-view-wrapper" style={{ display: 'flex' }}>
+    <div className="login-view-wrapper" style={{ display: hideLeftPane ? 'contents' : 'flex' }}>
       {/* Left Hero Pane with Background Video Backdrop */}
-      <div className="login-left-pane">
-        <video
-          className="login-media-backdrop"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          poster={heroBoat}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0.45,
-            filter: 'saturate(1.2) contrast(1.1)',
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
-        >
-          <source src={heroVideo} type="video/mp4" />
-          <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
-        </video>
-        <div
-          className="login-overlay-gradient"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
+      {!hideLeftPane && (
+        <div className="login-left-pane">
+          <video
+            className="login-media-backdrop"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            poster={heroBoat}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              opacity: 0.45,
+              filter: 'saturate(1.2) contrast(1.1)',
+              zIndex: 0,
+              pointerEvents: 'none',
+            }}
+          >
+            <source src={heroVideo} type="video/mp4" />
+            <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
+          </video>
+          <div
+            className="login-overlay-gradient"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+            }}
+          />
 
-        <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontWeight: 800,
-              fontSize: '26px',
-              letterSpacing: '-0.5px',
-              color: '#FFFFFF',
-              display: 'block',
-              marginBottom: '6px',
-              cursor: 'pointer'
-            }}>
-              TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
-            </span>
-          </Link>
-          <p className="login-brand-tagline">
-            Bergabunglah dengan ekosistem pemantauan hasil tangkapan laut modern.
-          </p>
-        </div>
+          <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <span style={{
+                fontWeight: 800,
+                fontSize: '26px',
+                letterSpacing: '-0.5px',
+                color: '#FFFFFF',
+                display: 'block',
+                marginBottom: '6px',
+                cursor: 'pointer'
+              }}>
+                TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
+              </span>
+            </Link>
+            <p className="login-brand-tagline">
+              Bergabunglah dengan ekosistem pemantauan hasil tangkapan laut modern.
+            </p>
+          </div>
 
-        <div className="login-left-footer" style={{ position: 'relative', zIndex: 10 }}>
-          &ldquo;Ikan tetap segar, nelayan lebih tenang.&rdquo;
+          <div className="login-left-footer" style={{ position: 'relative', zIndex: 10 }}>
+            &ldquo;Ikan tetap segar, nelayan lebih tenang.&rdquo;
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Right Form Pane */}
       <div className="login-right-pane">

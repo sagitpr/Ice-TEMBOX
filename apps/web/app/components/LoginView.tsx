@@ -26,6 +26,7 @@ interface LoginViewProps {
   onNavigateRegister?: () => void;
   onNavigateForgotPassword?: () => void;
   onBackHome?: () => void;
+  hideLeftPane?: boolean;
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({
@@ -33,6 +34,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onNavigateRegister,
   onNavigateForgotPassword,
   onBackHome,
+  hideLeftPane = false,
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,6 +53,136 @@ export const LoginView: React.FC<LoginViewProps> = ({
       }
     }, 400);
   };
+
+  const rightFormPane = (
+    <div className="login-right-pane">
+      <div className="login-form-box">
+        <h2 className="login-title">Selamat Datang</h2>
+        <p className="login-desc">Masuk untuk melanjutkan ke sistem TEMBOX.</p>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="loginEmail">Email / Username</label>
+            <div className="input-icon-wrap">
+              <User size={16} className="input-icon" />
+              <input
+                type="text"
+                id="loginEmail"
+                className="form-input"
+                placeholder="Email / Username"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="loginPassword">Password</label>
+            <div className="input-icon-wrap">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="loginPassword"
+                className="form-input"
+                placeholder="Password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? 'Sembunyikan' : 'Lihat'}
+              </button>
+            </div>
+          </div>
+
+          <div className="form-row-actions">
+            <label className="remember-label">
+              <input type="checkbox" className="remember-checkbox" />
+              <span>Ingat saya</span>
+            </label>
+            <a
+              href="#/forgot-password"
+              onClick={(e) => {
+                if (onNavigateForgotPassword) {
+                  e.preventDefault();
+                  onNavigateForgotPassword();
+                }
+              }}
+              className="forgot-link"
+            >
+              Lupa password?
+            </a>
+          </div>
+
+          <button type="submit" className="btn-login-submit" disabled={loading}>
+            {loading ? 'Memproses...' : 'Masuk'}
+          </button>
+        </form>
+
+        <p className="auth-switch-text">
+          Belum punya akun?{' '}
+          <a
+            href="#/register"
+            onClick={(e) => {
+              if (onNavigateRegister) {
+                e.preventDefault();
+                onNavigateRegister();
+              }
+            }}
+            className="auth-switch-link"
+          >
+            Daftar sekarang
+          </a>
+        </p>
+
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          {onBackHome ? (
+            <button
+              type="button"
+              onClick={onBackHome}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '13px',
+                color: '#64748B',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <ArrowLeft size={14} />
+              <span>Kembali ke Beranda</span>
+            </button>
+          ) : (
+            <Link
+              href="/"
+              style={{
+                fontSize: '13px',
+                color: '#64748B',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <ArrowLeft size={14} />
+              <span>Kembali ke TEMBOX</span>
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (hideLeftPane) {
+    return rightFormPane;
+  }
 
   return (
     <div className="login-view-wrapper" style={{ display: 'flex' }}>
@@ -113,134 +245,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
       </div>
 
-      {/* Right Form Pane */}
-      <div className="login-right-pane">
-        <div className="login-form-box">
-          <h2 className="login-title">Selamat Datang</h2>
-          <p className="login-desc">Masuk untuk melanjutkan ke sistem TEMBOX.</p>
-
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="loginEmail">Email / Username</label>
-              <div className="input-icon-wrap">
-                <User size={16} className="input-icon" />
-                <input
-                  type="text"
-                  id="loginEmail"
-                  className="form-input"
-                  placeholder="Email / Username"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="loginPassword">Password</label>
-              <div className="input-icon-wrap">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="loginPassword"
-                  className="form-input"
-                  placeholder="Password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{ paddingLeft: '14px' }}
-                />
-                <button
-                  type="button"
-                  className="input-toggle-pwd"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label="Toggle password visibility"
-                >
-                  <span style={{ fontSize: '11px', color: '#64748B' }}>
-                    {showPassword ? 'Hide' : 'Show'}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <div className="form-row-between">
-              <label className="checkbox-label">
-                <input type="checkbox" id="rememberMe" />
-                <span>Ingat saya</span>
-              </label>
-              <span
-                className="form-link"
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  if (onNavigateForgotPassword) {
-                    onNavigateForgotPassword();
-                  } else {
-                    window.location.hash = '#/forgot-password';
-                  }
-                }}
-              >
-                Lupa password?
-              </span>
-            </div>
-
-            <button type="submit" className="btn-primary-block" disabled={loading}>
-              <span>{loading ? 'Memproses...' : 'Masuk'}</span>
-            </button>
-          </form>
-
-          <p className="login-footer-text">
-            Belum punya akun?{' '}
-            {onNavigateRegister ? (
-              <button
-                type="button"
-                onClick={onNavigateRegister}
-                className="form-link"
-                style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
-              >
-                Daftar
-              </button>
-            ) : (
-              <Link href="/register" className="form-link">Daftar</Link>
-            )}
-          </p>
-
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            {onBackHome ? (
-              <button
-                type="button"
-                onClick={onBackHome}
-                style={{
-                  fontSize: '12.5px',
-                  color: '#64748B',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <ArrowLeft size={14} />
-                <span>Kembali ke TEMBOX</span>
-              </button>
-            ) : (
-              <Link
-                href="/"
-                style={{
-                  fontSize: '12.5px',
-                  color: '#64748B',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <ArrowLeft size={14} />
-                <span>Kembali ke TEMBOX</span>
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
+      {rightFormPane}
     </div>
   );
 };

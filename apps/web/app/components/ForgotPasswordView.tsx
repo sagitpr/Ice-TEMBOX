@@ -26,12 +26,14 @@ interface ForgotPasswordViewProps {
   onSuccess?: () => void;
   onNavigateLogin?: () => void;
   onBackHome?: () => void;
+  hideLeftPane?: boolean;
 }
 
 export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   onSuccess,
   onNavigateLogin,
   onBackHome,
+  hideLeftPane = false,
 }) => {
   // Step 1: 'email' -> Step 2: 'reset' -> Step 3: 'success'
   const [step, setStep] = useState<'email' | 'reset' | 'success'>('email');
@@ -89,65 +91,67 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   };
 
   return (
-    <div className="login-view-wrapper" style={{ display: 'flex' }}>
+    <div className="login-view-wrapper" style={{ display: hideLeftPane ? 'contents' : 'flex' }}>
       {/* Left Hero Pane with Background Video Backdrop */}
-      <div className="login-left-pane">
-        <video
-          className="login-media-backdrop"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          poster={heroBoat}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0.45,
-            filter: 'saturate(1.2) contrast(1.1)',
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
-        >
-          <source src={heroVideo} type="video/mp4" />
-          <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
-        </video>
-        <div
-          className="login-overlay-gradient"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
+      {!hideLeftPane && (
+        <div className="login-left-pane">
+          <video
+            className="login-media-backdrop"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            poster={heroBoat}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              opacity: 0.45,
+              filter: 'saturate(1.2) contrast(1.1)',
+              zIndex: 0,
+              pointerEvents: 'none',
+            }}
+          >
+            <source src={heroVideo} type="video/mp4" />
+            <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
+          </video>
+          <div
+            className="login-overlay-gradient"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+            }}
+          />
 
-        <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontWeight: 800,
-              fontSize: '26px',
-              letterSpacing: '-0.5px',
-              color: '#FFFFFF',
-              display: 'block',
-              marginBottom: '6px',
-              cursor: 'pointer'
-            }}>
-              TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
-            </span>
-          </Link>
-          <p className="login-brand-tagline">
-            Pemulihan akun dan pengaturan ulang kata sandi dengan aman.
-          </p>
-        </div>
+          <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <span style={{
+                fontWeight: 800,
+                fontSize: '26px',
+                letterSpacing: '-0.5px',
+                color: '#FFFFFF',
+                display: 'block',
+                marginBottom: '6px',
+                cursor: 'pointer'
+              }}>
+                TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
+              </span>
+            </Link>
+            <p className="login-brand-tagline">
+              Pemulihan akun dan pengaturan ulang kata sandi dengan aman.
+            </p>
+          </div>
 
-        <div className="login-left-footer" style={{ position: 'relative', zIndex: 10 }}>
-          &ldquo;Keamanan data dan stabilitas pemantauan Anda adalah prioritas kami.&rdquo;
+          <div className="login-left-footer" style={{ position: 'relative', zIndex: 10 }}>
+            &ldquo;Keamanan data dan stabilitas pemantauan Anda adalah prioritas kami.&rdquo;
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Right Form Pane */}
       <div className="login-right-pane">

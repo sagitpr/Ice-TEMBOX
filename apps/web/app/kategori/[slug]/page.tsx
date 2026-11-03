@@ -25,8 +25,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const resolvedParams = await params;
-  const topic = resolveSeoTopic(resolvedParams.slug);
+  const { slug } = await params;
+  const topic = resolveSeoTopic(slug);
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-tembox.vercel.app';
   const url = `${baseUrl}/kategori/${topic.slug}`;
 
@@ -63,8 +63,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function KategoriPage({ params }: Props) {
-  const resolvedParams = await params;
-  const topic = resolveSeoTopic(resolvedParams.slug);
+  const { slug } = await params;
+  const topic = resolveSeoTopic(slug);
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-tembox.vercel.app';
   const currentUrl = `${baseUrl}/kategori/${topic.slug}`;
 
@@ -153,7 +153,7 @@ export default async function KategoriPage({ params }: Props) {
           background: 'rgba(7, 26, 39, 0.94)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(125, 220, 232, 0.15)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           padding: '16px 24px',
           position: 'sticky',
           top: 0,
@@ -182,7 +182,7 @@ export default async function KategoriPage({ params }: Props) {
             <Link href="/about" style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>
               About
             </Link>
-            <Link href="/contact" style={{ color: '#7DDCE8', fontSize: '14px', fontWeight: 700, textDecoration: 'none' }}>
+            <Link href="/contact" style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>
               Contact
             </Link>
           </nav>
@@ -190,11 +190,11 @@ export default async function KategoriPage({ params }: Props) {
       </header>
 
       {/* Breadcrumbs */}
-      <div style={{ background: '#092233', borderBottom: '1px solid rgba(125, 220, 232, 0.1)', padding: '12px 24px' }}>
+      <div style={{ background: '#092233', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', padding: '12px 24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', fontSize: '13px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <Link href="/" style={{ color: '#CBD5E1', textDecoration: 'none' }}>Beranda</Link>
           <span>/</span>
-          <span style={{ color: '#7DDCE8' }}>Kategori Solusi</span>
+          <span style={{ color: '#94A3B8' }}>Kategori Solusi</span>
           <span>/</span>
           <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{topic.title}</span>
         </div>
@@ -203,17 +203,26 @@ export default async function KategoriPage({ params }: Props) {
       {/* Hero Section */}
       <section
         style={{
-          padding: '60px 24px 40px',
+          padding: '60px 24px 44px',
           background: 'linear-gradient(180deg, #092233 0%, #071A27 100%)',
-          borderBottom: '1px solid rgba(125, 220, 232, 0.12)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         }}
       >
         <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(125, 220, 232, 0.12)', border: '1px solid rgba(125, 220, 232, 0.3)', padding: '4px 14px', borderRadius: '30px', marginBottom: '18px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#7DDCE8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              {topic.category}
-            </span>
-          </div>
+          {/* Category Text (Clean, no box/border, consistent muted neutral typography) */}
+          <p
+            style={{
+              fontSize: '12px',
+              fontWeight: 700,
+              color: '#94A3B8',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              marginBottom: '14px',
+            }}
+          >
+            {topic.category}
+          </p>
+
           <h1
             style={{
               fontSize: 'clamp(2rem, 3.6vw, 3.2rem)',
@@ -237,21 +246,21 @@ export default async function KategoriPage({ params }: Props) {
             {topic.subtitle}
           </p>
 
-          {/* Quick Metrics Badges */}
+          {/* Quick Metrics Badges (Neutral, minimal border) */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <div style={{ background: 'rgba(11, 45, 66, 0.65)', border: '1px solid rgba(125, 220, 232, 0.25)', borderRadius: '12px', padding: '12px 20px', textAlign: 'center' }}>
+            <div style={{ background: 'rgba(11, 45, 66, 0.45)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '12px 20px', textAlign: 'center' }}>
               <span style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>
                 Suhu Penyimpanan Optimal
               </span>
-              <strong style={{ fontSize: '18px', color: '#7DDCE8', fontWeight: 800 }}>
+              <strong style={{ fontSize: '17px', color: '#FFFFFF', fontWeight: 700 }}>
                 {topic.optimalTemp}
               </strong>
             </div>
-            <div style={{ background: 'rgba(11, 45, 66, 0.65)', border: '1px solid rgba(125, 220, 232, 0.25)', borderRadius: '12px', padding: '12px 20px', textAlign: 'center' }}>
+            <div style={{ background: 'rgba(11, 45, 66, 0.45)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '12px 20px', textAlign: 'center' }}>
               <span style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>
                 Ketahanan Kesegaran
               </span>
-              <strong style={{ fontSize: '18px', color: '#FFFFFF', fontWeight: 800 }}>
+              <strong style={{ fontSize: '17px', color: '#FFFFFF', fontWeight: 700 }}>
                 {topic.maxStorageDays}
               </strong>
             </div>
@@ -261,36 +270,38 @@ export default async function KategoriPage({ params }: Props) {
 
       {/* Main Content Body */}
       <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '60px 24px' }}>
-        {/* Overview & Context */}
-        <div style={{ background: 'rgba(11, 45, 66, 0.45)', border: '1px solid rgba(125, 220, 232, 0.2)', borderRadius: '18px', padding: '36px', marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#FFFFFF', marginBottom: '14px' }}>
+        {/* Overview & Context: Clean, borderless text flow seamlessly integrated into page */}
+        <div style={{ marginBottom: '52px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#FFFFFF', marginBottom: '16px' }}>
             Ringkasan &amp; Latar Belakang
           </h2>
-          <p style={{ fontSize: '15.5px', lineHeight: 1.8, color: '#CBD5E1', marginBottom: '18px' }}>
+          <p style={{ fontSize: '16px', lineHeight: 1.8, color: '#CBD5E1', marginBottom: '28px' }}>
             {topic.overview}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '24px' }}>
-            <div style={{ background: 'rgba(7, 26, 39, 0.75)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '12px', padding: '20px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#F87171', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+
+          {/* Feature Comparison Cards: Neutral minimal borders, no harsh colored borders */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            <div style={{ background: 'rgba(11, 45, 66, 0.35)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '14px', padding: '24px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 TANTANGAN KONVENSIONAL
               </span>
-              <p style={{ fontSize: '14px', lineHeight: 1.65, color: '#E2E8F0', marginTop: '8px', margin: 0 }}>
+              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#E2E8F0', marginTop: '10px', margin: 0 }}>
                 {topic.challenge}
               </p>
             </div>
-            <div style={{ background: 'rgba(7, 26, 39, 0.75)', border: '1px solid rgba(125, 220, 232, 0.3)', borderRadius: '12px', padding: '20px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#7DDCE8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <div style={{ background: 'rgba(11, 45, 66, 0.35)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '14px', padding: '24px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 SOLUSI TERINTEGRASI TEMBOX
               </span>
-              <p style={{ fontSize: '14px', lineHeight: 1.65, color: '#E2E8F0', marginTop: '8px', margin: 0 }}>
+              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#E2E8F0', marginTop: '10px', margin: 0 }}>
                 {topic.solution}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Key Features Grid */}
-        <div style={{ marginBottom: '50px' }}>
+        {/* Key Features Grid: Clean minimal cards */}
+        <div style={{ marginBottom: '52px' }}>
           <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#FFFFFF', marginBottom: '20px' }}>
             Fitur Unggulan Sistem
           </h2>
@@ -299,13 +310,13 @@ export default async function KategoriPage({ params }: Props) {
               <div
                 key={idx}
                 style={{
-                  background: 'rgba(11, 45, 66, 0.45)',
-                  border: '1px solid rgba(125, 220, 232, 0.18)',
+                  background: 'rgba(11, 45, 66, 0.35)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '14px',
                   padding: '24px',
                 }}
               >
-                <div style={{ fontSize: '11px', fontWeight: 800, color: '#7DDCE8', marginBottom: '8px', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', marginBottom: '8px', textTransform: 'uppercase' }}>
                   MODUL 0{idx + 1}
                 </div>
                 <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px' }}>
@@ -320,7 +331,7 @@ export default async function KategoriPage({ params }: Props) {
         </div>
 
         {/* FAQs */}
-        <div style={{ marginBottom: '50px' }}>
+        <div style={{ marginBottom: '52px' }}>
           <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#FFFFFF', marginBottom: '20px' }}>
             Pertanyaan Umum (FAQ)
           </h2>
@@ -329,13 +340,13 @@ export default async function KategoriPage({ params }: Props) {
               <div
                 key={idx}
                 style={{
-                  background: 'rgba(11, 45, 66, 0.45)',
-                  border: '1px solid rgba(125, 220, 232, 0.2)',
+                  background: 'rgba(11, 45, 66, 0.35)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '12px',
                   padding: '22px 26px',
                 }}
               >
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#7DDCE8', marginBottom: '8px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px' }}>
                   {faq.question}
                 </h3>
                 <p style={{ fontSize: '14px', color: '#CBD5E1', lineHeight: 1.7, margin: 0 }}>
@@ -347,7 +358,7 @@ export default async function KategoriPage({ params }: Props) {
         </div>
 
         {/* Internal Linking SEO Grid: Related Categories */}
-        <div style={{ background: '#092233', border: '1px solid rgba(125, 220, 232, 0.18)', borderRadius: '18px', padding: '32px', marginBottom: '40px' }}>
+        <div style={{ background: '#092233', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '18px', padding: '32px', marginBottom: '40px' }}>
           <h2 style={{ fontSize: '19px', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
             Eksplorasi Topik &amp; Kategori Rantai Dingin Terkait
           </h2>
@@ -361,7 +372,7 @@ export default async function KategoriPage({ params }: Props) {
                 href={`/kategori/${rel.slug}`}
                 style={{
                   background: 'rgba(7, 26, 39, 0.8)',
-                  border: '1px solid rgba(125, 220, 232, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '10px',
                   padding: '14px 16px',
                   color: '#FFFFFF',
@@ -372,7 +383,7 @@ export default async function KategoriPage({ params }: Props) {
                   transition: 'border-color 0.2s ease',
                 }}
               >
-                <span style={{ color: '#7DDCE8', display: 'block', fontSize: '11px', textTransform: 'uppercase', marginBottom: '4px' }}>
+                <span style={{ color: '#94A3B8', display: 'block', fontSize: '11px', textTransform: 'uppercase', marginBottom: '4px' }}>
                   {rel.category}
                 </span>
                 {rel.title}
@@ -391,8 +402,8 @@ export default async function KategoriPage({ params }: Props) {
                   key={c.slug}
                   href={`/kategori/monitoring-suhu-palka-${c.slug}`}
                   style={{
-                    background: 'rgba(125, 220, 232, 0.08)',
-                    border: '1px solid rgba(125, 220, 232, 0.2)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     padding: '5px 12px',
                     borderRadius: '20px',
                     fontSize: '12px',
@@ -410,8 +421,8 @@ export default async function KategoriPage({ params }: Props) {
         {/* CTA Consultation */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #0B2D42 0%, #071A27 100%)',
-            border: '1.5px solid #0284C7',
+            background: 'rgba(11, 45, 66, 0.45)',
+            border: '1px solid rgba(2, 132, 199, 0.4)',
             borderRadius: '18px',
             padding: '36px',
             textAlign: 'center',
@@ -460,4 +471,3 @@ export default async function KategoriPage({ params }: Props) {
     </div>
   );
 }
-

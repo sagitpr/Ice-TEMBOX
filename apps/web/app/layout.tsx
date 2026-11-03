@@ -100,7 +100,10 @@ export const metadata: Metadata = {
     apple: '/Favicon.png',
   },
   verification: {
-    google: 'google835db05cba2f9052',
+    google: [
+      'google835db05cba2f9052',
+      't11aB7h55yknoLd2mUNHP546wltGH0gF1mrbh4ZMb6E',
+    ],
   },
   openGraph: {
     type: 'website',

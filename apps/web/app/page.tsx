@@ -11,6 +11,7 @@ const RegisterView = dynamic(() => import('./components/RegisterView'), { ssr: f
 const ForgotPasswordView = dynamic(() => import('./components/ForgotPasswordView'), { ssr: false });
 const AboutView = dynamic(() => import('./components/AboutView'), { ssr: false });
 const ContactView = dynamic(() => import('./components/ContactView'), { ssr: false });
+const AuthShell = dynamic(() => import('./components/AuthShell'), { ssr: false });
 
 export default function Page() {
   const [currentView, setCurrentView] = useState<'home' | 'login' | 'register' | 'forgot-password' | 'dashboard' | 'about' | 'contact'>('home');
@@ -59,67 +60,66 @@ export default function Page() {
     return <DashboardPage />;
   }
 
-  // 2. Strict Isolation: If on Login, only LoginView is rendered
-  if (currentView === 'login') {
+  // 2. Auth Flow: Single Persistent AuthShell guaranteeing continuous, glitch-free video playback
+  if (currentView === 'login' || currentView === 'register' || currentView === 'forgot-password') {
     return (
-      <LoginView
-        onSuccess={() => {
-          window.location.hash = '#/dashboard';
-          setCurrentView('dashboard');
-        }}
-        onNavigateRegister={() => {
-          window.location.hash = '#/register';
-          setCurrentView('register');
-        }}
-        onNavigateForgotPassword={() => {
-          window.location.hash = '#/forgot-password';
-          setCurrentView('forgot-password');
-        }}
-        onBackHome={() => {
-          window.location.hash = '';
-          setCurrentView('home');
-        }}
-      />
-    );
-  }
-
-  // 3. Strict Isolation: If on Register, only RegisterView is rendered (includes 6-digit OTP step)
-  if (currentView === 'register') {
-    return (
-      <RegisterView
-        onSuccess={() => {
-          window.location.hash = '#/dashboard';
-          setCurrentView('dashboard');
-        }}
-        onNavigateLogin={() => {
-          window.location.hash = '#/login';
-          setCurrentView('login');
-        }}
-        onBackHome={() => {
-          window.location.hash = '';
-          setCurrentView('home');
-        }}
-      />
-    );
-  }
-
-  // 4. Strict Isolation: If on Forgot Password, only ForgotPasswordView is rendered
-  if (currentView === 'forgot-password') {
-    return (
-      <ForgotPasswordView
-        onSuccess={() => {
-          window.location.hash = '#/login';
-          setCurrentView('login');
-        }}
-        onNavigateLogin={() => {
-          window.location.hash = '#/login';
-          setCurrentView('login');
-        }}
-        onBackHome={() => {
-          window.location.hash = '';
-          setCurrentView('home');
-        }}
-      />
+      <AuthShell>
+        {currentView === 'login' && (
+          <LoginView
+            hideLeftPane
+            onSuccess={() => {
+              window.location.hash = '#/dashboard';
+              setCurrentView('dashboard');
+            }}
+            onNavigateRegister={() => {
+              window.location.hash = '#/register';
+              setCurrentView('register');
+            }}
+            onNavigateForgotPassword={() => {
+              window.location.hash = '#/forgot-password';
+              setCurrentView('forgot-password');
+            }}
+            onBackHome={() => {
+              window.location.hash = '';
+              setCurrentView('home');
+            }}
+          />
+        )}
+        {currentView === 'register' && (
+          <RegisterView
+            hideLeftPane
+            onSuccess={() => {
+              window.location.hash = '#/dashboard';
+              setCurrentView('dashboard');
+            }}
+            onNavigateLogin={() => {
+              window.location.hash = '#/login';
+              setCurrentView('login');
+            }}
+            onBackHome={() => {
+              window.location.hash = '';
+              setCurrentView('home');
+            }}
+          />
+        )}
+        {currentView === 'forgot-password' && (
+          <ForgotPasswordView
+            hideLeftPane
+            onSuccess={() => {
+              window.location.hash = '#/login';
+              setCurrentView('login');
+            }}
+            onNavigateLogin={() => {
+              window.location.hash = '#/login';
+              setCurrentView('login');
+            }}
+            onBackHome={() => {
+              window.location.hash = '';
+              setCurrentView('home');
+            }}
+          />
+        )}
+      </AuthShell>
     );
   }
 

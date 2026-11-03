@@ -421,7 +421,7 @@ export const LandingBelowTheFold: React.FC = () => {
               Kami percaya bahwa teknologi dapat menjadi solusi nyata untuk
               menjaga keberlanjutan laut dan meningkatkan kesejahteraan nelayan.
             </p>
-            <a href="mailto:info@tembox.id" className="btn-vision-cta">
+            <a href="/contact" className="btn-vision-cta">
               <span>Hubungi Kami</span>
               <span>→</span>
             </a>

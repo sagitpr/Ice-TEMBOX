@@ -96,7 +96,6 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
                   width: '140px',
                   height: '36px',
                   objectFit: 'contain',
-                  filter: 'brightness(0) invert(1)',
                 }}
               />
             </a>
@@ -170,8 +169,8 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
               height: '100%',
               objectFit: 'cover',
               objectPosition: '72% 52%',
-              opacity: 0.76,
-              filter: 'brightness(0.85) contrast(0.92) saturate(0.90)',
+              opacity: 0.92,
+              filter: 'brightness(0.98) contrast(1.0) saturate(1.02)',
               pointerEvents: 'none',
             }}
           >
