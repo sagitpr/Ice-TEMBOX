@@ -4,6 +4,23 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { User, ArrowLeft } from './Icons';
 
+// Media assets
+import heroVideoRaw from '../../src/assets/Video/Nelayan-kapal-Horizontal.mp4';
+import heroBoatRaw from '../../src/assets/hero-boat.jpg';
+
+interface StaticAssetLike {
+  src?: string;
+}
+
+const getSrc = (asset: string | StaticAssetLike | unknown): string => {
+  if (typeof asset === 'string') return asset;
+  if (asset && typeof asset === 'object' && 'src' in asset) return (asset as StaticAssetLike).src || '';
+  return '';
+};
+
+const heroVideo = getSrc(heroVideoRaw) || '/Nelayan-kapal-Horizontal.mp4';
+const heroBoat = getSrc(heroBoatRaw) || '/hero-boat.jpg';
+
 interface LoginViewProps {
   onSuccess?: () => void;
   onNavigateRegister?: () => void;
@@ -35,7 +52,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   return (
     <div className="login-view-wrapper" style={{ display: 'flex' }}>
-      {/* Left Hero Pane */}
+      {/* Left Hero Pane with Background Video Backdrop */}
       <div className="login-left-pane">
         <video
           className="login-media-backdrop"
@@ -44,28 +61,52 @@ export const LoginView: React.FC<LoginViewProps> = ({
           muted
           playsInline
           preload="auto"
+          poster={heroBoat}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: 0.45,
+            filter: 'saturate(1.2) contrast(1.1)',
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
         >
-          <source src="/src/assets/Video/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
+          <source src={heroVideo} type="video/mp4" />
+          <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
         </video>
-        <div className="login-overlay-gradient" />
+        <div
+          className="login-overlay-gradient"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        />
 
-        <div className="login-left-content">
-          <span style={{
-            fontWeight: 800,
-            fontSize: '26px',
-            letterSpacing: '-0.5px',
-            color: '#FFFFFF',
-            display: 'block',
-            marginBottom: '6px'
-          }}>
-            TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
-          </span>
+        <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <span style={{
+              fontWeight: 800,
+              fontSize: '26px',
+              letterSpacing: '-0.5px',
+              color: '#FFFFFF',
+              display: 'block',
+              marginBottom: '6px',
+              cursor: 'pointer'
+            }}>
+              TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
+            </span>
+          </Link>
           <p className="login-brand-tagline">
             Pantau kondisi penyimpanan ikan Anda secara real-time.
           </p>
         </div>
 
-        <div className="login-left-footer">
+        <div className="login-left-footer" style={{ position: 'relative', zIndex: 10 }}>
           &ldquo;Ikan tetap segar, nelayan lebih tenang.&rdquo;
         </div>
       </div>
@@ -193,4 +234,3 @@ export const LoginView: React.FC<LoginViewProps> = ({
 };
 
 export default LoginView;
-
