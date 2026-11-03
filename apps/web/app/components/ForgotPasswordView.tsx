@@ -104,12 +104,12 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
             {errorMsg && (
               <div
                 style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                  border: '1px solid rgba(239, 68, 68, 0.35)',
-                  borderRadius: '10px',
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FCA5A5',
+                  borderRadius: '8px',
                   padding: '10px 14px',
                   marginBottom: '16px',
-                  color: '#FCA5A5',
+                  color: '#B91C1C',
                   fontSize: '13px',
                 }}
               >
@@ -143,11 +143,11 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
               <button
                 type="button"
                 onClick={onNavigateLogin ? onNavigateLogin : () => { window.location.href = '/login'; }}
-                className="auth-switch-link"
                 style={{
+                  fontSize: '13px',
+                  color: '#0284C7',
                   background: 'none',
                   border: 'none',
-                  fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'inline-flex',
@@ -167,18 +167,18 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
           <>
             <h2 className="login-title">Verifikasi &amp; Reset</h2>
             <p className="login-desc" style={{ marginBottom: '20px' }}>
-              Kode 6 digit telah dikirim ke <strong style={{ color: '#7DDCE8' }}>{email}</strong>.
+              Kode 6 digit telah dikirim ke <strong style={{ color: '#0B2D42' }}>{email}</strong>.
             </p>
 
             {errorMsg && (
               <div
                 style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                  border: '1px solid rgba(239, 68, 68, 0.35)',
-                  borderRadius: '10px',
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FCA5A5',
+                  borderRadius: '8px',
                   padding: '10px 14px',
                   marginBottom: '16px',
-                  color: '#FCA5A5',
+                  color: '#B91C1C',
                   fontSize: '13px',
                 }}
               >
@@ -222,11 +222,13 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                   />
                   <button
                     type="button"
-                    className="password-toggle-btn"
+                    className="input-toggle-pwd"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label="Toggle password visibility"
                   >
-                    {showPassword ? 'Sembunyikan' : 'Lihat'}
+                    <span style={{ fontSize: '11px', color: '#64748B' }}>
+                      {showPassword ? 'Hide' : 'Show'}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -257,7 +259,16 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
               <button
                 type="button"
                 onClick={() => setStep('email')}
-                className="auth-back-link"
+                style={{
+                  fontSize: '12.5px',
+                  color: '#64748B',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
               >
                 <ArrowLeft size={13} />
                 <span>Ubah alamat email</span>
@@ -274,21 +285,20 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                 width: '58px',
                 height: '58px',
                 borderRadius: '50%',
-                background: 'rgba(16, 185, 129, 0.2)',
-                color: '#34D399',
+                background: '#EAF8FF',
+                color: '#0284C7',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: '16px',
-                border: '1px solid rgba(52, 211, 153, 0.3)',
               }}
             >
               <Check size={28} />
             </div>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-ocean)', marginBottom: '8px' }}>
               Password Berhasil Diubah!
             </h3>
-            <p style={{ fontSize: '13.5px', color: '#94A3B8', marginBottom: '24px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '13.5px', color: '#64748B', marginBottom: '24px', lineHeight: 1.5 }}>
               Kata sandi baru Anda telah aktif. Silakan masuk kembali dengan password yang baru.
             </p>
             <button
@@ -309,12 +319,21 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
 
         {/* Return to Home link */}
         {step !== 'success' && (
-          <div style={{ marginTop: '22px', textAlign: 'center' }}>
+          <div style={{ marginTop: '24px', textAlign: 'center' }}>
             {onBackHome ? (
               <button
                 type="button"
                 onClick={onBackHome}
-                className="auth-back-link"
+                style={{
+                  fontSize: '12.5px',
+                  color: '#64748B',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
               >
                 <ArrowLeft size={14} />
                 <span>Kembali ke TEMBOX</span>
@@ -322,7 +341,14 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
             ) : (
               <Link
                 href="/"
-                className="auth-back-link"
+                style={{
+                  fontSize: '12.5px',
+                  color: '#64748B',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
               >
                 <ArrowLeft size={14} />
                 <span>Kembali ke TEMBOX</span>
@@ -339,7 +365,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   }
 
   return (
-    <div className="login-view-wrapper">
+    <div className="login-view-wrapper" style={{ display: 'flex' }}>
       {/* Left Hero Pane with Background Video Backdrop */}
       <div className="login-left-pane">
         <video
@@ -350,13 +376,32 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
           playsInline
           preload="auto"
           poster={heroBoat}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: 0.45,
+            filter: 'saturate(1.2) contrast(1.1)',
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
         >
           <source src={heroVideo} type="video/mp4" />
           <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
         </video>
-        <div className="login-overlay-gradient" />
+        <div
+          className="login-overlay-gradient"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        />
 
-        <div className="login-left-content">
+        <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <span
               style={{
@@ -377,7 +422,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
           </p>
         </div>
 
-        <div className="login-left-footer">
+        <div className="login-left-footer" style={{ position: 'relative', zIndex: 10 }}>
           &ldquo;Keamanan data dan stabilitas pemantauan Anda adalah prioritas kami.&rdquo;
         </div>
       </div>
