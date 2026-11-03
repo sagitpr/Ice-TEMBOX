@@ -64,8 +64,8 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             {/* Desktop Navigation */}
             <nav className="header-nav">
               <Link
-                href="/#vision"
-                onClick={(e) => handleNav('home', e)}
+                href="/contact"
+                onClick={(e) => handleNav('contact', e)}
                 className="nav-link"
                 style={{ color: navTextMuted, fontWeight: 500 }}
               >
@@ -124,9 +124,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             }}
           >
             <Link
-              href="/#vision"
+              href="/contact"
               className="nav-link"
-              onClick={() => { setMobileMenuOpen(false); handleNav('home', {} as any); }}
+              onClick={(e) => { setMobileMenuOpen(false); handleNav('contact', e); }}
               style={{ color: '#1E293B' }}
             >
               Contact
@@ -669,7 +669,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             </div>
 
             <div className="footer-nav">
-              <Link href="/#vision" onClick={(e) => handleNav('home', e)} className="footer-link" style={{ color: '#CBD5E1' }}>
+              <Link href="/contact" onClick={(e) => handleNav('contact', e)} className="footer-link" style={{ color: '#CBD5E1' }}>
                 Contact
               </Link>
               <Link href="/about" className="footer-link" style={{ color: '#7DDCE8' }}>

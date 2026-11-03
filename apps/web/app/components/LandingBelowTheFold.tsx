@@ -450,7 +450,7 @@ export const LandingBelowTheFold: React.FC = () => {
             </div>
 
             <div className="footer-nav">
-              <a href="#vision" className="footer-link">Contact</a>
+              <a href="/contact" className="footer-link">Contact</a>
               <a href="/about" className="footer-link">About</a>
             </div>
 

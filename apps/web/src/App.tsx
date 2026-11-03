@@ -98,7 +98,7 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
 
             {/* Desktop Navigation */}
             <nav className="header-nav">
-              <a href="#vision" className="nav-link">Contact</a>
+              <a href="/contact" onClick={(e) => handleNav('contact', e)} className="nav-link">Contact</a>
               <a href="/about" onClick={(e) => handleNav('about', e)} className="nav-link">About</a>
               <div className="nav-divider" />
               <div className="auth-links">
@@ -124,7 +124,7 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
         {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
           <div className="mobile-nav-menu">
-            <a href="#vision" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Contact</a>
+            <a href="/contact" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('contact', e); }}>Contact</a>
             <a href="/about" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('about', e); }}>About</a>
             <hr style={{ border: 'none', borderTop: '1px solid #E2EDF3' }} />
             <a href="/login" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('login', e); }}>Sign in</a>

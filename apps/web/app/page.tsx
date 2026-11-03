@@ -10,9 +10,10 @@ const LoginView = dynamic(() => import('./components/LoginView'), { ssr: false }
 const RegisterView = dynamic(() => import('./components/RegisterView'), { ssr: false });
 const ForgotPasswordView = dynamic(() => import('./components/ForgotPasswordView'), { ssr: false });
 const AboutView = dynamic(() => import('./components/AboutView'), { ssr: false });
+const ContactView = dynamic(() => import('./components/ContactView'), { ssr: false });
 
 export default function Page() {
-  const [currentView, setCurrentView] = useState<'home' | 'login' | 'register' | 'forgot-password' | 'dashboard' | 'about'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'login' | 'register' | 'forgot-password' | 'dashboard' | 'about' | 'contact'>('home');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -27,6 +28,8 @@ export default function Page() {
         setCurrentView('forgot-password');
       } else if (['about', 'tentang'].includes(hash)) {
         setCurrentView('about');
+      } else if (['contact', 'kontak', 'hubungi'].includes(hash)) {
+        setCurrentView('contact');
       } else if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(hash)) {
         setCurrentView('dashboard');
       } else {
@@ -43,7 +46,7 @@ export default function Page() {
     return (
       <LandingPage
         onNavigate={(view) => {
-          if (view === 'login' || view === 'register' || view === 'forgot-password' || view === 'dashboard' || view === 'about' || view === 'home') {
+          if (view === 'login' || view === 'register' || view === 'forgot-password' || view === 'dashboard' || view === 'about' || view === 'contact' || view === 'home') {
             setCurrentView(view as any);
           }
         }}
@@ -131,6 +134,9 @@ export default function Page() {
           } else if (view === 'register') {
             window.location.hash = '#/register';
             setCurrentView('register');
+          } else if (view === 'contact') {
+            window.location.hash = '#/contact';
+            setCurrentView('contact');
           } else if (view === 'forgot-password') {
             window.location.hash = '#/forgot-password';
             setCurrentView('forgot-password');
@@ -146,7 +152,36 @@ export default function Page() {
     );
   }
 
-  // 6. Default: Render Landing Page ONLY
+  // 6. Strict Isolation: If on Contact, only ContactView is rendered
+  if (currentView === 'contact') {
+    return (
+      <ContactView
+        onNavigate={(view) => {
+          if (view === 'login') {
+            window.location.hash = '#/login';
+            setCurrentView('login');
+          } else if (view === 'register') {
+            window.location.hash = '#/register';
+            setCurrentView('register');
+          } else if (view === 'about') {
+            window.location.hash = '#/about';
+            setCurrentView('about');
+          } else if (view === 'forgot-password') {
+            window.location.hash = '#/forgot-password';
+            setCurrentView('forgot-password');
+          } else if (view === 'dashboard') {
+            window.location.hash = '#/dashboard';
+            setCurrentView('dashboard');
+          } else {
+            window.location.hash = '';
+            setCurrentView('home');
+          }
+        }}
+      />
+    );
+  }
+
+  // 7. Default: Render Landing Page ONLY
   return (
     <LandingPage
       onNavigate={(view) => {
@@ -165,6 +200,9 @@ export default function Page() {
         } else if (view === 'about') {
           window.location.hash = '#/about';
           setCurrentView('about');
+        } else if (view === 'contact') {
+          window.location.hash = '#/contact';
+          setCurrentView('contact');
         }
       }}
     />
