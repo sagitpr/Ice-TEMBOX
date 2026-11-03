@@ -18,6 +18,13 @@ try {
     fs.copyFileSync(faviconSrc, faviconDest);
   }
 
+  // Ensure LogoTembox-Horizontal.png exists in public
+  const logoSrc = path.join(assetsDir, 'LogoTembox-Horizontal.png');
+  const logoDest = path.join(publicDir, 'LogoTembox-Horizontal.png');
+  if (fs.existsSync(logoSrc) && !fs.existsSync(logoDest)) {
+    fs.copyFileSync(logoSrc, logoDest);
+  }
+
   // Ensure Nelayan-kapal-Horizontal.mp4 exists in public
   const videoSrc = path.join(assetsDir, 'Video', 'Nelayan-kapal-Horizontal.mp4');
   const videoDest = path.join(publicDir, 'Nelayan-kapal-Horizontal.mp4');

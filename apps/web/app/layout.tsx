@@ -10,6 +10,12 @@ try {
   const assetsDir = path.resolve(process.cwd(), 'src/assets');
   if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
 
+  const logoSrc = path.join(assetsDir, 'LogoTembox-Horizontal.png');
+  const logoDest = path.join(publicDir, 'LogoTembox-Horizontal.png');
+  if (fs.existsSync(logoSrc) && !fs.existsSync(logoDest)) {
+    fs.copyFileSync(logoSrc, logoDest);
+  }
+
   const penangkapSrc = path.join(assetsDir, 'Penangkap-ikan.jpg');
   const penangkapDest = path.join(publicDir, 'Penangkap-ikan.jpg');
   if (fs.existsSync(penangkapSrc) && !fs.existsSync(penangkapDest)) {

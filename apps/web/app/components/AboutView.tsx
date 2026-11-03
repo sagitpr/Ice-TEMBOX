@@ -17,24 +17,10 @@ import {
   Info
 } from './Icons';
 
-// Local assets
-import logoHorizontalRaw from '../../src/assets/LogoTembox-Horizontal.png';
-import penangkapIkanRaw from '../../src/assets/Penangkap-ikan.jpg';
-import sagitRaw from '../../src/assets/Sagit-Faturrakhman.jpg';
-
-interface StaticAssetLike {
-  src?: string;
-}
-
-const getSrc = (asset: string | StaticAssetLike | unknown): string => {
-  if (typeof asset === 'string') return asset;
-  if (asset && typeof asset === 'object' && 'src' in asset) return (asset as StaticAssetLike).src || '';
-  return '';
-};
-
-const logoHorizontal = getSrc(logoHorizontalRaw);
-const penangkapIkan = getSrc(penangkapIkanRaw) || '/Penangkap-ikan.jpg';
-const sagitPhoto = getSrc(sagitRaw) || '/Sagit-Faturrakhman.jpg';
+// Static public assets (Direct root path for Next.js public directory, preventing Webpack module resolution failures on Linux/Vercel)
+const logoHorizontal = '/LogoTembox-Horizontal.png';
+const penangkapIkan = '/Penangkap-ikan.jpg';
+const sagitPhoto = '/Sagit-Faturrakhman.jpg';
 
 export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
   const [scrolled, setScrolled] = useState(false);
