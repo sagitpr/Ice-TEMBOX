@@ -9,7 +9,10 @@ import {
 } from '../../lib/seo-data';
 
 interface Props {
-  params: Promise<{ keyword: string }> | { keyword: string };
+  params: Promise<{
+    keyword: string;
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export const dynamicParams = true;

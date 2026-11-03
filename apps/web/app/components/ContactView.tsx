@@ -80,6 +80,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Accordion State for FAQ
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
@@ -117,14 +118,39 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
     };
   }, [categoryModalOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    // Simulate interactive transmission
-    setTimeout(() => {
-      setSubmitting(false);
+    setErrorMessage('');
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName,
+          contactInfo,
+          category,
+          message,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal mengirim pesan. Silakan coba kembali beberapa saat lagi.');
+      }
+
       setSubmitted(true);
-    }, 600);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : 'Terjadi kendala jaringan saat mengirim pesan.';
+      setErrorMessage(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -132,6 +158,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
     setContactInfo('');
     setCategory('Konsultasi Perangkat');
     setMessage('');
+    setErrorMessage('');
     setSubmitted(false);
   };
 
@@ -397,10 +424,11 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                     ✓
                   </div>
                   <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#FFFFFF', marginBottom: '10px' }}>
-                    Pesan Berhasil Terkirim!
+                    Pesan berhasil dikirim ke tim Ice-TEMBOX!
                   </h3>
                   <p style={{ fontSize: '14px', color: '#CBD5E1', lineHeight: 1.7, marginBottom: '24px' }}>
-                    Terima kasih telah menghubungi TEMBOX. Pesan Anda telah dicatat oleh sistem kami dan akan ditanggapi melalui email atau WhatsApp dalam 1x24 jam kerja.
+                    Terima kasih telah menghubungi TEMBOX. Pesan Anda telah diteruskan langsung ke email resmi{' '}
+                    <strong style={{ color: '#7DDCE8' }}>sagitistaratas465@gmail.com</strong> dan tim kami akan segera menindaklanjuti dalam 1x24 jam kerja.
                   </p>
                   <button
                     type="button"
@@ -589,6 +617,23 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                     />
                   </div>
 
+                  {/* Error Notification Alert */}
+                  {errorMessage && (
+                    <div
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        borderRadius: '10px',
+                        padding: '12px 16px',
+                        color: '#FCA5A5',
+                        fontSize: '13.5px',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {errorMessage}
+                    </div>
+                  )}
+
                   {/* Submit Button (Flat & Professional Minimalist Design) */}
                   <button
                     type="submit"
@@ -613,7 +658,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                       if (!submitting) e.currentTarget.style.backgroundColor = '#0284C7';
                     }}
                   >
-                    {submitting ? 'Mengirimkan Pesan...' : 'Kirim Pesan Sekarang'}
+                    {submitting ? 'Mengirim...' : 'Kirim Pesan Sekarang'}
                   </button>
                 </form>
               )}

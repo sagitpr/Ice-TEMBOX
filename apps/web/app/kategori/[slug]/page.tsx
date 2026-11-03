@@ -9,7 +9,10 @@ import {
 } from '../../lib/seo-data';
 
 interface Props {
-  params: Promise<{ slug: string }> | { slug: string };
+  params: Promise<{
+    slug: string;
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Next.js App Router dynamic params
