@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { RefreshCw, Check, ShieldCheck } from './Icons';
+import { RefreshCw } from './Icons';
 
 interface OtpInputProps {
   length?: number;
@@ -137,11 +137,15 @@ export const OtpInput: React.FC<OtpInputProps> = ({
               fontWeight: 700,
               textAlign: 'center',
               borderRadius: '10px',
-              border: error ? '2px solid #EF4444' : digits[idx] ? '2px solid #0284C7' : '1px solid #CBD5E1',
-              background: '#FFFFFF',
-              color: '#0B2D42',
+              border: error
+                ? '2px solid #EF4444'
+                : digits[idx]
+                ? '2px solid #38BDF8'
+                : '1px solid rgba(125, 220, 232, 0.3)',
+              background: 'rgba(7, 26, 39, 0.85)',
+              color: '#FFFFFF',
               outline: 'none',
-              boxShadow: digits[idx] ? '0 0 0 3px rgba(2, 132, 199, 0.12)' : 'none',
+              boxShadow: digits[idx] ? '0 0 0 3px rgba(56, 189, 248, 0.2)' : 'none',
               transition: 'all 0.15s ease',
             }}
           />
@@ -164,7 +168,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
           justifyContent: 'center',
           gap: '6px',
           fontSize: '12.5px',
-          color: '#64748B',
+          color: '#94A3B8',
         }}
       >
         <span>Belum menerima kode?</span>
@@ -176,7 +180,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
               background: 'none',
               border: 'none',
               padding: 0,
-              color: '#0284C7',
+              color: '#38BDF8',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'inline-flex',
@@ -188,7 +192,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
             <span>Kirim ulang OTP</span>
           </button>
         ) : (
-          <span style={{ color: '#94A3B8', fontWeight: 600 }}>
+          <span style={{ color: '#64748B', fontWeight: 600 }}>
             Kirim ulang ({countdown}s)
           </span>
         )}
@@ -198,4 +202,3 @@ export const OtpInput: React.FC<OtpInputProps> = ({
 };
 
 export default OtpInput;
-

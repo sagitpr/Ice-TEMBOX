@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, ArrowLeft } from './Icons';
+import { User, Lock, ArrowLeft } from './Icons';
 
 // Media assets
 import heroVideoRaw from '../../src/assets/Video/Nelayan-kapal-Horizontal.mp4';
@@ -39,6 +39,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,7 +63,9 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="loginEmail">Email / Username</label>
+            <label className="form-label" htmlFor="loginEmail">
+              Email / Username
+            </label>
             <div className="input-icon-wrap">
               <User size={16} className="input-icon" />
               <input
@@ -78,8 +81,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="loginPassword">Password</label>
+            <label className="form-label" htmlFor="loginPassword">
+              Password
+            </label>
             <div className="input-icon-wrap">
+              <Lock size={16} className="input-icon" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="loginPassword"
@@ -94,6 +100,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
               >
                 {showPassword ? 'Sembunyikan' : 'Lihat'}
               </button>
@@ -102,7 +109,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
           <div className="form-row-actions">
             <label className="remember-label">
-              <input type="checkbox" className="remember-checkbox" />
+              <input
+                type="checkbox"
+                className="remember-checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
               <span>Ingat saya</span>
             </label>
             <a
@@ -140,21 +152,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </a>
         </p>
 
-        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+        <div style={{ marginTop: '22px', textAlign: 'center' }}>
           {onBackHome ? (
             <button
               type="button"
               onClick={onBackHome}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '13px',
-                color: '#64748B',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
+              className="auth-back-link"
             >
               <ArrowLeft size={14} />
               <span>Kembali ke Beranda</span>
@@ -162,17 +165,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
           ) : (
             <Link
               href="/"
-              style={{
-                fontSize: '13px',
-                color: '#64748B',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
+              className="auth-back-link"
             >
               <ArrowLeft size={14} />
-              <span>Kembali ke TEMBOX</span>
+              <span>Kembali ke Beranda</span>
             </Link>
           )}
         </div>
@@ -185,7 +181,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   }
 
   return (
-    <div className="login-view-wrapper" style={{ display: 'flex' }}>
+    <div className="login-view-wrapper">
       {/* Left Hero Pane with Background Video Backdrop */}
       <div className="login-left-pane">
         <video
@@ -196,42 +192,25 @@ export const LoginView: React.FC<LoginViewProps> = ({
           playsInline
           preload="auto"
           poster={heroBoat}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0.45,
-            filter: 'saturate(1.2) contrast(1.1)',
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
         >
           <source src={heroVideo} type="video/mp4" />
           <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
         </video>
-        <div
-          className="login-overlay-gradient"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
+        <div className="login-overlay-gradient" />
 
-        <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
+        <div className="login-left-content">
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontWeight: 800,
-              fontSize: '26px',
-              letterSpacing: '-0.5px',
-              color: '#FFFFFF',
-              display: 'block',
-              marginBottom: '6px',
-              cursor: 'pointer'
-            }}>
+            <span
+              style={{
+                fontWeight: 800,
+                fontSize: '26px',
+                letterSpacing: '-0.5px',
+                color: '#FFFFFF',
+                display: 'block',
+                marginBottom: '6px',
+                cursor: 'pointer',
+              }}
+            >
               TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
             </span>
           </Link>
@@ -240,7 +219,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </p>
         </div>
 
-        <div className="login-left-footer" style={{ position: 'relative', zIndex: 10 }}>
+        <div className="login-left-footer">
           &ldquo;Ikan tetap segar, nelayan lebih tenang.&rdquo;
         </div>
       </div>

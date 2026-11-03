@@ -92,352 +92,315 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
     }, 600);
   };
 
-  return (
-    <div className="login-view-wrapper" style={{ display: hideLeftPane ? 'contents' : 'flex' }}>
-      {/* Left Hero Pane with Background Video Backdrop */}
-      {!hideLeftPane && (
-        <div className="login-left-pane">
-          <video
-            className="login-media-backdrop"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            poster={heroBoat}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              opacity: 0.45,
-              filter: 'saturate(1.2) contrast(1.1)',
-              zIndex: 0,
-              pointerEvents: 'none',
-            }}
-          >
-            <source src={heroVideo} type="video/mp4" />
-            <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
-          </video>
-          <div
-            className="login-overlay-gradient"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 1,
-              pointerEvents: 'none',
-            }}
-          />
+  const rightFormPane = (
+    <div className="login-right-pane">
+      <div className="login-form-box">
+        {/* STEP 1: Registration Input Form */}
+        {step === 'form' && (
+          <>
+            <h2 className="login-title">Buat Akun</h2>
+            <p className="login-desc">Mulai menggunakan sistem monitoring TEMBOX.</p>
 
-          <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
-            <Link href="/" style={{ textDecoration: 'none' }}>
-              <span style={{
+            {errorMsg && (
+              <div
+                style={{
+                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  marginBottom: '16px',
+                  color: '#FCA5A5',
+                  fontSize: '13px',
+                }}
+              >
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitForm}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="regFullName">Nama Lengkap</label>
+                <div className="input-icon-wrap">
+                  <User size={16} className="input-icon" />
+                  <input
+                    type="text"
+                    id="regFullName"
+                    className="form-input"
+                    placeholder="Nama Lengkap"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="regEmail">Email</label>
+                <div className="input-icon-wrap">
+                  <Mail size={16} className="input-icon" />
+                  <input
+                    type="email"
+                    id="regEmail"
+                    className="form-input"
+                    placeholder="alamat@email.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="regPassword">Password</label>
+                <div className="input-icon-wrap">
+                  <Lock size={16} className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="regPassword"
+                    className="form-input"
+                    placeholder="Minimal 8 karakter"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label="Toggle password visibility"
+                  >
+                    {showPassword ? 'Sembunyikan' : 'Lihat'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="regConfirmPassword">Konfirmasi Password</label>
+                <div className="input-icon-wrap">
+                  <Lock size={16} className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="regConfirmPassword"
+                    className="form-input"
+                    placeholder="Ulangi password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-between" style={{ marginBottom: '18px' }}>
+                <label className="checkbox-label" style={{ fontSize: '12.5px' }}>
+                  <input
+                    type="checkbox"
+                    id="regTerms"
+                    required
+                    checked={terms}
+                    onChange={(e) => setTerms(e.target.checked)}
+                  />
+                  <span>Saya menyetujui syarat &amp; ketentuan TEMBOX</span>
+                </label>
+              </div>
+
+              <button type="submit" className="btn-primary-block" disabled={loading}>
+                <span>{loading ? 'Memproses...' : 'Lanjutkan Verifikasi'}</span>
+              </button>
+            </form>
+
+            <p className="login-footer-text">
+              Sudah punya akun?{' '}
+              {onNavigateLogin ? (
+                <button
+                  type="button"
+                  onClick={onNavigateLogin}
+                  className="auth-switch-link"
+                  style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                >
+                  Masuk
+                </button>
+              ) : (
+                <Link href="/login" className="auth-switch-link">Masuk</Link>
+              )}
+            </p>
+          </>
+        )}
+
+        {/* STEP 2: 6-Digit OTP Verification Form */}
+        {step === 'otp' && (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+              <div
+                style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '50%',
+                  background: 'rgba(2, 132, 199, 0.2)',
+                  color: '#38BDF8',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '12px',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                }}
+              >
+                <ShieldCheck size={28} />
+              </div>
+              <h2 className="login-title" style={{ fontSize: '24px' }}>Verifikasi Email</h2>
+              <p className="login-desc" style={{ marginBottom: '0' }}>
+                Kode OTP 6 digit telah dikirim ke <strong style={{ color: '#7DDCE8' }}>{email}</strong>.
+              </p>
+            </div>
+
+            <form onSubmit={handleVerifyOtp}>
+              <div style={{ marginBottom: '20px' }}>
+                <OtpInput
+                  value={otp}
+                  onChange={(val) => {
+                    setOtp(val);
+                    setOtpError('');
+                  }}
+                  error={otpError}
+                  onResend={() => {
+                    setOtp('');
+                    setOtpError('');
+                  }}
+                />
+              </div>
+
+              <button type="submit" className="btn-primary-block" disabled={loading}>
+                <span>{loading ? 'Memverifikasi...' : 'Verifikasi & Aktifkan Akun'}</span>
+              </button>
+            </form>
+
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setStep('form')}
+                className="auth-back-link"
+              >
+                <ArrowLeft size={13} />
+                <span>Ubah data pendaftaran</span>
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* STEP 3: Success Confirmation */}
+        {step === 'success' && (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div
+              style={{
+                width: '58px',
+                height: '58px',
+                borderRadius: '50%',
+                background: 'rgba(16, 185, 129, 0.2)',
+                color: '#34D399',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+                border: '1px solid rgba(52, 211, 153, 0.3)',
+              }}
+            >
+              <Check size={28} />
+            </div>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+              Akun Berhasil Diaktifkan!
+            </h3>
+            <p style={{ fontSize: '13.5px', color: '#94A3B8', marginBottom: '24px', lineHeight: 1.5 }}>
+              Selamat datang di TEMBOX. Akun Anda siap digunakan untuk memantau data suhu palka secara real-time.
+            </p>
+            <button
+              type="button"
+              className="btn-primary-block"
+              onClick={() => {
+                if (onSuccess) {
+                  onSuccess();
+                } else {
+                  window.location.href = '/dashboard';
+                }
+              }}
+            >
+              <span>Lanjut ke Dashboard</span>
+            </button>
+          </div>
+        )}
+
+        {/* Return to Home link */}
+        <div style={{ marginTop: '22px', textAlign: 'center' }}>
+          {onBackHome ? (
+            <button
+              type="button"
+              onClick={onBackHome}
+              className="auth-back-link"
+            >
+              <ArrowLeft size={14} />
+              <span>Kembali ke TEMBOX</span>
+            </button>
+          ) : (
+            <Link
+              href="/"
+              className="auth-back-link"
+            >
+              <ArrowLeft size={14} />
+              <span>Kembali ke TEMBOX</span>
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (hideLeftPane) {
+    return rightFormPane;
+  }
+
+  return (
+    <div className="login-view-wrapper">
+      {/* Left Hero Pane with Background Video Backdrop */}
+      <div className="login-left-pane">
+        <video
+          className="login-media-backdrop"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          poster={heroBoat}
+        >
+          <source src={heroVideo} type="video/mp4" />
+          <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
+        </video>
+        <div className="login-overlay-gradient" />
+
+        <div className="login-left-content">
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <span
+              style={{
                 fontWeight: 800,
                 fontSize: '26px',
                 letterSpacing: '-0.5px',
                 color: '#FFFFFF',
                 display: 'block',
                 marginBottom: '6px',
-                cursor: 'pointer'
-              }}>
-                TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
-              </span>
-            </Link>
-            <p className="login-brand-tagline">
-              Bergabunglah dengan ekosistem pemantauan hasil tangkapan laut modern.
-            </p>
-          </div>
-
-          <div className="login-left-footer" style={{ position: 'relative', zIndex: 10 }}>
-            &ldquo;Ikan tetap segar, nelayan lebih tenang.&rdquo;
-          </div>
+                cursor: 'pointer',
+              }}
+            >
+              TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
+            </span>
+          </Link>
+          <p className="login-brand-tagline">
+            Bergabunglah dengan ekosistem pemantauan hasil tangkapan laut modern.
+          </p>
         </div>
-      )}
 
-      {/* Right Form Pane */}
-      <div className="login-right-pane">
-        <div className="login-form-box">
-          {/* STEP 1: Registration Input Form */}
-          {step === 'form' && (
-            <>
-              <h2 className="login-title">Buat Akun</h2>
-              <p className="login-desc">Mulai menggunakan sistem monitoring TEMBOX.</p>
-
-              {errorMsg && (
-                <div
-                  style={{
-                    backgroundColor: '#FEF2F2',
-                    border: '1px solid #FCA5A5',
-                    borderRadius: '8px',
-                    padding: '10px 14px',
-                    marginBottom: '16px',
-                    color: '#B91C1C',
-                    fontSize: '13px',
-                  }}
-                >
-                  {errorMsg}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmitForm}>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="regFullName">Nama Lengkap</label>
-                  <div className="input-icon-wrap">
-                    <User size={16} className="input-icon" />
-                    <input
-                      type="text"
-                      id="regFullName"
-                      className="form-input"
-                      placeholder="Nama Lengkap"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="regEmail">Email</label>
-                  <div className="input-icon-wrap">
-                    <Mail size={16} className="input-icon" />
-                    <input
-                      type="email"
-                      id="regEmail"
-                      className="form-input"
-                      placeholder="alamat@email.com"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="regPassword">Password</label>
-                  <div className="input-icon-wrap">
-                    <Lock size={16} className="input-icon" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="regPassword"
-                      className="form-input"
-                      placeholder="Minimal 8 karakter"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="input-toggle-pwd"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label="Toggle password visibility"
-                    >
-                      <span style={{ fontSize: '11px', color: '#64748B' }}>
-                        {showPassword ? 'Hide' : 'Show'}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="regConfirmPassword">Konfirmasi Password</label>
-                  <div className="input-icon-wrap">
-                    <Lock size={16} className="input-icon" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="regConfirmPassword"
-                      className="form-input"
-                      placeholder="Ulangi password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row-between" style={{ marginBottom: '18px' }}>
-                  <label className="checkbox-label" style={{ fontSize: '12px' }}>
-                    <input
-                      type="checkbox"
-                      id="regTerms"
-                      required
-                      checked={terms}
-                      onChange={(e) => setTerms(e.target.checked)}
-                    />
-                    <span>Saya menyetujui syarat &amp; ketentuan TEMBOX</span>
-                  </label>
-                </div>
-
-                <button type="submit" className="btn-primary-block" disabled={loading}>
-                  <span>{loading ? 'Memproses...' : 'Lanjutkan Verifikasi'}</span>
-                </button>
-              </form>
-
-              <p className="login-footer-text">
-                Sudah punya akun?{' '}
-                {onNavigateLogin ? (
-                  <button
-                    type="button"
-                    onClick={onNavigateLogin}
-                    className="form-link"
-                    style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
-                  >
-                    Masuk
-                  </button>
-                ) : (
-                  <Link href="/login" className="form-link">Masuk</Link>
-                )}
-              </p>
-            </>
-          )}
-
-          {/* STEP 2: 6-Digit OTP Verification Form */}
-          {step === 'otp' && (
-            <>
-              <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-                <div
-                  style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '50%',
-                    background: '#EAF8FF',
-                    color: '#0284C7',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '12px',
-                  }}
-                >
-                  <ShieldCheck size={28} />
-                </div>
-                <h2 className="login-title" style={{ fontSize: '24px' }}>Verifikasi Email</h2>
-                <p className="login-desc" style={{ marginBottom: '0' }}>
-                  Kode OTP 6 digit telah dikirim ke <strong style={{ color: '#0B2D42' }}>{email}</strong>.
-                </p>
-              </div>
-
-              <form onSubmit={handleVerifyOtp}>
-                <div style={{ marginBottom: '20px' }}>
-                  <OtpInput
-                    value={otp}
-                    onChange={(val) => {
-                      setOtp(val);
-                      setOtpError('');
-                    }}
-                    error={otpError}
-                    onResend={() => {
-                      setOtp('');
-                      setOtpError('');
-                    }}
-                  />
-                </div>
-
-                <button type="submit" className="btn-primary-block" disabled={loading}>
-                  <span>{loading ? 'Memverifikasi...' : 'Verifikasi &amp; Aktifkan Akun'}</span>
-                </button>
-              </form>
-
-              <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                <button
-                  type="button"
-                  onClick={() => setStep('form')}
-                  style={{
-                    fontSize: '12.5px',
-                    color: '#64748B',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <ArrowLeft size={13} />
-                  <span>Ubah data pendaftaran</span>
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* STEP 3: Success Confirmation */}
-          {step === 'success' && (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div
-                style={{
-                  width: '58px',
-                  height: '58px',
-                  borderRadius: '50%',
-                  background: '#EAF8FF',
-                  color: '#0284C7',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '16px',
-                }}
-              >
-                <Check size={28} />
-              </div>
-              <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-ocean)', marginBottom: '6px' }}>
-                Akun Berhasil Diaktifkan!
-              </h3>
-              <p style={{ fontSize: '13.5px', color: '#64748B', marginBottom: '24px' }}>
-                Selamat datang di TEMBOX. Akun Anda siap digunakan untuk memantau data suhu palka secara real-time.
-              </p>
-              <button
-                type="button"
-                className="btn-primary-block"
-                onClick={() => {
-                  if (onSuccess) {
-                    onSuccess();
-                  } else {
-                    window.location.href = '/dashboard';
-                  }
-                }}
-              >
-                <span>Lanjut ke Dashboard</span>
-              </button>
-            </div>
-          )}
-
-          {/* Return to Home link */}
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            {onBackHome ? (
-              <button
-                type="button"
-                onClick={onBackHome}
-                style={{
-                  fontSize: '12.5px',
-                  color: '#64748B',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <ArrowLeft size={14} />
-                <span>Kembali ke TEMBOX</span>
-              </button>
-            ) : (
-              <Link
-                href="/"
-                style={{
-                  fontSize: '12.5px',
-                  color: '#64748B',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <ArrowLeft size={14} />
-                <span>Kembali ke TEMBOX</span>
-              </Link>
-            )}
-          </div>
+        <div className="login-left-footer">
+          &ldquo;Ikan tetap segar, nelayan lebih tenang.&rdquo;
         </div>
       </div>
+
+      {rightFormPane}
     </div>
   );
 };
