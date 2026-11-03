@@ -13,8 +13,9 @@ export const PersistentBackgroundVideo: React.FC = () => {
     pathname.startsWith('/register') ||
     pathname.startsWith('/forgot-password');
 
-  // Video is active and visible on Home and Auth pages
-  const isVisible = isHome || isAuth;
+  // Dedicated Hero background video is rendered in App.tsx for Home.
+  // Persistent video provides fluid background for auth pages (login, register, forgot-password).
+  const isVisible = isAuth;
 
   return (
     <div

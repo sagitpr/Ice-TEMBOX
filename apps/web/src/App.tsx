@@ -158,9 +158,44 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
           minHeight: '100vh',
           position: 'relative',
           overflow: 'hidden',
-          backgroundColor: 'transparent',
+          backgroundColor: '#071A27',
         }}
       >
+        {/* Maritime Fisherman Boat Background Video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          poster="/hero-boat.jpg"
+          className="hero-video absolute inset-0 w-full h-full object-cover -z-10"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: '72% 52%',
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
+        </video>
+
+        {/* Soft Dark Neutral Overlay (bg-slate-950/40 or bg-slate-900/50 equivalent) */}
+        <div
+          className="hero-overlay"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.45)',
+            background: 'linear-gradient(180deg, rgba(7, 26, 39, 0.45) 0%, rgba(15, 23, 42, 0.40) 50%, rgba(7, 26, 39, 0.65) 100%)',
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        />
         {/* Three.js Atmospheric Canvas deferred to idle */}
         {loadAtmosphere && (
           <div
@@ -182,13 +217,15 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
         {/* Hero Content Container (strictly above background video) */}
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div className="hero-content">
-            <span className="eyebrow">SMART MONITORING FOR FRESHER CATCH</span>
-            <h1 className="heading-xl hero-heading">
+            <span className="eyebrow" style={{ color: '#7DDCE8', fontWeight: 700, letterSpacing: '0.18em', textShadow: '0 1px 6px rgba(0, 0, 0, 0.6)' }}>
+              SMART MONITORING FOR FRESHER CATCH
+            </span>
+            <h1 className="heading-xl hero-heading" style={{ color: '#FFFFFF', textShadow: '0 2px 14px rgba(0, 0, 0, 0.75)' }}>
               Keeping Every Catch
               <br />
-              Fresh, with <span className="text-ice">TEMBOX.</span>
+              Fresh, with <span className="text-ice" style={{ color: '#7DDCE8' }}>TEMBOX.</span>
             </h1>
-            <p className="body-lg hero-description">
+            <p className="body-lg hero-description" style={{ color: '#E2E8F0', textShadow: '0 1px 8px rgba(0, 0, 0, 0.7)' }}>
               TEMBOX adalah sistem pemantauan suhu dan kondisi penyimpanan ikan
               secara real-time untuk menjaga kualitas hasil tangkapan hingga
               sampai ke tangan Anda.
