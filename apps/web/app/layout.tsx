@@ -31,6 +31,7 @@ try {
           'Penangkap-ikan.jpg',
           'hero-boat.jpg',
           'Sagit-Faturrakhman.jpg',
+          'google835db05cba2f9052.html',
         ];
 
         for (const file of filesToSync) {
@@ -39,6 +40,13 @@ try {
           if (fs.existsSync(s) && !fs.existsSync(d)) {
             fs.copyFileSync(s, d);
           }
+        }
+
+        // Also ensure Penangkap-Ikan.jpg (capitalized I) exists for Linux/Vercel case-sensitive resolution
+        const penangkapReal = path.join(assetsDir, 'Penangkap-ikan.jpg');
+        const penangkapCap = path.join(pub, 'Penangkap-Ikan.jpg');
+        if (fs.existsSync(penangkapReal) && !fs.existsSync(penangkapCap)) {
+          fs.copyFileSync(penangkapReal, penangkapCap);
         }
 
         // Also check Video directory
@@ -69,12 +77,54 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'TEMBOX — Smart Monitoring for Fresher Catch',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-tembox.vercel.app'),
+  title: {
+    default: 'TEMBOX — Smart Monitoring for Fresher Catch',
+    template: '%s | TEMBOX',
+  },
   description:
-    'TEMBOX adalah sistem pemantauan suhu dan kondisi penyimpanan ikan secara real-time untuk menjaga kualitas hasil tangkapan hingga sampai ke tangan Anda.',
+    'TEMBOX adalah sistem pemantauan suhu dan kondisi penyimpanan palka ikan secara real-time berbasis IoT untuk menjaga kualitas kesegaran hasil tangkapan laut nelayan.',
+  keywords: [
+    'TEMBOX',
+    'monitoring suhu palka ikan',
+    'cold chain perikanan',
+    'IoT maritim',
+    'rantai dingin ikan',
+    'kualitas tangkapan laut',
+    'sensor DS18B20 kapal',
+  ],
+  authors: [{ name: 'Sagit Faturrakhman' }],
+  creator: 'TEMBOX Engineering Team',
   icons: {
     icon: '/favicon.svg',
     apple: '/Favicon.png',
+  },
+  verification: {
+    google: 'google835db05cba2f9052',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'id_ID',
+    url: 'https://ice-tembox.vercel.app',
+    siteName: 'TEMBOX',
+    title: 'TEMBOX — Smart Monitoring for Fresher Catch',
+    description:
+      'Solusi cerdas pemantauan suhu palka es berbasis IoT untuk menjaga kesegaran ikan tangkapan nelayan.',
+    images: [
+      {
+        url: '/Penangkap-ikan.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'TEMBOX IoT Marine Cold Chain',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TEMBOX — Smart Monitoring for Fresher Catch',
+    description:
+      'Solusi cerdas pemantauan suhu palka es berbasis IoT untuk menjaga kesegaran ikan tangkapan nelayan.',
+    images: ['/Penangkap-ikan.jpg'],
   },
 };
 

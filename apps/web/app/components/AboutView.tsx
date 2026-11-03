@@ -57,7 +57,12 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 height={36}
                 fetchPriority="high"
                 decoding="sync"
-                style={{ width: '140px', height: '36px', objectFit: 'contain' }}
+                style={{
+                  width: '140px',
+                  height: '36px',
+                  objectFit: 'contain',
+                  filter: scrolled ? 'none' : 'brightness(0) invert(1)',
+                }}
               />
             </Link>
 
@@ -190,7 +195,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
           <img
             src={heroBg}
             onError={() => {
-              if (heroBg !== '/hero-boat.jpg') {
+              if (heroBg === '/Penangkap-ikan.jpg') {
+                setHeroBg('/Penangkap-Ikan.jpg');
+              } else if (heroBg !== '/hero-boat.jpg') {
                 setHeroBg('/hero-boat.jpg');
               }
             }}
@@ -200,9 +207,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
               height: '100%',
               objectFit: 'cover',
               objectPosition: 'center 35%',
-              opacity: 0.55,
+              opacity: 0.78,
               display: 'block',
-              filter: 'brightness(0.85) contrast(1.05)',
+              filter: 'brightness(0.95) contrast(1.05)',
             }}
           />
 
@@ -211,7 +218,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(180deg, rgba(7, 26, 39, 0.72) 0%, rgba(7, 26, 39, 0.82) 50%, rgba(7, 26, 39, 0.95) 78%, #FFFFFF 100%)',
+              background: 'linear-gradient(180deg, rgba(7, 26, 39, 0.42) 0%, rgba(7, 26, 39, 0.58) 55%, rgba(7, 26, 39, 0.85) 80%, #FFFFFF 100%)',
               pointerEvents: 'none',
             }}
           />
@@ -228,7 +235,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 lineHeight: 1.15,
                 letterSpacing: '-0.03em',
                 marginBottom: '22px',
-                textShadow: '0 2px 10px rgba(0, 0, 0, 0.35)',
+                textShadow: '0 2px 14px rgba(0, 0, 0, 0.75)',
               }}
             >
               Merevolusi Rantai Pasok Maritim Melalui{' '}
@@ -240,7 +247,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 lineHeight: 1.75,
                 color: '#E2E8F0',
                 maxWidth: '640px',
-                textShadow: '0 1px 4px rgba(0, 0, 0, 0.25)',
+                textShadow: '0 1px 8px rgba(0, 0, 0, 0.65)',
               }}
             >
               TEMBOX hadir sebagai perwujudan visi masa depan industri perikanan yang cerdas,
@@ -669,6 +676,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             </div>
 
             <div className="footer-nav">
+              <Link href="/kategori/monitoring-suhu-palka-ikan" className="footer-link" style={{ color: '#CBD5E1' }}>
+                Kategori
+              </Link>
               <Link href="/contact" onClick={(e) => handleNav('contact', e)} className="footer-link" style={{ color: '#CBD5E1' }}>
                 Contact
               </Link>

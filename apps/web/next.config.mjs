@@ -28,6 +28,7 @@ try {
           'Penangkap-ikan.jpg',
           'hero-boat.jpg',
           'Sagit-Faturrakhman.jpg',
+          'google835db05cba2f9052.html',
         ];
 
         for (const file of filesToSync) {
@@ -36,6 +37,13 @@ try {
           if (fs.existsSync(s) && !fs.existsSync(d)) {
             fs.copyFileSync(s, d);
           }
+        }
+
+        // Also ensure Penangkap-Ikan.jpg (capitalized I) exists for Linux/Vercel case-sensitive resolution
+        const penangkapReal = path.join(assetsDir, 'Penangkap-ikan.jpg');
+        const penangkapCap = path.join(pub, 'Penangkap-Ikan.jpg');
+        if (fs.existsSync(penangkapReal) && !fs.existsSync(penangkapCap)) {
+          fs.copyFileSync(penangkapReal, penangkapCap);
         }
 
         // Also check Video directory

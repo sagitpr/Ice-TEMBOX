@@ -92,7 +92,12 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
                 height={36}
                 fetchPriority="high"
                 decoding="sync"
-                style={{ width: '140px', height: '36px', objectFit: 'contain' }}
+                style={{
+                  width: '140px',
+                  height: '36px',
+                  objectFit: 'contain',
+                  filter: 'brightness(0) invert(1)',
+                }}
               />
             </a>
 
