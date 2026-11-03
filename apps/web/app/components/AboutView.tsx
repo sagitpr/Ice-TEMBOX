@@ -14,17 +14,20 @@ import {
   Check,
   User,
   ArrowRight,
-  Info
+  Info,
+  Bell,
+  Settings,
+  RefreshCw
 } from './Icons';
 
-// Static public assets (Direct root path for Next.js public directory, preventing Webpack module resolution failures on Linux/Vercel)
+// Static public assets (Direct root path for Next.js public directory)
 const logoHorizontal = '/LogoTembox-Horizontal.png';
 const penangkapIkan = '/Penangkap-ikan.jpg';
-const sagitPhoto = '/Sagit-Faturrakhman.jpg';
 
 export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [devPhoto, setDevPhoto] = useState('/sagit.png');
 
   const handleNav = (view: string, e: React.MouseEvent) => {
     if (onNavigate) {
@@ -41,12 +44,25 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const navTextColor = scrolled ? '#0F172A' : '#FFFFFF';
+  const navTextMuted = scrolled ? '#64748B' : '#E2E8F0';
+
   return (
-    <div className="tembox-app" style={{ backgroundColor: '#071A27', color: '#E2E8F0', minHeight: '100vh' }}>
+    <div className="tembox-app" style={{ backgroundColor: '#FFFFFF', color: '#0F172A', minHeight: '100vh' }}>
       {/* ==================================================
-          1. HEADER (Identical to Main Landing)
+          1. HEADER (Adaptive: Transparent over Hero, Frosted White on Scroll)
           ================================================== */}
-      <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
+      <header
+        className={`site-header ${scrolled ? 'scrolled' : ''}`}
+        style={{
+          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          background: scrolled ? 'rgba(255, 255, 255, 0.94)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(16px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
+          borderBottom: scrolled ? '1px solid #E2E8F0' : 'none',
+          boxShadow: scrolled ? '0 4px 20px rgba(11, 45, 66, 0.05)' : 'none',
+        }}
+      >
         <div className="container">
           <div className="header-inner">
             <Link href="/" className="brand-link" onClick={(e) => handleNav('home', e)}>
@@ -64,19 +80,38 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
 
             {/* Desktop Navigation */}
             <nav className="header-nav">
-              <Link href="/#vision" onClick={(e) => handleNav('home', e)} className="nav-link">
+              <Link
+                href="/#vision"
+                onClick={(e) => handleNav('home', e)}
+                className="nav-link"
+                style={{ color: navTextMuted, fontWeight: 500 }}
+              >
                 Contact
               </Link>
-              <Link href="/about" className="nav-link" style={{ color: '#0284C7', fontWeight: 700 }}>
+              <Link
+                href="/about"
+                className="nav-link"
+                style={{ color: '#0284C7', fontWeight: 700 }}
+              >
                 About
               </Link>
-              <div className="nav-divider" />
-              <div className="auth-links">
-                <Link href="/login" onClick={(e) => handleNav('login', e)} className="nav-link">
+              <div className="nav-divider" style={{ backgroundColor: scrolled ? '#CBD5E1' : 'rgba(255, 255, 255, 0.25)' }} />
+              <div className="auth-links" style={{ color: navTextColor }}>
+                <Link
+                  href="/login"
+                  onClick={(e) => handleNav('login', e)}
+                  className="nav-link"
+                  style={{ color: navTextColor, fontWeight: 600 }}
+                >
                   Sign in
                 </Link>
-                <span className="auth-sep">|</span>
-                <Link href="/register" onClick={(e) => handleNav('register', e)} className="nav-link">
+                <span className="auth-sep" style={{ color: scrolled ? '#94A3B8' : 'rgba(255, 255, 255, 0.4)' }}>|</span>
+                <Link
+                  href="/register"
+                  onClick={(e) => handleNav('register', e)}
+                  className="nav-link"
+                  style={{ color: navTextColor, fontWeight: 600 }}
+                >
                   Sign up
                 </Link>
               </div>
@@ -88,27 +123,54 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle navigation menu"
             >
-              <span />
-              <span />
-              <span />
+              <span style={{ background: navTextColor }} />
+              <span style={{ background: navTextColor }} />
+              <span style={{ background: navTextColor }} />
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
-          <div className="mobile-nav-menu">
-            <Link href="/#vision" className="nav-link" onClick={() => { setMobileMenuOpen(false); handleNav('home', {} as any); }}>
+          <div
+            className="mobile-nav-menu"
+            style={{
+              background: '#FFFFFF',
+              borderBottom: '1px solid #E2E8F0',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+            }}
+          >
+            <Link
+              href="/#vision"
+              className="nav-link"
+              onClick={() => { setMobileMenuOpen(false); handleNav('home', {} as any); }}
+              style={{ color: '#1E293B' }}
+            >
               Contact
             </Link>
-            <Link href="/about" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              href="/about"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ color: '#0284C7', fontWeight: 700 }}
+            >
               About
             </Link>
-            <hr style={{ border: 'none', borderTop: '1px solid #E2EDF3' }} />
-            <Link href="/login" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('login', e); }}>
+            <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0' }} />
+            <Link
+              href="/login"
+              className="nav-link"
+              onClick={(e) => { setMobileMenuOpen(false); handleNav('login', e); }}
+              style={{ color: '#1E293B' }}
+            >
               Sign in
             </Link>
-            <Link href="/register" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('register', e); }}>
+            <Link
+              href="/register"
+              className="nav-link"
+              onClick={(e) => { setMobileMenuOpen(false); handleNav('register', e); }}
+              style={{ color: '#0284C7', fontWeight: 600 }}
+            >
               Sign up
             </Link>
           </div>
@@ -116,17 +178,17 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </header>
 
       {/* ==================================================
-          2. HERO SECTION: Penangkap-ikan.jpg with Gradient Blur Overlay
+          2. HERO SECTION: Elegant Corporate Deep Navy with Penangkap-ikan.jpg
           ================================================== */}
       <section
         id="about-hero"
         style={{
           position: 'relative',
-          minHeight: '85vh',
+          minHeight: '80vh',
           display: 'flex',
           alignItems: 'center',
-          paddingTop: '130px',
-          paddingBottom: '80px',
+          paddingTop: '140px',
+          paddingBottom: '100px',
           overflow: 'hidden',
           background: '#071A27',
         }}
@@ -152,49 +214,32 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(90deg, rgba(7, 26, 39, 0.98) 0%, rgba(7, 26, 39, 0.92) 38%, rgba(7, 26, 39, 0.65) 68%, rgba(7, 26, 39, 0.35) 100%)',
+              background: 'linear-gradient(90deg, rgba(7, 26, 39, 0.98) 0%, rgba(7, 26, 39, 0.92) 42%, rgba(7, 26, 39, 0.7) 72%, rgba(7, 26, 39, 0.4) 100%)',
               backdropFilter: 'blur(1px)',
               pointerEvents: 'none',
             }}
           />
-          {/* Soft Bottom Fade to Content */}
+          {/* Smooth Dark-to-Light Transition Fade at the Bottom */}
           <div
             style={{
               position: 'absolute',
               bottom: 0,
               left: 0,
               right: 0,
-              height: '140px',
-              background: 'linear-gradient(to top, #071A27 0%, rgba(7, 26, 39, 0) 100%)',
+              height: '160px',
+              background: 'linear-gradient(to bottom, rgba(7, 26, 39, 0) 0%, rgba(255, 255, 255, 0.7) 70%, #FFFFFF 100%)',
               pointerEvents: 'none',
             }}
           />
         </div>
 
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
-          <div style={{ maxWidth: '680px' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                fontSize: '12px',
-                fontWeight: 700,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: '#7DDCE8',
-                marginBottom: '16px',
-                background: 'rgba(125, 220, 232, 0.1)',
-                padding: '6px 14px',
-                borderRadius: '999px',
-                border: '1px solid rgba(125, 220, 232, 0.25)',
-              }}
-            >
-              TENTANG TEMBOX • MARITIME IOT INTELLIGENCE
-            </span>
+          <div style={{ maxWidth: '720px' }}>
             <h1
               className="heading-xl"
               style={{
                 color: '#FFFFFF',
-                fontSize: 'clamp(2.4rem, 4.2vw, 3.8rem)',
+                fontSize: 'clamp(2.4rem, 4.4vw, 4rem)',
                 fontWeight: 800,
                 lineHeight: 1.15,
                 letterSpacing: '-0.03em',
@@ -206,10 +251,10 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             </h1>
             <p
               style={{
-                fontSize: '16.5px',
-                lineHeight: 1.65,
+                fontSize: '17px',
+                lineHeight: 1.7,
                 color: '#CBD5E1',
-                maxWidth: '620px',
+                maxWidth: '640px',
               }}
             >
               TEMBOX hadir sebagai perwujudan visi masa depan industri perikanan yang cerdas,
@@ -222,65 +267,65 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          3. SECTION: VISI & PENGANTAR KORPORAT
+          3. SECTION: VISI & PENGANTAR KORPORAT (Clean Light Mode)
           ================================================== */}
-      <section style={{ padding: '80px 0', borderTop: '1px solid rgba(225, 239, 246, 0.08)' }}>
+      <section style={{ padding: '80px 0', background: '#FFFFFF' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '48px', alignItems: 'center' }}>
             <div>
-              <span className="eyebrow" style={{ color: '#00A3C4' }}>1. VISI &amp; PENGANTAR KORPORAT</span>
-              <h2 style={{ fontSize: 'clamp(1.8rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25, marginBottom: '18px' }}>
+              <span className="eyebrow" style={{ color: '#0284C7', marginBottom: '12px' }}>
+                VISI &amp; PENGANTAR KORPORAT
+              </span>
+              <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#0F172A', lineHeight: 1.25, marginBottom: '20px' }}>
                 Menjaga Nilai Luhur Nelayan Nusantara di Era Digital
               </h2>
-              <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#94A3B8', marginBottom: '16px' }}>
+              <p style={{ fontSize: '15px', lineHeight: 1.75, color: '#475569', marginBottom: '16px' }}>
                 Di era transformasi digital yang bergerak masif, sektor kelautan dan perikanan Indonesia memegang peran
                 fundamental dalam ketahanan pangan serta perekonomian nasional. Namun, tantangan klasik dalam distribusi
                 hasil tangkapan laut—khususnya penanganan pasca-penangkapan (<em>post-harvest handling</em>)—masih
                 menghadapi kendala efisiensi rantai dingin (<em>cold chain logistics</em>).
               </p>
-              <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#94A3B8' }}>
+              <p style={{ fontSize: '15px', lineHeight: 1.75, color: '#475569' }}>
                 Kami berkomitmen menghadirkan solusi teknologi mutakhir yang inklusif, dapat dijangkau oleh nelayan skala
                 kecil hingga menengah, tanpa merombak armada kapal yang telah mereka miliki selama puluhan tahun.
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
               <div
                 style={{
-                  background: 'rgba(15, 38, 54, 0.7)',
-                  border: '1px solid rgba(125, 220, 232, 0.18)',
-                  borderRadius: '14px',
-                  padding: '24px',
-                  backdropFilter: 'blur(8px)',
+                  background: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '16px',
+                  padding: '28px',
+                  boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(2, 132, 199, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7DDCE8' }}>
-                    <ShieldCheck size={22} />
-                  </div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#FFFFFF' }}>Integritas Mutu Tangkapan</h3>
-                </div>
-                <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6 }}>
-                  Mencegah degradasi histamin dan pembusukan dini pada ikan dengan pengawasan termal presisi 24/7.
+                {/* Standalone Clean Icon without box wrapper */}
+                <ShieldCheck size={30} color="#0284C7" style={{ marginBottom: '14px', display: 'block' }} />
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
+                  Integritas Mutu Tangkapan
+                </h3>
+                <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.65 }}>
+                  Mencegah degradasi histamin dan pembusukan dini pada ikan dengan pengawasan termal presisi tinggi secara terus menerus.
                 </p>
               </div>
 
               <div
                 style={{
-                  background: 'rgba(15, 38, 54, 0.7)',
-                  border: '1px solid rgba(125, 220, 232, 0.18)',
-                  borderRadius: '14px',
-                  padding: '24px',
-                  backdropFilter: 'blur(8px)',
+                  background: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '16px',
+                  padding: '28px',
+                  boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(2, 132, 199, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7DDCE8' }}>
-                    <TrendingUp size={22} />
-                  </div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#FFFFFF' }}>Dampak Ekonomi Berkelanjutan</h3>
-                </div>
-                <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6 }}>
+                {/* Standalone Clean Icon without box wrapper */}
+                <TrendingUp size={30} color="#0284C7" style={{ marginBottom: '14px', display: 'block' }} />
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
+                  Dampak Ekonomi Berkelanjutan
+                </h3>
+                <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.65 }}>
                   Meningkatkan nilai jual lelang ikan di Tempat Pelelangan Ikan (TPI) berkat bukti riwayat suhu dingin terverifikasi.
                 </p>
               </div>
@@ -290,66 +335,71 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          4. SECTION: PROBLEM VS SOLUTION (RETROFIT MODULAR)
+          4. SECTION: LATAR BELAKANG & SOLUSI INOVATIF (Soft Slate Background)
           ================================================== */}
-      <section style={{ padding: '80px 0', background: '#051420', borderTop: '1px solid rgba(225, 239, 246, 0.08)' }}>
+      <section style={{ padding: '80px 0', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 50px' }}>
-            <span className="eyebrow" style={{ color: '#00A3C4' }}>2. LATAR BELAKANG MASALAH &amp; SOLUSI INOVATIF</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
+            <span className="eyebrow" style={{ color: '#0284C7' }}>
+              LATAR BELAKANG &amp; SOLUSI INOVATIF
+            </span>
+            <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
               Dari Kerentanan Manual ke Kepastian Terukur
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px' }}>
-            {/* The Problem Card */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' }}>
+            {/* The Problem Card (Clean slate border, no aggressive red) */}
             <div
               style={{
-                background: 'rgba(30, 41, 59, 0.5)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '16px',
-                padding: '32px',
-                position: 'relative',
+                background: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderRadius: '18px',
+                padding: '36px',
+                boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
               }}
             >
-              <div style={{ display: 'inline-block', background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 700, marginBottom: '16px' }}>
-                THE PROBLEM (TANTANGAN)
-              </div>
-              <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#FFFFFF', marginBottom: '14px' }}>
+              {/* Standalone Clean Icon without box */}
+              <Thermometer size={30} color="#64748B" style={{ marginBottom: '14px', display: 'block' }} />
+              <p style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748B', marginBottom: '10px' }}>
+                TANTANGAN INDUSTRI
+              </p>
+              <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#0F172A', marginBottom: '14px' }}>
                 Fluktuasi Suhu Palka Es Konvensional
               </h3>
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#94A3B8', marginBottom: '16px' }}>
+              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#475569', marginBottom: '16px' }}>
                 Secara geografis, Indonesia merupakan negara kepulauan dengan potensi maritim luar biasa. Namun, nelayan
                 tradisional masih sangat bergantung pada metode penyimpanan es manual di dalam kotak palka tanpa sistem pemantauan terukur.
               </p>
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#94A3B8' }}>
+              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#475569' }}>
                 Selama pelayaran yang panjang, es mencair dan suhu naik secara perlahan tanpa disadari. Nelayan baru mengetahui
                 penurunan mutu ketika pembusukan telah terjadi saat bersandar di pelabuhan, mengakibatkan kerugian ekonomi yang fatal.
               </p>
             </div>
 
-            {/* The Solution Card */}
+            {/* The Solution Card (Clean brand blue accent) */}
             <div
               style={{
-                background: 'rgba(11, 45, 66, 0.65)',
-                border: '1px solid rgba(125, 220, 232, 0.4)',
-                borderRadius: '16px',
-                padding: '32px',
-                position: 'relative',
-                boxShadow: '0 10px 30px rgba(0, 163, 196, 0.12)',
+                background: '#FFFFFF',
+                border: '2px solid #0284C7',
+                borderRadius: '18px',
+                padding: '36px',
+                boxShadow: '0 12px 30px -5px rgba(2, 132, 199, 0.12)',
               }}
             >
-              <div style={{ display: 'inline-block', background: 'rgba(125, 220, 232, 0.2)', color: '#7DDCE8', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 700, marginBottom: '16px' }}>
-                THE SOLUTION (SOLUSI TEMBOX)
-              </div>
-              <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#FFFFFF', marginBottom: '14px' }}>
+              {/* Standalone Clean Icon without box */}
+              <Snowflake size={30} color="#0284C7" style={{ marginBottom: '14px', display: 'block' }} />
+              <p style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '10px' }}>
+                SOLUSI MODULAR TEMBOX
+              </p>
+              <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#0B2D42', marginBottom: '14px' }}>
                 Perangkat Tambahan Pintar (Retrofit Device)
               </h3>
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#D1EAF7', marginBottom: '16px' }}>
-                Kami tidak berupaya menggantikan es sebagai media pendingin utama, melainkan menghadirkan <strong>TEMBOX (Temperature Box)</strong> sebagai perangkat tambahan modular.
+              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#334155', marginBottom: '16px' }}>
+                Kami tidak berupaya menggantikan es sebagai media pendingin utama, melainkan menghadirkan <strong>TEMBOX (Temperature Box)</strong> sebagai perangkat tambahan modular cerdas.
               </p>
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#D1EAF7' }}>
-                Perangkat ini dipasang langsung pada wadah penyimpanan ikan yang sudah dimiliki nelayan tanpa perlu mengganti infrastruktur fisik. Memantau suhu secara real-time, memberi peringatan dini visual &amp; suara, serta mencatat data secara terukur.
+              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#334155' }}>
+                Perangkat ini dipasang langsung pada wadah penyimpanan ikan yang sudah dimiliki nelayan tanpa perlu merombak fisik kapal. Memantau suhu secara real-time, memberi peringatan dini visual &amp; audio, serta mencatat data telemetri secara terukur.
               </p>
             </div>
           </div>
@@ -357,54 +407,76 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          5. SECTION: HARDWARE TO CLOUD ARCHITECTURE
+          5. SECTION: ARSITEKTUR SISTEM & CARA KERJA (White Background)
           ================================================== */}
-      <section style={{ padding: '80px 0', borderTop: '1px solid rgba(225, 239, 246, 0.08)' }}>
+      <section style={{ padding: '80px 0', background: '#FFFFFF', borderTop: '1px solid #E2E8F0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 50px' }}>
-            <span className="eyebrow" style={{ color: '#00A3C4' }}>3. ARSITEKTUR SISTEM &amp; CARA KERJA</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
+            <span className="eyebrow" style={{ color: '#0284C7' }}>
+              ARSITEKTUR SISTEM &amp; CARA KERJA
+            </span>
+            <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
               Hardware to Cloud: Andal Tanpa Sinyal Internet
             </h2>
-            <p style={{ fontSize: '14.5px', color: '#94A3B8', marginTop: '10px' }}>
-              Dirancang dengan kapabilitas <em>Offline-First</em> yang kokoh untuk kondisi ekstrem di tengah laut.
+            <p style={{ fontSize: '15px', color: '#64748B', marginTop: '12px' }}>
+              Dirancang dengan kapabilitas <em>Offline-First</em> yang tangguh untuk menghadapi kondisi ekstrem di tengah samudra.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
             {/* Step 1 */}
-            <div style={{ background: 'rgba(15, 38, 54, 0.65)', border: '1px solid rgba(125, 220, 232, 0.15)', borderRadius: '14px', padding: '24px' }}>
-              <div style={{ color: '#7DDCE8', fontSize: '13px', fontWeight: 800, marginBottom: '8px' }}>TAHAP 01</div>
-              <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#FFFFFF', marginBottom: '10px' }}>Input Sensor DS18B20 &amp; ESP32</h4>
-              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6 }}>
-                Sensor industri waterproof DS18B20 membaca suhu palka es secara berkala. Data mentah diproses lokal oleh mikrokontroler ESP32 berkemampuan tinggi.
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
+              <Thermometer size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <p style={{ color: '#0284C7', fontSize: '12px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px' }}>
+                INPUT TELEMETRI
+              </p>
+              <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
+                Sensor DS18B20 &amp; ESP32
+              </h4>
+              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.65 }}>
+                Sensor industri tahan air (probe DS18B20 presisi tinggi ±0.5°C) membaca temperatur palka secara berkala. Pemrosesan awal dilakukan lokal oleh mikrokontroler ESP32 hemat energi.
               </p>
             </div>
 
             {/* Step 2 */}
-            <div style={{ background: 'rgba(15, 38, 54, 0.65)', border: '1px solid rgba(125, 220, 232, 0.15)', borderRadius: '14px', padding: '24px' }}>
-              <div style={{ color: '#7DDCE8', fontSize: '13px', fontWeight: 800, marginBottom: '8px' }}>TAHAP 02</div>
-              <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#FFFFFF', marginBottom: '10px' }}>Display LCD &amp; Alarm Peringatan</h4>
-              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6 }}>
-                Layar LCD 16x2 I2C menampilkan suhu seketika pada awak kapal. LED RGB dan Buzzer aktif memberi alarm instan jika suhu melampaui ambang batas aman.
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
+              <Bell size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <p style={{ color: '#0284C7', fontSize: '12px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px' }}>
+                INDIKATOR LOKAL
+              </p>
+              <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
+                Display LCD &amp; Alarm Peringatan
+              </h4>
+              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.65 }}>
+                Layar LCD 16x2 I2C menampilkan nilai suhu seketika pada awak kapal di palka. Buzzer audio aktif dan indikator visual memberi peringatan instan jika suhu melampaui batas aman.
               </p>
             </div>
 
             {/* Step 3 */}
-            <div style={{ background: 'rgba(15, 38, 54, 0.65)', border: '1px solid rgba(125, 220, 232, 0.15)', borderRadius: '14px', padding: '24px' }}>
-              <div style={{ color: '#7DDCE8', fontSize: '13px', fontWeight: 800, marginBottom: '8px' }}>TAHAP 03</div>
-              <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#FFFFFF', marginBottom: '10px' }}>Pencatatan Offline RTC &amp; MicroSD</h4>
-              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6 }}>
-                Modul RTC DS3231 memberi penanda waktu akurat, sementara slot MicroSD menyimpan seluruh riwayat suhu secara lokal saat kapal berlayar tanpa sinyal internet.
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
+              <Clock size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <p style={{ color: '#0284C7', fontSize: '12px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px' }}>
+                OFFLINE-FIRST
+              </p>
+              <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
+                Pencatatan RTC &amp; MicroSD
+              </h4>
+              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.65 }}>
+                Modul RTC DS3231 memberi penanda waktu presisi tanpa internet, sementara slot MicroSD FAT32 menyimpan riwayat data secara kontinu tanpa risiko kehilangan data saat melaut lepas.
               </p>
             </div>
 
             {/* Step 4 */}
-            <div style={{ background: 'rgba(15, 38, 54, 0.65)', border: '1px solid rgba(125, 220, 232, 0.15)', borderRadius: '14px', padding: '24px' }}>
-              <div style={{ color: '#7DDCE8', fontSize: '13px', fontWeight: 800, marginBottom: '8px' }}>TAHAP 04</div>
-              <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#FFFFFF', marginBottom: '10px' }}>Sinkronisasi Cloud &amp; Web Next.js</h4>
-              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6 }}>
-                Begitu mendeteksi jaringan Wi-Fi di pelabuhan, data tersinkronisasi otomatis ke cloud. Pengguna memantau grafik tren 24 jam via Dashboard Web Next.js.
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
+              <Server size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <p style={{ color: '#0284C7', fontSize: '12px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px' }}>
+                CLOUD SYNC
+              </p>
+              <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
+                Sinkronisasi Cloud &amp; Next.js
+              </h4>
+              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.65 }}>
+                Saat kapal bersandar dan mendeteksi jaringan Wi-Fi/Hotspot pelabuhan, data batch tersinkronisasi otomatis ke cloud. Pengelola TPI dapat memantau grafik tren 24 jam via web.
               </p>
             </div>
           </div>
@@ -412,43 +484,64 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          6. SECTION: CORE TECHNOLOGY STACK
+          6. SECTION: CORE TECHNOLOGY STACK & CLOUD ARCHITECTURE (Soft Slate)
           ================================================== */}
-      <section style={{ padding: '70px 0', background: '#051420', borderTop: '1px solid rgba(225, 239, 246, 0.08)' }}>
+      <section style={{ padding: '80px 0', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 40px' }}>
-            <span className="eyebrow" style={{ color: '#00A3C4' }}>4. CORE TECHNOLOGY STACK &amp; CDN ARCHITECTURE</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
-              Fondasi Performa &amp; Keandalan Tinggi
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 48px' }}>
+            <span className="eyebrow" style={{ color: '#0284C7' }}>
+              CORE TECHNOLOGY STACK &amp; CLOUD ARCHITECTURE
+            </span>
+            <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
+              Fondasi Performa &amp; Keandalan Skala Industri
             </h2>
+            <p style={{ fontSize: '15px', color: '#64748B', marginTop: '12px' }}>
+              Arsitektur hibrida modern yang menggabungkan keandalan komputasi tepi (*edge hardware*) dengan skalabilitas komputasi awan.
+            </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
-            <div style={{ background: 'rgba(11, 45, 66, 0.45)', border: '1px solid rgba(125, 220, 232, 0.15)', borderRadius: '12px', padding: '20px' }}>
-              <h4 style={{ color: '#7DDCE8', fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Next.js App Router</h4>
-              <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: 1.6 }}>
-                Fondasi aplikasi web performa tinggi dengan Server Components dan code-splitting dinamis (0 CLS, minimal TBT).
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+            {/* Tech 1: Next.js 15 App Router */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
+              <Box size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
+                Next.js 15 App Router &amp; Server Components
+              </h4>
+              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.7 }}>
+                Fondasi aplikasi web performa tinggi dengan React Server Components (RSC) untuk streaming telemetri instan, code-splitting dinamis, serta optimasi bundle yang mengeliminasi Total Blocking Time (TBT) dan Cumulative Layout Shift (CLS).
               </p>
             </div>
 
-            <div style={{ background: 'rgba(11, 45, 66, 0.45)', border: '1px solid rgba(125, 220, 232, 0.15)', borderRadius: '12px', padding: '20px' }}>
-              <h4 style={{ color: '#7DDCE8', fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Tailwind Styling Engine</h4>
-              <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: 1.6 }}>
-                Antarmuka dark-mode korporat yang responsif, terkalibrasi, dan ringan untuk peramban desktop maupun ponsel nelayan.
+            {/* Tech 2: Supabase Realtime Database */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
+              <Server size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
+                Supabase &amp; Real-Time Data Pipeline
+              </h4>
+              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.7 }}>
+                Infrastruktur basis data relasional enterprise berbasis PostgreSQL yang dilengkapi otentikasi aman berbasis Row Level Security (RLS) serta channel WebSocket real-time untuk pembaruan status suhu otomatis tanpa refresh.
               </p>
             </div>
 
-            <div style={{ background: 'rgba(11, 45, 66, 0.45)', border: '1px solid rgba(125, 220, 232, 0.15)', borderRadius: '12px', padding: '20px' }}>
-              <h4 style={{ color: '#7DDCE8', fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Inter &amp; Plus Jakarta Sans</h4>
-              <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: 1.6 }}>
-                Tipografi standar enterprise dengan keterbacaan tingkat tinggi di bawah terik matahari maupun pencahayaan minim palka.
+            {/* Tech 3: ESP32 IoT Firmware */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
+              <Settings size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
+                Dual-Mode IoT Firmware (ESP32)
+              </h4>
+              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.7 }}>
+                Firmware C++ mikrokontroler teroptimasi dengan mekanisme fault-tolerance tinggi: pencatatan lokal pada MicroSD saat di luar jangkauan jaringan, dan transmisi batch otomatis aman seketika kapal bersandar di pelabuhan.
               </p>
             </div>
 
-            <div style={{ background: 'rgba(11, 45, 66, 0.45)', border: '1px solid rgba(125, 220, 232, 0.15)', borderRadius: '12px', padding: '20px' }}>
-              <h4 style={{ color: '#7DDCE8', fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>Interactive Telemetry</h4>
-              <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: 1.6 }}>
-                Visualisasi tren suhu historis 24 jam dengan filter rentang waktu interaktif untuk evaluasi mutu tangkapan.
+            {/* Tech 4: Tailwind Design System */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
+              <TrendingUp size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
+                Tailwind CSS &amp; Visual Design System
+              </h4>
+              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.7 }}>
+                Antarmuka visual terkalibrasi dengan tipografi modern Plus Jakarta Sans, menjamin keterbacaan data grafik telemetri tetap tajam dan ergonomis di bawah terik matahari pantai maupun pencahayaan minim.
               </p>
             </div>
           </div>
@@ -456,17 +549,19 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          7. SECTION: THE ENGINEERING TEAM (SAGIT FATURRAKHMAN)
+          7. SECTION: THE ENGINEERING TEAM (Clean Profile Card, No Text Overlay)
           ================================================== */}
-      <section style={{ padding: '90px 0', borderTop: '1px solid rgba(225, 239, 246, 0.08)' }}>
+      <section style={{ padding: '90px 0', background: '#FFFFFF', borderTop: '1px solid #E2E8F0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 50px' }}>
-            <span className="eyebrow" style={{ color: '#00A3C4' }}>5. THE ENGINEERING TEAM</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
+            <span className="eyebrow" style={{ color: '#0284C7' }}>
+              THE ENGINEERING TEAM
+            </span>
+            <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
               Profil Pengembang Utama
             </h2>
-            <p style={{ fontSize: '14.5px', color: '#94A3B8', marginTop: '10px' }}>
-              Di balik inovasi arsitektur dan ekosistem digital TEMBOX.
+            <p style={{ fontSize: '15px', color: '#64748B', marginTop: '12px' }}>
+              Dedikasi rekayasa perangkat lunak dan teknologi IoT untuk kemandirian sektor maritim Indonesia.
             </p>
           </div>
 
@@ -474,109 +569,88 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             style={{
               maxWidth: '920px',
               margin: '0 auto',
-              background: 'linear-gradient(135deg, rgba(15, 38, 54, 0.85) 0%, rgba(7, 26, 39, 0.95) 100%)',
-              border: '1px solid rgba(125, 220, 232, 0.3)',
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
               borderRadius: '20px',
               overflow: 'hidden',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
+              boxShadow: '0 20px 45px -10px rgba(11, 45, 66, 0.08)',
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
               gap: '0',
             }}
           >
-            {/* Left: 3:4 Portrait Image */}
+            {/* Left: 3:4 Portrait Image (Clean, No Text Overlays) */}
             <div
               style={{
                 position: 'relative',
-                minHeight: '420px',
-                background: '#0B2D42',
+                minHeight: '440px',
+                background: '#F1F5F9',
                 overflow: 'hidden',
               }}
             >
-              <Image
-                src={sagitPhoto}
-                alt="Sagit Faturrakhman - Lead Systems Architect & Full-Stack/IoT Engineer"
-                fill
-                sizes="(max-width: 768px) 100vw, 420px"
+              <img
+                src={devPhoto}
+                onError={() => {
+                  if (devPhoto !== '/Sagit-Faturrakhman.jpg') {
+                    setDevPhoto('/Sagit-Faturrakhman.jpg');
+                  }
+                }}
+                alt="Sagit Faturrakhman - Full-Stack & IoT Engineer"
                 style={{
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'cover',
-                  objectPosition: 'center 50%',
+                  objectPosition: 'center 40%',
+                  display: 'block',
                 }}
               />
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(to top, rgba(7, 26, 39, 0.8) 0%, rgba(7, 26, 39, 0) 50%)',
-                  pointerEvents: 'none',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '20px',
-                  left: '20px',
-                  right: '20px',
-                  background: 'rgba(7, 26, 39, 0.85)',
-                  backdropFilter: 'blur(8px)',
-                  padding: '10px 16px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(125, 220, 232, 0.3)',
-                }}
-              >
-                <span style={{ fontSize: '11px', color: '#7DDCE8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  LEAD SYSTEMS ARCHITECT
-                </span>
-                <h4 style={{ fontSize: '15px', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                  Sagit Faturrakhman
-                </h4>
-              </div>
             </div>
 
             {/* Right: Bio & Profile Details */}
-            <div style={{ padding: '36px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ marginBottom: '18px' }}>
-                <span
+            <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ marginBottom: '20px' }}>
+                {/* Clean Typography Label without box/pill */}
+                <p
                   style={{
-                    display: 'inline-block',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: '#7DDCE8',
-                    background: 'rgba(125, 220, 232, 0.12)',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: '#0284C7',
                     marginBottom: '8px',
                   }}
                 >
                   FULL-STACK &amp; IOT ENGINEER
-                </span>
-                <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#FFFFFF', marginBottom: '4px' }}>
+                </p>
+                <h3 style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
                   Sagit Faturrakhman
                 </h3>
-                <p style={{ fontSize: '13px', color: '#94A3B8' }}>
+                <p style={{ fontSize: '14px', color: '#334155', fontWeight: 600, marginBottom: '2px' }}>
                   NPM: <strong>12046124006</strong> • S1 Sistem Informasi
                 </p>
-                <p style={{ fontSize: '13px', color: '#64748B' }}>
+                <p style={{ fontSize: '13.5px', color: '#64748B' }}>
                   Fakultas Teknologi dan Bisnis — Universitas Bakti Tunas Husada Tasikmalaya
                 </p>
               </div>
 
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#CBD5E1', marginBottom: '22px' }}>
+              <p style={{ fontSize: '14.5px', lineHeight: 1.75, color: '#475569', marginBottom: '16px' }}>
                 Menggabungkan pemahaman mendalam antara logika bisnis sistem informasi korporat, pengembangan antarmuka
-                web modern (Frontend/Backend Next.js), hingga perancangan integrasi mikrokontroler dan telemetri data sensor IoT.
-                Berdedikasi penuh untuk menghadirkan solusi teknologi terapan yang memberikan dampak nyata bagi pemberdayaan sektor maritim nasional.
+                web modern (Next.js 15, Supabase, Tailwind CSS), hingga perancangan integrasi mikrokontroler dan telemetri data sensor IoT.
+              </p>
+              <p style={{ fontSize: '14.5px', lineHeight: 1.75, color: '#475569', marginBottom: '24px' }}>
+                Berdedikasi penuh untuk menghadirkan solusi teknologi terapan yang memberikan dampak nyata bagi pemberdayaan nelayan dan peningkatan kualitas hasil tangkapan laut nasional.
               </p>
 
               {/* Motto Banner */}
               <div
                 style={{
-                  background: 'rgba(2, 132, 199, 0.15)',
-                  borderLeft: '4px solid #7DDCE8',
+                  background: '#F0F9FF',
+                  borderLeft: '4px solid #0284C7',
                   borderRadius: '0 8px 8px 0',
-                  padding: '14px 18px',
+                  padding: '16px 20px',
                 }}
               >
-                <p style={{ fontSize: '15px', fontStyle: 'italic', fontWeight: 700, color: '#7DDCE8', margin: 0 }}>
+                <p style={{ fontSize: '15px', fontStyle: 'italic', fontWeight: 700, color: '#0369A1', margin: 0 }}>
                   &ldquo;Untuk Nelayan, Untuk Laut Kita.&rdquo;
                 </p>
               </div>
@@ -586,9 +660,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          8. FOOTER (Strictly Consistent with Landing Page)
+          8. FOOTER (Consistent Corporate Dark Navy Anchor)
           ================================================== */}
-      <footer className="site-footer" style={{ borderTop: '1px solid rgba(225, 239, 246, 0.08)' }}>
+      <footer className="site-footer" style={{ background: '#071A27', color: '#E2E8F0', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div className="container">
           <div className="footer-top">
             <div className="footer-brand">
@@ -602,14 +676,14 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 decoding="async"
                 style={{ width: '130px', height: '34px', objectFit: 'contain' }}
               />
-              <p className="footer-tagline">Fresh Catch, Better Tomorrow.</p>
+              <p className="footer-tagline" style={{ color: '#94A3B8' }}>Fresh Catch, Better Tomorrow.</p>
             </div>
 
             <div className="footer-nav">
-              <Link href="/#vision" onClick={(e) => handleNav('home', e)} className="footer-link">
+              <Link href="/#vision" onClick={(e) => handleNav('home', e)} className="footer-link" style={{ color: '#CBD5E1' }}>
                 Contact
               </Link>
-              <Link href="/about" className="footer-link" style={{ color: '#0284C7' }}>
+              <Link href="/about" className="footer-link" style={{ color: '#7DDCE8' }}>
                 About
               </Link>
             </div>
@@ -638,8 +712,8 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             </div>
           </div>
 
-          <div className="footer-bottom">
-            <p>© 2025 TEMBOX. All rights reserved.</p>
+          <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <p style={{ color: '#64748B' }}>© 2025 TEMBOX. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -648,4 +722,3 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
 };
 
 export default AboutView;
-
