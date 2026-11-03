@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, ArrowLeft, Check } from './Icons';
+import { User, Mail, Lock, ArrowLeft, Check, ShieldCheck } from './Icons';
+import OtpInput from './OtpInput';
 
 // Media assets
 import heroVideoRaw from '../../src/assets/Video/Nelayan-kapal-Horizontal.mp4';
@@ -32,28 +33,61 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   onNavigateLogin,
   onBackHome,
 }) => {
+  // Step 1: 'form' -> Step 2: 'otp' -> Step 3: 'success'
+  const [step, setStep] = useState<'form' | 'otp' | 'success'>('form');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [terms, setTerms] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Step 1: Submit Registration Form -> Proceed to OTP
+  const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+
     if (password !== confirmPassword) {
-      alert('Password dan Konfirmasi Password tidak cocok!');
+      setErrorMsg('Password dan Konfirmasi Password tidak cocok!');
       return;
     }
+
+    if (password.length < 8) {
+      setErrorMsg('Password minimal harus 8 karakter!');
+      return;
+    }
+
+    if (!terms) {
+      setErrorMsg('Anda harus menyetujui syarat & ketentuan TEMBOX.');
+      return;
+    }
+
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      setIsSuccess(true);
-      if (onSuccess) {
-        onSuccess();
-      }
-    }, 400);
+      setStep('otp'); // Automatically advance to 6-digit OTP verification
+    }, 500);
+  };
+
+  // Step 2: Verify OTP
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpError('');
+
+    if (otp.length < 6) {
+      setOtpError('Masukkan 6 digit kode OTP yang lengkap.');
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setStep('success'); // Mark account verified & active
+    }, 600);
   };
 
   return (
@@ -108,7 +142,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             </span>
           </Link>
           <p className="login-brand-tagline">
-            Pantau kondisi penyimpanan ikan Anda secara real-time.
+            Bergabunglah dengan ekosistem pemantauan hasil tangkapan laut modern.
           </p>
         </div>
 
@@ -120,46 +154,29 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
       {/* Right Form Pane */}
       <div className="login-right-pane">
         <div className="login-form-box">
-          {isSuccess ? (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div
-                style={{
-                  width: '58px',
-                  height: '58px',
-                  borderRadius: '50%',
-                  background: '#EAF8FF',
-                  color: '#0284C7',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '16px',
-                }}
-              >
-                <Check size={28} />
-              </div>
-              <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-ocean)', marginBottom: '6px' }}>
-                Akun siap digunakan
-              </h3>
-              <p style={{ fontSize: '13.5px', color: '#64748B', marginBottom: '24px' }}>
-                Silakan masuk untuk melanjutkan ke dashboard.
-              </p>
-              <button
-                type="button"
-                className="btn-primary-block"
-                onClick={() => {
-                  if (onNavigateLogin) onNavigateLogin();
-                  else window.location.href = '/login';
-                }}
-              >
-                <span>Masuk ke TEMBOX</span>
-              </button>
-            </div>
-          ) : (
+          {/* STEP 1: Registration Input Form */}
+          {step === 'form' && (
             <>
               <h2 className="login-title">Buat Akun</h2>
               <p className="login-desc">Mulai menggunakan sistem monitoring TEMBOX.</p>
 
-              <form onSubmit={handleSubmit}>
+              {errorMsg && (
+                <div
+                  style={{
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FCA5A5',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    marginBottom: '16px',
+                    color: '#B91C1C',
+                    fontSize: '13px',
+                  }}
+                >
+                  {errorMsg}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmitForm}>
                 <div className="form-group">
                   <label className="form-label" htmlFor="regFullName">Nama Lengkap</label>
                   <div className="input-icon-wrap">
@@ -179,6 +196,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 <div className="form-group">
                   <label className="form-label" htmlFor="regEmail">Email</label>
                   <div className="input-icon-wrap">
+                    <Mail size={16} className="input-icon" />
                     <input
                       type="email"
                       id="regEmail"
@@ -187,7 +205,6 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      style={{ paddingLeft: '14px' }}
                     />
                   </div>
                 </div>
@@ -195,31 +212,41 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 <div className="form-group">
                   <label className="form-label" htmlFor="regPassword">Password</label>
                   <div className="input-icon-wrap">
+                    <Lock size={16} className="input-icon" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       id="regPassword"
                       className="form-input"
                       placeholder="Minimal 8 karakter"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      style={{ paddingLeft: '14px' }}
                     />
+                    <button
+                      type="button"
+                      className="input-toggle-pwd"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label="Toggle password visibility"
+                    >
+                      <span style={{ fontSize: '11px', color: '#64748B' }}>
+                        {showPassword ? 'Hide' : 'Show'}
+                      </span>
+                    </button>
                   </div>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label" htmlFor="regConfirmPassword">Konfirmasi Password</label>
                   <div className="input-icon-wrap">
+                    <Lock size={16} className="input-icon" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       id="regConfirmPassword"
                       className="form-input"
                       placeholder="Ulangi password"
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      style={{ paddingLeft: '14px' }}
                     />
                   </div>
                 </div>
@@ -238,7 +265,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 </div>
 
                 <button type="submit" className="btn-primary-block" disabled={loading}>
-                  <span>{loading ? 'Memproses...' : 'Buat Akun'}</span>
+                  <span>{loading ? 'Memproses...' : 'Lanjutkan Verifikasi'}</span>
                 </button>
               </form>
 
@@ -257,45 +284,154 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                   <Link href="/login" className="form-link">Masuk</Link>
                 )}
               </p>
+            </>
+          )}
+
+          {/* STEP 2: 6-Digit OTP Verification Form */}
+          {step === 'otp' && (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+                <div
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    background: '#EAF8FF',
+                    color: '#0284C7',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <ShieldCheck size={28} />
+                </div>
+                <h2 className="login-title" style={{ fontSize: '24px' }}>Verifikasi Email</h2>
+                <p className="login-desc" style={{ marginBottom: '0' }}>
+                  Kode OTP 6 digit telah dikirim ke <strong style={{ color: '#0B2D42' }}>{email}</strong>.
+                </p>
+              </div>
+
+              <form onSubmit={handleVerifyOtp}>
+                <div style={{ marginBottom: '20px' }}>
+                  <OtpInput
+                    value={otp}
+                    onChange={(val) => {
+                      setOtp(val);
+                      setOtpError('');
+                    }}
+                    error={otpError}
+                    onResend={() => {
+                      setOtp('');
+                      setOtpError('');
+                    }}
+                  />
+                </div>
+
+                <button type="submit" className="btn-primary-block" disabled={loading}>
+                  <span>{loading ? 'Memverifikasi...' : 'Verifikasi &amp; Aktifkan Akun'}</span>
+                </button>
+              </form>
 
               <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                {onBackHome ? (
-                  <button
-                    type="button"
-                    onClick={onBackHome}
-                    style={{
-                      fontSize: '12.5px',
-                      color: '#64748B',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <ArrowLeft size={14} />
-                    <span>Kembali ke TEMBOX</span>
-                  </button>
-                ) : (
-                  <Link
-                    href="/"
-                    style={{
-                      fontSize: '12.5px',
-                      color: '#64748B',
-                      textDecoration: 'none',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <ArrowLeft size={14} />
-                    <span>Kembali ke TEMBOX</span>
-                  </Link>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setStep('form')}
+                  style={{
+                    fontSize: '12.5px',
+                    color: '#64748B',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <ArrowLeft size={13} />
+                  <span>Ubah data pendaftaran</span>
+                </button>
               </div>
             </>
           )}
+
+          {/* STEP 3: Success Confirmation */}
+          {step === 'success' && (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div
+                style={{
+                  width: '58px',
+                  height: '58px',
+                  borderRadius: '50%',
+                  background: '#EAF8FF',
+                  color: '#0284C7',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '16px',
+                }}
+              >
+                <Check size={28} />
+              </div>
+              <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-ocean)', marginBottom: '6px' }}>
+                Akun Berhasil Diaktifkan!
+              </h3>
+              <p style={{ fontSize: '13.5px', color: '#64748B', marginBottom: '24px' }}>
+                Selamat datang di TEMBOX. Akun Anda siap digunakan untuk memantau data suhu palka secara real-time.
+              </p>
+              <button
+                type="button"
+                className="btn-primary-block"
+                onClick={() => {
+                  if (onSuccess) {
+                    onSuccess();
+                  } else {
+                    window.location.href = '/dashboard';
+                  }
+                }}
+              >
+                <span>Lanjut ke Dashboard</span>
+              </button>
+            </div>
+          )}
+
+          {/* Return to Home link */}
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            {onBackHome ? (
+              <button
+                type="button"
+                onClick={onBackHome}
+                style={{
+                  fontSize: '12.5px',
+                  color: '#64748B',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <ArrowLeft size={14} />
+                <span>Kembali ke TEMBOX</span>
+              </button>
+            ) : (
+              <Link
+                href="/"
+                style={{
+                  fontSize: '12.5px',
+                  color: '#64748B',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <ArrowLeft size={14} />
+                <span>Kembali ke TEMBOX</span>
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </div>

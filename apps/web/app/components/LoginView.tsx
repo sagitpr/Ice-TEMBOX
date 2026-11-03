@@ -24,12 +24,14 @@ const heroBoat = getSrc(heroBoatRaw) || '/hero-boat.jpg';
 interface LoginViewProps {
   onSuccess?: () => void;
   onNavigateRegister?: () => void;
+  onNavigateForgotPassword?: () => void;
   onBackHome?: () => void;
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({
   onSuccess,
   onNavigateRegister,
+  onNavigateForgotPassword,
   onBackHome,
 }) => {
   const [email, setEmail] = useState('');
@@ -165,7 +167,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 <input type="checkbox" id="rememberMe" />
                 <span>Ingat saya</span>
               </label>
-              <span className="form-link" style={{ cursor: 'pointer' }}>
+              <span
+                className="form-link"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  if (onNavigateForgotPassword) {
+                    onNavigateForgotPassword();
+                  } else {
+                    window.location.hash = '#/forgot-password';
+                  }
+                }}
+              >
                 Lupa password?
               </span>
             </div>
