@@ -294,44 +294,6 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
           </div>
         )}
       </header>
-            }}
-          >
-            <Link
-              href="/contact"
-              className="nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{ color: '#7DDCE8', fontWeight: 700 }}
-            >
-              Contact
-            </Link>
-            <Link
-              href="/about"
-              className="nav-link"
-              onClick={(e) => { setMobileMenuOpen(false); handleNav('about', e); }}
-              style={{ color: '#E2E8F0' }}
-            >
-              About
-            </Link>
-            <hr style={{ border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }} />
-            <Link
-              href="/login"
-              className="nav-link"
-              onClick={(e) => { setMobileMenuOpen(false); handleNav('login', e); }}
-              style={{ color: '#E2E8F0' }}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="nav-link"
-              onClick={(e) => { setMobileMenuOpen(false); handleNav('register', e); }}
-              style={{ color: '#7DDCE8', fontWeight: 600 }}
-            >
-              Sign up
-            </Link>
-          </div>
-        )}
-      </header>
 
       {/* ==================================================
           2. HERO SECTION

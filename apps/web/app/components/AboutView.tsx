@@ -670,7 +670,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
               <Link href="/kategori/monitoring-suhu-palka-ikan" className="footer-link" style={{ color: '#CBD5E1' }}>
                 Kategori
               </Link>
-              <Link href="/contact" onClick={(e) => handleNav('contact', e)} className="footer-link" style={{ color: '#CBD5E1' }}>
+              <Link href="/contact" className="footer-link" style={{ color: '#CBD5E1' }}>
                 Contact
               </Link>
               <Link href="/about" className="footer-link" style={{ color: '#7DDCE8' }}>
