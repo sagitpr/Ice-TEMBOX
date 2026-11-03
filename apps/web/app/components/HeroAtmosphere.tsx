@@ -83,7 +83,7 @@ export const HeroAtmosphere: React.FC = () => {
       // Animation Loop
       let clock = 0;
       const animate = () => {
-        if (isDisposed) return;
+        if (isDisposed || !renderer) return;
         clock += 0.01;
 
         currentX += (targetX - currentX) * 0.035;
@@ -103,7 +103,9 @@ export const HeroAtmosphere: React.FC = () => {
           wavePos.needsUpdate = true;
         }
 
-        renderer.render(scene, camera);
+        if (renderer) {
+          renderer.render(scene, camera);
+        }
         animationFrameId = requestAnimationFrame(animate);
       };
 
@@ -112,6 +114,8 @@ export const HeroAtmosphere: React.FC = () => {
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('resize', handleResize);
+        waveGeometry.dispose();
+        waveMaterial.dispose();
       };
     };
 
@@ -150,4 +154,3 @@ export const HeroAtmosphere: React.FC = () => {
 };
 
 export default HeroAtmosphere;
-

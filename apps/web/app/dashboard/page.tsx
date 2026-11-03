@@ -33,12 +33,8 @@ const PengaturanView = dynamic(() => import('../components/PengaturanView'), {
   loading: () => <SkeletonLoader type="table" />,
 });
 
-interface DashboardPageProps {
-  initialTab?: string;
-}
-
-export default function DashboardPage({ initialTab = 'dashboard' }: DashboardPageProps) {
-  const [currentTab, setCurrentTab] = useState(initialTab);
+export default function DashboardPage() {
+  const [currentTab, setCurrentTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 

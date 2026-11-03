@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 
 // Existing local assets
 import box1ImgRaw from '../../src/assets/Box-1.png';

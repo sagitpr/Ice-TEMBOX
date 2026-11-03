@@ -36,7 +36,7 @@ export const IceTemboxLogoSvg: React.FC<{ size?: number; className?: string }> =
 );
 
 interface SkeletonProps {
-  type?: 'metrics' | 'chart' | 'boxes' | 'custom';
+  type?: 'metrics' | 'chart' | 'boxes' | 'table' | 'custom';
   height?: number | string;
   count?: number;
 }
@@ -154,6 +154,44 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
     );
   }
 
+  if (type === 'table') {
+    return (
+      <div
+        className="dashboard-panel-card skeleton-container"
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          minHeight: height || '280px',
+          backgroundColor: '#F8FAFC',
+          borderColor: '#E2EDF4',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+        }}
+        aria-busy="true"
+        aria-label="Memuat data tabel"
+      >
+        <div className="skeleton-shimmer" />
+        <div className="skeleton-logo-pulse">
+          <IceTemboxLogoSvg size={40} />
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#94A3B8',
+              letterSpacing: '0.5px',
+              marginTop: '8px',
+            }}
+          >
+            MEMUAT DATA...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="skeleton-container"
@@ -179,4 +217,3 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
 };
 
 export default SkeletonLoader;
-
