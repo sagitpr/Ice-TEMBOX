@@ -4,36 +4,58 @@ import fs from 'node:fs';
 import path from 'node:path';
 import './globals.css';
 
-// Server-side asset sync for public media
+// Server-side asset sync for public media across standalone and monorepo setups
 try {
-  const publicDir = path.resolve(process.cwd(), 'public');
-  const assetsDir = path.resolve(process.cwd(), 'src/assets');
-  if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+  const possibleRoots = [
+    path.resolve(process.cwd(), 'apps/web'),
+    process.cwd(),
+  ];
 
-  const logoSrc = path.join(assetsDir, 'LogoTembox-Horizontal.png');
-  const logoDest = path.join(publicDir, 'LogoTembox-Horizontal.png');
-  if (fs.existsSync(logoSrc) && !fs.existsSync(logoDest)) {
-    fs.copyFileSync(logoSrc, logoDest);
-  }
+  for (const root of possibleRoots) {
+    const assetsDir = path.join(root, 'src', 'assets');
+    if (fs.existsSync(assetsDir)) {
+      const targetPublicDirs = [
+        path.join(root, 'public'),
+        path.resolve(process.cwd(), 'apps/web/public'),
+        path.resolve(process.cwd(), 'public'),
+      ];
 
-  const penangkapSrc = path.join(assetsDir, 'Penangkap-ikan.jpg');
-  const penangkapDest = path.join(publicDir, 'Penangkap-ikan.jpg');
-  if (fs.existsSync(penangkapSrc) && !fs.existsSync(penangkapDest)) {
-    fs.copyFileSync(penangkapSrc, penangkapDest);
-  }
+      for (const pub of targetPublicDirs) {
+        if (!fs.existsSync(pub)) {
+          fs.mkdirSync(pub, { recursive: true });
+        }
 
-  const sagitRealSrc = path.join(assetsDir, 'Sagit-Faturrakhman.jpg');
-  const sagitRealDest = path.join(publicDir, 'Sagit-Faturrakhman.jpg');
-  if (fs.existsSync(sagitRealSrc) && !fs.existsSync(sagitRealDest)) {
-    fs.copyFileSync(sagitRealSrc, sagitRealDest);
-  }
+        const filesToSync = [
+          'Favicon.png',
+          'LogoTembox-Horizontal.png',
+          'Penangkap-ikan.jpg',
+          'hero-boat.jpg',
+          'Sagit-Faturrakhman.jpg',
+        ];
 
-  const sagitArtifact = 'C:\\Users\\ThinkPad\\.gemini\\antigravity\\brain\\b7931393-0445-4c26-b05c-d441be92bba2\\sagit_faturrakhman_headshot_1793670941210.jpg';
-  const sagitDest = path.join(publicDir, 'sagit.png');
-  const sagitAssetsDest = path.join(assetsDir, 'sagit.png');
-  if (fs.existsSync(sagitArtifact)) {
-    if (!fs.existsSync(sagitDest)) fs.copyFileSync(sagitArtifact, sagitDest);
-    if (!fs.existsSync(sagitAssetsDest)) fs.copyFileSync(sagitArtifact, sagitAssetsDest);
+        for (const file of filesToSync) {
+          const s = path.join(assetsDir, file);
+          const d = path.join(pub, file);
+          if (fs.existsSync(s) && !fs.existsSync(d)) {
+            fs.copyFileSync(s, d);
+          }
+        }
+
+        // Also check Video directory
+        const videoSrc = path.join(assetsDir, 'Video', 'Nelayan-kapal-Horizontal.mp4');
+        const videoDest = path.join(pub, 'Nelayan-kapal-Horizontal.mp4');
+        if (fs.existsSync(videoSrc) && !fs.existsSync(videoDest)) {
+          fs.copyFileSync(videoSrc, videoDest);
+        }
+
+        // Sync Sagit profile photo to sagit.png as well
+        const sagitSrc = path.join(assetsDir, 'Sagit-Faturrakhman.jpg');
+        const sagitPngDest = path.join(pub, 'sagit.png');
+        if (fs.existsSync(sagitSrc) && !fs.existsSync(sagitPngDest)) {
+          fs.copyFileSync(sagitSrc, sagitPngDest);
+        }
+      }
+    }
   }
 } catch {
   // Silent fallback

@@ -2,31 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import {
-  Thermometer,
-  Snowflake,
-  Server,
-  Clock,
-  ShieldCheck,
-  TrendingUp,
-  Box,
-  Check,
-  User,
-  ArrowRight,
-  Info,
-  Bell,
-  Settings,
-  RefreshCw
-} from './Icons';
 
 // Static public assets (Direct root path for Next.js public directory)
 const logoHorizontal = '/LogoTembox-Horizontal.png';
-const penangkapIkan = '/Penangkap-ikan.jpg';
 
 export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [heroBg, setHeroBg] = useState('/Penangkap-ikan.jpg');
   const [devPhoto, setDevPhoto] = useState('/sagit.png');
 
   const handleNav = (view: string, e: React.MouseEvent) => {
@@ -178,56 +161,57 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </header>
 
       {/* ==================================================
-          2. HERO SECTION: Elegant Corporate Deep Navy with Penangkap-ikan.jpg
+          2. HERO SECTION: Penangkap-ikan.jpg with Natural Vertical Gradient (Dark-to-Light)
           ================================================== */}
       <section
         id="about-hero"
         style={{
           position: 'relative',
-          minHeight: '80vh',
+          minHeight: '82vh',
           display: 'flex',
           alignItems: 'center',
-          paddingTop: '140px',
-          paddingBottom: '100px',
+          paddingTop: '150px',
+          paddingBottom: '120px',
           overflow: 'hidden',
-          background: '#071A27',
+          backgroundColor: '#071A27',
         }}
       >
-        {/* Backdrop Image */}
-        <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
-          <Image
-            src={penangkapIkan}
-            alt="Nelayan Tradisional Sedang Memperbaiki Jaring Tangkap"
-            priority
-            fill
-            sizes="100vw"
-            quality={90}
+        {/* Backdrop Image with Reliable Fallback */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <img
+            src={heroBg}
+            onError={() => {
+              if (heroBg !== '/hero-boat.jpg') {
+                setHeroBg('/hero-boat.jpg');
+              }
+            }}
+            alt="Nelayan Tradisional Sedang Mempersiapkan Jaring di Perahu"
             style={{
+              width: '100%',
+              height: '100%',
               objectFit: 'cover',
-              objectPosition: 'center 40%',
-              opacity: 0.38,
-              filter: 'brightness(0.75) contrast(1.1)',
+              objectPosition: 'center 35%',
+              opacity: 0.55,
+              display: 'block',
+              filter: 'brightness(0.85) contrast(1.05)',
             }}
           />
-          {/* Deep Navy/Black Gradient Overlay for Maximum Text Contrast */}
+
+          {/* Natural Top-to-Bottom Vertical Gradient (No horizontal blue pileup) */}
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(90deg, rgba(7, 26, 39, 0.98) 0%, rgba(7, 26, 39, 0.92) 42%, rgba(7, 26, 39, 0.7) 72%, rgba(7, 26, 39, 0.4) 100%)',
-              backdropFilter: 'blur(1px)',
-              pointerEvents: 'none',
-            }}
-          />
-          {/* Smooth Dark-to-Light Transition Fade at the Bottom */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '160px',
-              background: 'linear-gradient(to bottom, rgba(7, 26, 39, 0) 0%, rgba(255, 255, 255, 0.7) 70%, #FFFFFF 100%)',
+              background: 'linear-gradient(180deg, rgba(7, 26, 39, 0.72) 0%, rgba(7, 26, 39, 0.82) 50%, rgba(7, 26, 39, 0.95) 78%, #FFFFFF 100%)',
               pointerEvents: 'none',
             }}
           />
@@ -244,6 +228,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 lineHeight: 1.15,
                 letterSpacing: '-0.03em',
                 marginBottom: '22px',
+                textShadow: '0 2px 10px rgba(0, 0, 0, 0.35)',
               }}
             >
               Merevolusi Rantai Pasok Maritim Melalui{' '}
@@ -252,9 +237,10 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             <p
               style={{
                 fontSize: '17px',
-                lineHeight: 1.7,
-                color: '#CBD5E1',
+                lineHeight: 1.75,
+                color: '#E2E8F0',
                 maxWidth: '640px',
+                textShadow: '0 1px 4px rgba(0, 0, 0, 0.25)',
               }}
             >
               TEMBOX hadir sebagai perwujudan visi masa depan industri perikanan yang cerdas,
@@ -267,7 +253,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          3. SECTION: VISI & PENGANTAR KORPORAT (Clean Light Mode)
+          3. SECTION: VISI & PENGANTAR KORPORAT (Clean Light Mode, No Icons)
           ================================================== */}
       <section style={{ padding: '80px 0', background: '#FFFFFF' }}>
         <div className="container">
@@ -292,6 +278,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+              {/* Card 1: Pure Minimalist Typography without Icons */}
               <div
                 style={{
                   background: '#F8FAFC',
@@ -301,16 +288,18 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                   boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
                 }}
               >
-                {/* Standalone Clean Icon without box wrapper */}
-                <ShieldCheck size={30} color="#0284C7" style={{ marginBottom: '14px', display: 'block' }} />
+                <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
+                  INTEGRITAS MUTU TANGKAPAN
+                </p>
                 <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
-                  Integritas Mutu Tangkapan
+                  Pengawasan Termal Presisi Tinggi
                 </h3>
                 <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.65 }}>
-                  Mencegah degradasi histamin dan pembusukan dini pada ikan dengan pengawasan termal presisi tinggi secara terus menerus.
+                  Mencegah degradasi histamin dan pembusukan dini pada ikan dengan pengawasan termal presisi tinggi secara terus menerus sepanjang pelayaran.
                 </p>
               </div>
 
+              {/* Card 2: Pure Minimalist Typography without Icons */}
               <div
                 style={{
                   background: '#F8FAFC',
@@ -320,13 +309,14 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                   boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
                 }}
               >
-                {/* Standalone Clean Icon without box wrapper */}
-                <TrendingUp size={30} color="#0284C7" style={{ marginBottom: '14px', display: 'block' }} />
+                <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
+                  DAMPAK EKONOMI MARITIM
+                </p>
                 <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
                   Dampak Ekonomi Berkelanjutan
                 </h3>
                 <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.65 }}>
-                  Meningkatkan nilai jual lelang ikan di Tempat Pelelangan Ikan (TPI) berkat bukti riwayat suhu dingin terverifikasi.
+                  Meningkatkan nilai jual lelang ikan di Tempat Pelelangan Ikan (TPI) berkat bukti riwayat suhu dingin terverifikasi dan dapat dipertanggungjawabkan.
                 </p>
               </div>
             </div>
@@ -335,7 +325,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          4. SECTION: LATAR BELAKANG & SOLUSI INOVATIF (Soft Slate Background)
+          4. SECTION: LATAR BELAKANG & SOLUSI INOVATIF (Soft Slate Background, No Icons)
           ================================================== */}
       <section style={{ padding: '80px 0', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
         <div className="container">
@@ -349,7 +339,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' }}>
-            {/* The Problem Card (Clean slate border, no aggressive red) */}
+            {/* The Problem Card (Clean slate border, no icons, no aggressive colors) */}
             <div
               style={{
                 background: '#FFFFFF',
@@ -359,9 +349,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
               }}
             >
-              {/* Standalone Clean Icon without box */}
-              <Thermometer size={30} color="#64748B" style={{ marginBottom: '14px', display: 'block' }} />
-              <p style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748B', marginBottom: '10px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: '10px' }}>
                 TANTANGAN INDUSTRI
               </p>
               <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#0F172A', marginBottom: '14px' }}>
@@ -377,19 +365,17 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
               </p>
             </div>
 
-            {/* The Solution Card (Clean brand blue accent) */}
+            {/* The Solution Card (Clean brand blue border, no icons) */}
             <div
               style={{
                 background: '#FFFFFF',
-                border: '2px solid #0284C7',
+                border: '1.5px solid #0284C7',
                 borderRadius: '18px',
                 padding: '36px',
-                boxShadow: '0 12px 30px -5px rgba(2, 132, 199, 0.12)',
+                boxShadow: '0 10px 30px -5px rgba(2, 132, 199, 0.1)',
               }}
             >
-              {/* Standalone Clean Icon without box */}
-              <Snowflake size={30} color="#0284C7" style={{ marginBottom: '14px', display: 'block' }} />
-              <p style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '10px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '10px' }}>
                 SOLUSI MODULAR TEMBOX
               </p>
               <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#0B2D42', marginBottom: '14px' }}>
@@ -407,7 +393,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          5. SECTION: ARSITEKTUR SISTEM & CARA KERJA (White Background)
+          5. SECTION: ARSITEKTUR SISTEM & CARA KERJA (White Background, No Icons)
           ================================================== */}
       <section style={{ padding: '80px 0', background: '#FFFFFF', borderTop: '1px solid #E2E8F0' }}>
         <div className="container">
@@ -426,9 +412,8 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
             {/* Step 1 */}
             <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
-              <Thermometer size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
-              <p style={{ color: '#0284C7', fontSize: '12px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px' }}>
-                INPUT TELEMETRI
+              <p style={{ color: '#0284C7', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                TAHAP 01: INPUT TELEMETRI
               </p>
               <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
                 Sensor DS18B20 &amp; ESP32
@@ -440,9 +425,8 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
 
             {/* Step 2 */}
             <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
-              <Bell size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
-              <p style={{ color: '#0284C7', fontSize: '12px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px' }}>
-                INDIKATOR LOKAL
+              <p style={{ color: '#0284C7', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                TAHAP 02: INDIKATOR LOKAL
               </p>
               <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
                 Display LCD &amp; Alarm Peringatan
@@ -454,9 +438,8 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
 
             {/* Step 3 */}
             <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
-              <Clock size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
-              <p style={{ color: '#0284C7', fontSize: '12px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px' }}>
-                OFFLINE-FIRST
+              <p style={{ color: '#0284C7', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                TAHAP 03: OFFLINE-FIRST
               </p>
               <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
                 Pencatatan RTC &amp; MicroSD
@@ -468,9 +451,8 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
 
             {/* Step 4 */}
             <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
-              <Server size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
-              <p style={{ color: '#0284C7', fontSize: '12px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px' }}>
-                CLOUD SYNC
+              <p style={{ color: '#0284C7', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                TAHAP 04: CLOUD SYNC
               </p>
               <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
                 Sinkronisasi Cloud &amp; Next.js
@@ -484,7 +466,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          6. SECTION: CORE TECHNOLOGY STACK & CLOUD ARCHITECTURE (Soft Slate)
+          6. SECTION: CORE TECHNOLOGY STACK & CLOUD ARCHITECTURE (Soft Slate, No Icons)
           ================================================== */}
       <section style={{ padding: '80px 0', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
         <div className="container">
@@ -503,7 +485,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             {/* Tech 1: Next.js 15 App Router */}
             <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
-              <Box size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
+                FRONTEND ARCHITECTURE
+              </p>
               <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
                 Next.js 15 App Router &amp; Server Components
               </h4>
@@ -514,7 +498,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
 
             {/* Tech 2: Supabase Realtime Database */}
             <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
-              <Server size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
+                DATABASE &amp; REAL-TIME
+              </p>
               <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
                 Supabase &amp; Real-Time Data Pipeline
               </h4>
@@ -525,7 +511,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
 
             {/* Tech 3: ESP32 IoT Firmware */}
             <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
-              <Settings size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
+                EDGE COMPUTING
+              </p>
               <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
                 Dual-Mode IoT Firmware (ESP32)
               </h4>
@@ -536,7 +524,9 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
 
             {/* Tech 4: Tailwind Design System */}
             <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
-              <TrendingUp size={28} color="#0284C7" style={{ marginBottom: '16px', display: 'block' }} />
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
+                DESIGN SYSTEM
+              </p>
               <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
                 Tailwind CSS &amp; Visual Design System
               </h4>
@@ -549,7 +539,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
       </section>
 
       {/* ==================================================
-          7. SECTION: THE ENGINEERING TEAM (Clean Profile Card, No Text Overlay)
+          7. SECTION: THE ENGINEERING TEAM (Clean Profile Card, No Text Overlay, No Icons)
           ================================================== */}
       <section style={{ padding: '90px 0', background: '#FFFFFF', borderTop: '1px solid #E2E8F0' }}>
         <div className="container">
@@ -609,7 +599,6 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             {/* Right: Bio & Profile Details */}
             <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{ marginBottom: '20px' }}>
-                {/* Clean Typography Label without box/pill */}
                 <p
                   style={{
                     fontSize: '12px',
