@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import Image from 'next/image';
 
 // Dynamic import for Three.js atmospheric layer (SSR false to eliminate initial bundle bloat)
 const HeroAtmosphere = dynamic(() => import('../app/components/HeroAtmosphere'), {
@@ -14,32 +16,7 @@ const LandingBelowTheFold = dynamic(() => import('../app/components/LandingBelow
   ssr: true,
 });
 
-// Local assets
-import logoHorizontalRaw from './assets/LogoTembox-Horizontal.png';
-import heroBoatRaw from './assets/hero-boat.jpg';
-import heroVideoRaw from './assets/Video/Nelayan-kapal-Horizontal.mp4';
-
-interface StaticAssetLike {
-  src?: string;
-}
-
-const getSrc = (asset: string | StaticAssetLike | unknown): string => {
-  if (typeof asset === 'string') return asset;
-  if (asset && typeof asset === 'object' && 'src' in asset) return (asset as StaticAssetLike).src || '';
-  return '';
-};
-
-const logoHorizontal = getSrc(logoHorizontalRaw);
-const heroBoat = getSrc(heroBoatRaw) || '/hero-boat.jpg';
-const heroVideo = getSrc(heroVideoRaw) || '/Nelayan-kapal-Horizontal.mp4';
-
-export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
-  const handleNav = (view: string, e: React.MouseEvent) => {
-    if (onNavigate) {
-      e.preventDefault();
-      onNavigate(view);
-    }
-  };
+export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadAtmosphere, setLoadAtmosphere] = useState(false);
@@ -62,9 +39,12 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
       };
 
       if (win.requestIdleCallback) {
-        const idleId = win.requestIdleCallback(() => {
-          setLoadAtmosphere(true);
-        }, { timeout: 2500 });
+        const idleId = win.requestIdleCallback(
+          () => {
+            setLoadAtmosphere(true);
+          },
+          { timeout: 2500 }
+        );
         return () => {
           if (win.cancelIdleCallback) win.cancelIdleCallback(idleId);
         };
@@ -83,32 +63,39 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
       <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
         <div className="container">
           <div className="header-inner">
-            <a href="#hero" className="brand-link">
-              <img
-                src={logoHorizontal}
+            <Link href="/" className="brand-link">
+              <Image
+                src="/LogoTembox-Horizontal.png"
                 alt="TEMBOX"
                 className="brand-logo-img"
                 width={140}
                 height={36}
-                fetchPriority="high"
-                decoding="sync"
+                priority
                 style={{
                   width: '140px',
                   height: '36px',
                   objectFit: 'contain',
                 }}
               />
-            </a>
+            </Link>
 
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation using native Next.js Link with automatic prefetching */}
             <nav className="header-nav">
-              <a href="/contact" onClick={(e) => handleNav('contact', e)} className="nav-link">Contact</a>
-              <a href="/about" onClick={(e) => handleNav('about', e)} className="nav-link">About</a>
+              <Link href="/contact" className="nav-link">
+                Contact
+              </Link>
+              <Link href="/about" className="nav-link">
+                About
+              </Link>
               <div className="nav-divider" />
               <div className="auth-links">
-                <a href="/login" onClick={(e) => handleNav('login', e)} className="nav-link">Sign in</a>
+                <Link href="/login" className="nav-link">
+                  Sign in
+                </Link>
                 <span className="auth-sep">|</span>
-                <a href="/register" onClick={(e) => handleNav('register', e)} className="nav-link">Sign up</a>
+                <Link href="/register" className="nav-link">
+                  Sign up
+                </Link>
               </div>
             </nav>
 
@@ -128,11 +115,35 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
         {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
           <div className="mobile-nav-menu">
-            <a href="/contact" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('contact', e); }}>Contact</a>
-            <a href="/about" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('about', e); }}>About</a>
+            <Link
+              href="/contact"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Contact
+            </Link>
+            <Link
+              href="/about"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              About
+            </Link>
             <hr style={{ border: 'none', borderTop: '1px solid #E2EDF3' }} />
-            <a href="/login" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('login', e); }}>Sign in</a>
-            <a href="/register" className="nav-link" onClick={(e) => { setMobileMenuOpen(false); handleNav('register', e); }}>Sign up</a>
+            <Link
+              href="/login"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sign up
+            </Link>
           </div>
         )}
       </header>
@@ -140,61 +151,27 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
       {/* ==================================================
           2. HERO SECTION
           ================================================== */}
-      <section id="hero" className="hero-section" style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
-        {/* Background Video Media Backdrop: Absolute position behind text (z-index: 0), pointer-events: none */}
-        <div
-          className="hero-bg-media"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 0,
-            pointerEvents: 'none',
-            overflow: 'hidden',
-          }}
-        >
-          <video
-            className="hero-video"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster={heroBoat}
+      <section
+        id="hero"
+        className="hero-section"
+        style={{
+          minHeight: '100vh',
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: 'transparent',
+        }}
+      >
+        {/* Three.js Atmospheric Canvas deferred to idle */}
+        {loadAtmosphere && (
+          <div
+            className="hero-canvas-container"
             style={{
               position: 'absolute',
               inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: '72% 52%',
-              opacity: 0.92,
-              filter: 'brightness(0.98) contrast(1.0) saturate(1.02)',
               pointerEvents: 'none',
+              zIndex: 2,
             }}
           >
-            <source src={heroVideo} type="video/mp4" />
-            <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
-            {/* Fallback image if video cannot be played */}
-            <img
-              src={heroBoat}
-              alt="Kapal Nelayan Tradisional TEMBOX"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-              }}
-            />
-          </video>
-          {/* Calming marine atmospheric gradient overlay */}
-          <div className="hero-overlay-gradient" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }} />
-        </div>
-
-        {/* Three.js Atmospheric Canvas deferred to idle */}
-        {loadAtmosphere && (
-          <div className="hero-canvas-container" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
             <HeroAtmosphere />
           </div>
         )}
@@ -202,19 +179,19 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
         {/* Soft bottom fade */}
         <div className="hero-bottom-fade" style={{ zIndex: 3 }} />
 
-        {/* Hero Content Container (z-index: 10 strictly above background video) */}
+        {/* Hero Content Container (strictly above background video) */}
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
-          {/* Shifted slightly left, no Watch Overview, no scroll indicator */}
           <div className="hero-content">
             <span className="eyebrow">SMART MONITORING FOR FRESHER CATCH</span>
             <h1 className="heading-xl hero-heading">
-              Keeping Every Catch<br />
+              Keeping Every Catch
+              <br />
               Fresh, with <span className="text-ice">TEMBOX.</span>
             </h1>
             <p className="body-lg hero-description">
-              TEMBOX adalah sistem pemantauan suhu dan kondisi penyimpanan
-              ikan secara real-time untuk menjaga kualitas hasil tangkapan
-              hingga sampai ke tangan Anda.
+              TEMBOX adalah sistem pemantauan suhu dan kondisi penyimpanan ikan
+              secara real-time untuk menjaga kualitas hasil tangkapan hingga
+              sampai ke tangan Anda.
             </p>
           </div>
         </div>

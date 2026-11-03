@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import fs from 'node:fs';
 import path from 'node:path';
+import PersistentBackgroundVideo from './components/PersistentBackgroundVideo';
 import './globals.css';
 
 // Server-side asset sync for public media across standalone and monorepo setups
@@ -138,7 +139,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={plusJakartaSans.variable}>
-      <body className={plusJakartaSans.className}>{children}</body>
+      <body className={plusJakartaSans.className}>
+        <PersistentBackgroundVideo />
+        <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+          {children}
+        </div>
+      </body>
     </html>
   );
 }

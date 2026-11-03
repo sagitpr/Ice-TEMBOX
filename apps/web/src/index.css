@@ -3141,3 +3141,37 @@ html, body {
   color: #64748B;
   margin-top: 24px;
 }
+
+/* ==================================================
+   PULSE SKELETON ANIMATIONS & GPU ACCELERATION
+   ================================================== */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* GPU Compositing Optimizations for Smooth Transitions */
+.site-header,
+.benefit-card,
+.feature-preview-box,
+.login-form-box,
+.notif-dropdown-menu,
+.ecosystem-node {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Reduce blur radius from heavy 16px/24px to performant 8px */
+.header-backdrop-blur,
+.site-header.scrolled {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}

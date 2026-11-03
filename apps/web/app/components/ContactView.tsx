@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Static public assets
 const logoHorizontal = '/LogoTembox-Horizontal.png';
@@ -172,23 +173,23 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
         style={{
           transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           background: scrolled ? 'rgba(7, 26, 39, 0.92)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(16px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
+          backdropFilter: scrolled ? 'blur(8px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(8px)' : 'none',
           borderBottom: scrolled ? '1px solid rgba(125, 220, 232, 0.15)' : 'none',
           boxShadow: scrolled ? '0 4px 20px rgba(0, 0, 0, 0.25)' : 'none',
+          willChange: 'transform',
         }}
       >
         <div className="container">
           <div className="header-inner">
-            <Link href="/" className="brand-link" onClick={(e) => handleNav('home', e)}>
-              <img
+            <Link href="/" className="brand-link">
+              <Image
                 src={logoHorizontal}
                 alt="TEMBOX"
                 className="brand-logo-img"
                 width={140}
                 height={36}
-                fetchPriority="high"
-                decoding="sync"
+                priority
                 style={{
                   width: '140px',
                   height: '36px',
@@ -198,7 +199,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
               />
             </Link>
 
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation with native Next.js automatic prefetching */}
             <nav className="header-nav">
               <Link
                 href="/contact"
@@ -209,7 +210,6 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
               </Link>
               <Link
                 href="/about"
-                onClick={(e) => handleNav('about', e)}
                 className="nav-link"
                 style={{ color: '#E2E8F0', fontWeight: 500 }}
               >
@@ -219,7 +219,6 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
               <div className="auth-links" style={{ color: '#FFFFFF' }}>
                 <Link
                   href="/login"
-                  onClick={(e) => handleNav('login', e)}
                   className="nav-link"
                   style={{ color: '#FFFFFF', fontWeight: 600 }}
                 >
@@ -228,7 +227,6 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                 <span className="auth-sep" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>|</span>
                 <Link
                   href="/register"
-                  onClick={(e) => handleNav('register', e)}
                   className="nav-link"
                   style={{ color: '#FFFFFF', fontWeight: 600 }}
                 >
@@ -258,6 +256,44 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
               background: '#0B2D42',
               borderBottom: '1px solid rgba(125, 220, 232, 0.2)',
               boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+            }}
+          >
+            <Link
+              href="/contact"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ color: '#0284C7', fontWeight: 700 }}
+            >
+              Contact
+            </Link>
+            <Link
+              href="/about"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ color: '#E2E8F0' }}
+            >
+              About
+            </Link>
+            <hr style={{ border: 'none', borderTop: '1px solid rgba(125, 220, 232, 0.2)' }} />
+            <Link
+              href="/login"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ color: '#FFFFFF' }}
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ color: '#0284C7', fontWeight: 600 }}
+            >
+              Sign up
+            </Link>
+          </div>
+        )}
+      </header>
             }}
           >
             <Link

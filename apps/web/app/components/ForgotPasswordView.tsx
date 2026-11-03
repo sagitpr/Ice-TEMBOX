@@ -2,25 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Mail, Lock, ArrowLeft, Check, KeyRound } from './Icons';
 import OtpInput from './OtpInput';
-
-// Media assets
-import heroVideoRaw from '../../src/assets/Video/Nelayan-kapal-Horizontal.mp4';
-import heroBoatRaw from '../../src/assets/hero-boat.jpg';
-
-interface StaticAssetLike {
-  src?: string;
-}
-
-const getSrc = (asset: string | StaticAssetLike | unknown): string => {
-  if (typeof asset === 'string') return asset;
-  if (asset && typeof asset === 'object' && 'src' in asset) return (asset as StaticAssetLike).src || '';
-  return '';
-};
-
-const heroVideo = getSrc(heroVideoRaw) || '/Nelayan-kapal-Horizontal.mp4';
-const heroBoat = getSrc(heroBoatRaw) || '/hero-boat.jpg';
 
 interface ForgotPasswordViewProps {
   onSuccess?: () => void;
@@ -35,6 +19,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   onBackHome,
   hideLeftPane = false,
 }) => {
+  const router = useRouter();
   // Step 1: 'email' -> Step 2: 'reset' -> Step 3: 'success'
   const [step, setStep] = useState<'email' | 'reset' | 'success'>('email');
   const [email, setEmail] = useState('');
@@ -59,7 +44,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
     setTimeout(() => {
       setLoading(false);
       setStep('reset');
-    }, 600);
+    }, 450);
   };
 
   // Step 2: Submit OTP and new password
@@ -87,11 +72,11 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
     setTimeout(() => {
       setLoading(false);
       setStep('success');
-    }, 600);
+    }, 500);
   };
 
   const rightFormPane = (
-    <div className="login-right-pane">
+    <div className="login-right-pane" style={{ background: '#FFFFFF' }}>
       <div className="login-form-box">
         {/* STEP 1: Enter Email */}
         {step === 'email' && (
@@ -119,7 +104,9 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
 
             <form onSubmit={handleRequestOtp}>
               <div className="form-group">
-                <label className="form-label" htmlFor="forgotEmail">Alamat Email Terdaftar</label>
+                <label className="form-label" htmlFor="forgotEmail">
+                  Alamat Email Terdaftar
+                </label>
                 <div className="input-icon-wrap">
                   <Mail size={16} className="input-icon" />
                   <input
@@ -140,24 +127,41 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
             </form>
 
             <div style={{ marginTop: '24px', textAlign: 'center' }}>
-              <button
-                type="button"
-                onClick={onNavigateLogin ? onNavigateLogin : () => { window.location.href = '/login'; }}
-                style={{
-                  fontSize: '13px',
-                  color: '#0284C7',
-                  background: 'none',
-                  border: 'none',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <ArrowLeft size={14} />
-                <span>Kembali ke Halaman Masuk</span>
-              </button>
+              {onNavigateLogin ? (
+                <button
+                  type="button"
+                  onClick={onNavigateLogin}
+                  style={{
+                    fontSize: '13px',
+                    color: '#0284C7',
+                    background: 'none',
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <ArrowLeft size={14} />
+                  <span>Kembali ke Halaman Masuk</span>
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  style={{
+                    fontSize: '13px',
+                    color: '#0284C7',
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <ArrowLeft size={14} />
+                  <span>Kembali ke Halaman Masuk</span>
+                </Link>
+              )}
             </div>
           </>
         )}
@@ -208,7 +212,9 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
 
               {/* New Password */}
               <div className="form-group">
-                <label className="form-label" htmlFor="resetNewPassword">Password Baru</label>
+                <label className="form-label" htmlFor="resetNewPassword">
+                  Password Baru
+                </label>
                 <div className="input-icon-wrap">
                   <Lock size={16} className="input-icon" />
                   <input
@@ -235,7 +241,9 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
 
               {/* Confirm New Password */}
               <div className="form-group">
-                <label className="form-label" htmlFor="resetConfirmPassword">Konfirmasi Password Baru</label>
+                <label className="form-label" htmlFor="resetConfirmPassword">
+                  Konfirmasi Password Baru
+                </label>
                 <div className="input-icon-wrap">
                   <Lock size={16} className="input-icon" />
                   <input
@@ -308,7 +316,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                 if (onNavigateLogin) {
                   onNavigateLogin();
                 } else {
-                  window.location.href = '/login';
+                  router.push('/login');
                 }
               }}
             >
@@ -324,32 +332,13 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
               <button
                 type="button"
                 onClick={onBackHome}
-                style={{
-                  fontSize: '12.5px',
-                  color: '#64748B',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
+                className="auth-back-link"
               >
                 <ArrowLeft size={14} />
                 <span>Kembali ke TEMBOX</span>
               </button>
             ) : (
-              <Link
-                href="/"
-                style={{
-                  fontSize: '12.5px',
-                  color: '#64748B',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
+              <Link href="/" className="auth-back-link">
                 <ArrowLeft size={14} />
                 <span>Kembali ke TEMBOX</span>
               </Link>
@@ -366,41 +355,14 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
 
   return (
     <div className="login-view-wrapper" style={{ display: 'flex' }}>
-      {/* Left Hero Pane with Background Video Backdrop */}
-      <div className="login-left-pane">
-        <video
-          className="login-media-backdrop"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          poster={heroBoat}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0.45,
-            filter: 'saturate(1.2) contrast(1.1)',
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
-        >
-          <source src={heroVideo} type="video/mp4" />
-          <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
-        </video>
-        <div
-          className="login-overlay-gradient"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
-
+      {/* Left Hero Pane: video is powered seamlessly by PersistentBackgroundVideo */}
+      <div
+        className="login-left-pane"
+        style={{
+          background: 'transparent',
+          position: 'relative',
+        }}
+      >
         <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <span

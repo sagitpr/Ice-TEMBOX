@@ -2,22 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Static public assets (Direct root path for Next.js public directory)
 const logoHorizontal = '/LogoTembox-Horizontal.png';
 
-export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
+export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [heroBg, setHeroBg] = useState('/Penangkap-ikan.jpg');
   const [devPhoto, setDevPhoto] = useState('/sagit.png');
-
-  const handleNav = (view: string, e: React.MouseEvent) => {
-    if (onNavigate) {
-      e.preventDefault();
-      onNavigate(view);
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,23 +34,23 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
         style={{
           transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           background: scrolled ? 'rgba(255, 255, 255, 0.94)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(16px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
+          backdropFilter: scrolled ? 'blur(8px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(8px)' : 'none',
           borderBottom: scrolled ? '1px solid #E2E8F0' : 'none',
           boxShadow: scrolled ? '0 4px 20px rgba(11, 45, 66, 0.05)' : 'none',
+          willChange: 'transform',
         }}
       >
         <div className="container">
           <div className="header-inner">
-            <Link href="/" className="brand-link" onClick={(e) => handleNav('home', e)}>
-              <img
+            <Link href="/" className="brand-link">
+              <Image
                 src={logoHorizontal}
                 alt="TEMBOX"
                 className="brand-logo-img"
                 width={140}
                 height={36}
-                fetchPriority="high"
-                decoding="sync"
+                priority
                 style={{
                   width: '140px',
                   height: '36px',
@@ -70,7 +64,6 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             <nav className="header-nav">
               <Link
                 href="/contact"
-                onClick={(e) => handleNav('contact', e)}
                 className="nav-link"
                 style={{ color: navTextMuted, fontWeight: 500 }}
               >
@@ -87,7 +80,6 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
               <div className="auth-links" style={{ color: navTextColor }}>
                 <Link
                   href="/login"
-                  onClick={(e) => handleNav('login', e)}
                   className="nav-link"
                   style={{ color: navTextColor, fontWeight: 600 }}
                 >
@@ -96,7 +88,6 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 <span className="auth-sep" style={{ color: scrolled ? '#94A3B8' : 'rgba(255, 255, 255, 0.4)' }}>|</span>
                 <Link
                   href="/register"
-                  onClick={(e) => handleNav('register', e)}
                   className="nav-link"
                   style={{ color: navTextColor, fontWeight: 600 }}
                 >
@@ -131,7 +122,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             <Link
               href="/contact"
               className="nav-link"
-              onClick={(e) => { setMobileMenuOpen(false); handleNav('contact', e); }}
+              onClick={() => setMobileMenuOpen(false)}
               style={{ color: '#1E293B' }}
             >
               Contact
@@ -148,7 +139,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             <Link
               href="/login"
               className="nav-link"
-              onClick={(e) => { setMobileMenuOpen(false); handleNav('login', e); }}
+              onClick={() => setMobileMenuOpen(false)}
               style={{ color: '#1E293B' }}
             >
               Sign in
@@ -156,7 +147,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             <Link
               href="/register"
               className="nav-link"
-              onClick={(e) => { setMobileMenuOpen(false); handleNav('register', e); }}
+              onClick={() => setMobileMenuOpen(false)}
               style={{ color: '#0284C7', fontWeight: 600 }}
             >
               Sign up
@@ -181,7 +172,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
           backgroundColor: '#071A27',
         }}
       >
-        {/* Backdrop Image with Reliable Fallback */}
+        {/* Backdrop Image with Reliable Fallback and Priority Loading */}
         <div
           style={{
             position: 'absolute',
@@ -192,8 +183,12 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
             overflow: 'hidden',
           }}
         >
-          <img
+          <Image
             src={heroBg}
+            alt="Nelayan Tradisional Sedang Mempersiapkan Jaring di Perahu"
+            fill
+            priority
+            sizes="100vw"
             onError={() => {
               if (heroBg === '/Penangkap-ikan.jpg') {
                 setHeroBg('/Penangkap-Ikan.jpg');
@@ -201,14 +196,10 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 setHeroBg('/hero-boat.jpg');
               }
             }}
-            alt="Nelayan Tradisional Sedang Mempersiapkan Jaring di Perahu"
             style={{
-              width: '100%',
-              height: '100%',
               objectFit: 'cover',
               objectPosition: 'center 35%',
               opacity: 0.78,
-              display: 'block',
               filter: 'brightness(0.95) contrast(1.05)',
             }}
           />
@@ -576,7 +567,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
               gap: '0',
             }}
           >
-            {/* Left: 3:4 Portrait Image (Clean, No Text Overlays) */}
+            {/* Left: 3:4 Portrait Image (Clean, No Text Overlays, Next.js Image Optimized) */}
             <div
               style={{
                 position: 'relative',
@@ -585,20 +576,20 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = ({ o
                 overflow: 'hidden',
               }}
             >
-              <img
+              <Image
                 src={devPhoto}
+                alt="Sagit Faturrakhman - Full-Stack & IoT Engineer"
+                fill
+                sizes="(max-width: 768px) 100vw, 460px"
+                loading="lazy"
                 onError={() => {
                   if (devPhoto !== '/Sagit-Faturrakhman.jpg') {
                     setDevPhoto('/Sagit-Faturrakhman.jpg');
                   }
                 }}
-                alt="Sagit Faturrakhman - Full-Stack & IoT Engineer"
                 style={{
-                  width: '100%',
-                  height: '100%',
                   objectFit: 'cover',
                   objectPosition: 'center 40%',
-                  display: 'block',
                 }}
               />
             </div>

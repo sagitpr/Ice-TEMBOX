@@ -2,24 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, ArrowLeft } from './Icons';
-
-// Media assets
-import heroVideoRaw from '../../src/assets/Video/Nelayan-kapal-Horizontal.mp4';
-import heroBoatRaw from '../../src/assets/hero-boat.jpg';
-
-interface StaticAssetLike {
-  src?: string;
-}
-
-const getSrc = (asset: string | StaticAssetLike | unknown): string => {
-  if (typeof asset === 'string') return asset;
-  if (asset && typeof asset === 'object' && 'src' in asset) return (asset as StaticAssetLike).src || '';
-  return '';
-};
-
-const heroVideo = getSrc(heroVideoRaw) || '/Nelayan-kapal-Horizontal.mp4';
-const heroBoat = getSrc(heroBoatRaw) || '/hero-boat.jpg';
+import { useRouter } from 'next/navigation';
+import { User, Lock, ArrowLeft } from './Icons';
 
 interface LoginViewProps {
   onSuccess?: () => void;
@@ -36,6 +20,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onBackHome,
   hideLeftPane = false,
 }) => {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -49,20 +34,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
       if (onSuccess) {
         onSuccess();
       } else {
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       }
-    }, 400);
+    }, 350);
   };
 
   const rightFormPane = (
-    <div className="login-right-pane">
+    <div className="login-right-pane" style={{ background: '#FFFFFF' }}>
       <div className="login-form-box">
         <h2 className="login-title">Selamat Datang</h2>
         <p className="login-desc">Masuk untuk melanjutkan ke sistem TEMBOX.</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="loginEmail">Email / Username</label>
+            <label className="form-label" htmlFor="loginEmail">
+              Email / Username
+            </label>
             <div className="input-icon-wrap">
               <User size={16} className="input-icon" />
               <input
@@ -78,8 +65,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="loginPassword">Password</label>
+            <label className="form-label" htmlFor="loginPassword">
+              Password
+            </label>
             <div className="input-icon-wrap">
+              <Lock size={16} className="input-icon" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="loginPassword"
@@ -105,18 +95,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <input type="checkbox" className="remember-checkbox" />
               <span>Ingat saya</span>
             </label>
-            <a
-              href="#/forgot-password"
-              onClick={(e) => {
-                if (onNavigateForgotPassword) {
+            {onNavigateForgotPassword ? (
+              <a
+                href="/forgot-password"
+                onClick={(e) => {
                   e.preventDefault();
                   onNavigateForgotPassword();
-                }
-              }}
-              className="forgot-link"
-            >
-              Lupa password?
-            </a>
+                }}
+                className="forgot-link"
+              >
+                Lupa password?
+              </a>
+            ) : (
+              <Link href="/forgot-password" className="forgot-link">
+                Lupa password?
+              </Link>
+            )}
           </div>
 
           <button type="submit" className="btn-login-submit" disabled={loading}>
@@ -126,18 +120,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
         <p className="auth-switch-text">
           Belum punya akun?{' '}
-          <a
-            href="#/register"
-            onClick={(e) => {
-              if (onNavigateRegister) {
+          {onNavigateRegister ? (
+            <a
+              href="/register"
+              onClick={(e) => {
                 e.preventDefault();
                 onNavigateRegister();
-              }
-            }}
-            className="auth-switch-link"
-          >
-            Daftar sekarang
-          </a>
+              }}
+              className="auth-switch-link"
+            >
+              Daftar sekarang
+            </a>
+          ) : (
+            <Link href="/register" className="auth-switch-link">
+              Daftar sekarang
+            </Link>
+          )}
         </p>
 
         <div style={{ marginTop: '24px', textAlign: 'center' }}>
@@ -145,34 +143,15 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <button
               type="button"
               onClick={onBackHome}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '13px',
-                color: '#64748B',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
+              className="auth-back-link"
             >
               <ArrowLeft size={14} />
               <span>Kembali ke Beranda</span>
             </button>
           ) : (
-            <Link
-              href="/"
-              style={{
-                fontSize: '13px',
-                color: '#64748B',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
+            <Link href="/" className="auth-back-link">
               <ArrowLeft size={14} />
-              <span>Kembali ke TEMBOX</span>
+              <span>Kembali ke Beranda</span>
             </Link>
           )}
         </div>
@@ -186,52 +165,27 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   return (
     <div className="login-view-wrapper" style={{ display: 'flex' }}>
-      {/* Left Hero Pane with Background Video Backdrop */}
-      <div className="login-left-pane">
-        <video
-          className="login-media-backdrop"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          poster={heroBoat}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0.45,
-            filter: 'saturate(1.2) contrast(1.1)',
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
-        >
-          <source src={heroVideo} type="video/mp4" />
-          <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
-        </video>
-        <div
-          className="login-overlay-gradient"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
-
+      {/* Left Hero Pane: video is powered seamlessly by PersistentBackgroundVideo */}
+      <div
+        className="login-left-pane"
+        style={{
+          background: 'transparent',
+          position: 'relative',
+        }}
+      >
         <div className="login-left-content" style={{ position: 'relative', zIndex: 10 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontWeight: 800,
-              fontSize: '26px',
-              letterSpacing: '-0.5px',
-              color: '#FFFFFF',
-              display: 'block',
-              marginBottom: '6px',
-              cursor: 'pointer'
-            }}>
+            <span
+              style={{
+                fontWeight: 800,
+                fontSize: '26px',
+                letterSpacing: '-0.5px',
+                color: '#FFFFFF',
+                display: 'block',
+                marginBottom: '6px',
+                cursor: 'pointer',
+              }}
+            >
               TEMBOX<span style={{ color: '#7DDCE8' }}>.</span>
             </span>
           </Link>

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 
 // Existing local assets
 import box1ImgRaw from '../../src/assets/Box-1.png';
@@ -421,10 +423,10 @@ export const LandingBelowTheFold: React.FC = () => {
               Kami percaya bahwa teknologi dapat menjadi solusi nyata untuk
               menjaga keberlanjutan laut dan meningkatkan kesejahteraan nelayan.
             </p>
-            <a href="/contact" className="btn-vision-cta">
+            <Link href="/contact" className="btn-vision-cta">
               <span>Hubungi Kami</span>
               <span>→</span>
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -436,23 +438,22 @@ export const LandingBelowTheFold: React.FC = () => {
         <div className="container">
           <div className="footer-top">
             <div className="footer-brand">
-              <img
-                src={logoHorizontal}
+              <Image
+                src="/LogoTembox-Horizontal.png"
                 alt="TEMBOX"
                 className="footer-logo-img"
                 width={130}
                 height={34}
                 loading="lazy"
-                decoding="async"
                 style={{ width: '130px', height: '34px', objectFit: 'contain' }}
               />
               <p className="footer-tagline">Fresh Catch, Better Tomorrow.</p>
             </div>
 
             <div className="footer-nav">
-              <a href="/kategori/monitoring-suhu-palka-ikan" className="footer-link">Kategori</a>
-              <a href="/contact" className="footer-link">Contact</a>
-              <a href="/about" className="footer-link">About</a>
+              <Link href="/kategori/monitoring-suhu-palka-ikan" className="footer-link">Kategori</Link>
+              <Link href="/contact" className="footer-link">Contact</Link>
+              <Link href="/about" className="footer-link">About</Link>
             </div>
 
             <div className="footer-socials">
