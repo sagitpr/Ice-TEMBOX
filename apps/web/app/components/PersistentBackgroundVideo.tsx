@@ -1,13 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 export const PersistentBackgroundVideo: React.FC = () => {
   const pathname = usePathname() || '/';
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Determine which routes utilize the maritime background video
-  const isHome = pathname === '/' || pathname === '';
   const isAuth =
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
@@ -17,10 +16,40 @@ export const PersistentBackgroundVideo: React.FC = () => {
   // Persistent video provides fluid background for auth pages (login, register, forgot-password).
   const isVisible = isAuth;
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const syncPlayback = () => {
+      if (document.hidden || !isVisible) {
+        if (!video.paused) {
+          video.pause();
+        }
+      } else {
+        if (video.paused) {
+          video.play().catch(() => {
+            // Autoplay fallback handled by browser policy
+          });
+        }
+      }
+    };
+
+    syncPlayback();
+    document.addEventListener('visibilitychange', syncPlayback);
+
+    return () => {
+      document.removeEventListener('visibilitychange', syncPlayback);
+      if (video && !video.paused) {
+        video.pause();
+      }
+    };
+  }, [isVisible]);
+
   return (
     <div
       id="persistent-video-container"
       aria-hidden="true"
+      className="pointer-events-none"
       style={{
         position: 'fixed',
         inset: 0,
@@ -30,18 +59,20 @@ export const PersistentBackgroundVideo: React.FC = () => {
         pointerEvents: 'none',
         overflow: 'hidden',
         opacity: isVisible ? 1 : 0,
+        visibility: isVisible ? 'visible' : 'hidden',
         transition: 'opacity 0.35s ease',
         willChange: 'opacity',
         backgroundColor: '#071A27',
       }}
     >
       <video
+        ref={videoRef}
         id="persistent-marine-video"
-        autoPlay
+        autoPlay={isVisible}
         muted
         loop
         playsInline
-        preload="auto"
+        preload={isVisible ? 'auto' : 'none'}
         poster="/hero-boat.jpg"
         style={{
           position: 'absolute',
@@ -49,12 +80,10 @@ export const PersistentBackgroundVideo: React.FC = () => {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          objectPosition: isAuth ? 'center' : '72% 52%',
-          opacity: isAuth ? 0.45 : 0.92,
-          filter: isAuth
-            ? 'saturate(1.2) contrast(1.1)'
-            : 'brightness(0.98) contrast(1.0) saturate(1.02)',
-          transition: 'opacity 0.3s ease, object-position 0.3s ease',
+          objectPosition: 'center',
+          opacity: 0.45,
+          filter: 'saturate(1.2) contrast(1.1)',
+          transition: 'opacity 0.3s ease',
           willChange: 'transform, opacity',
           transform: 'translateZ(0)',
           pointerEvents: 'none',
@@ -69,9 +98,7 @@ export const PersistentBackgroundVideo: React.FC = () => {
         style={{
           position: 'absolute',
           inset: 0,
-          background: isAuth
-            ? 'linear-gradient(135deg, rgba(7, 26, 39, 0.88) 0%, rgba(11, 45, 66, 0.8) 100%)'
-            : 'linear-gradient(180deg, rgba(11, 45, 66, 0.15) 0%, rgba(11, 45, 66, 0.45) 60%, rgba(7, 26, 39, 0.75) 100%)',
+          background: 'linear-gradient(135deg, rgba(7, 26, 39, 0.88) 0%, rgba(11, 45, 66, 0.8) 100%)',
           transition: 'background 0.35s ease',
           pointerEvents: 'none',
         }}
@@ -81,4 +108,3 @@ export const PersistentBackgroundVideo: React.FC = () => {
 };
 
 export default PersistentBackgroundVideo;
-

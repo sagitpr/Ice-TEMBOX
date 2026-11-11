@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -9,7 +9,6 @@ import box1ImgRaw from '../../src/assets/Box-1.png';
 import box2ImgRaw from '../../src/assets/Box-2.png';
 import box3ImgRaw from '../../src/assets/Box-3.png';
 import heroVideoRaw from '../../src/assets/Video/Nelayan-kapal-Horizontal.mp4';
-import logoHorizontalRaw from '../../src/assets/LogoTembox-Horizontal.png';
 
 interface StaticAssetLike {
   src?: string;
@@ -25,308 +24,589 @@ const box1Img = getSrc(box1ImgRaw);
 const box2Img = getSrc(box2ImgRaw);
 const box3Img = getSrc(box3ImgRaw);
 const heroVideo = getSrc(heroVideoRaw);
-const logoHorizontal = getSrc(logoHorizontalRaw);
 
 // Product variants data
 const PRODUCTS = [
   {
     id: 'mini',
     name: 'TEMBOX Mini',
+    spec: '1 Probe • Kapal Kecil & Coolbox',
     desc: 'Cocok untuk nelayan skala kecil dan penyimpanan sederhana.',
     image: box1Img,
   },
   {
     id: 'pro',
     name: 'TEMBOX Pro',
+    spec: 'Dual Probe • Logging RTC + MicroSD',
     desc: 'Untuk usaha menengah dengan fitur lengkap dan konektivitas stabil.',
     image: box2Img,
   },
   {
     id: 'enterprise',
     name: 'TEMBOX Enterprise',
+    spec: 'Multi-Palka • Sinkronisasi Armada TPI',
     desc: 'Solusi untuk industri dan rantai distribusi perikanan skala besar.',
     image: box3Img,
   },
 ];
 
+const TECH_PILLARS = [
+  {
+    num: '01',
+    title: 'Presisi Sensor & Telemetri',
+    tag: '-1°C s/d +2°C',
+    desc: 'Akurasi pemantauan suhu kontinu probe anti-korosi air laut pada rentang kritis -1°C s/d +2°C.',
+  },
+  {
+    num: '02',
+    title: 'Peringatan Dini Multi-Level',
+    tag: 'Anjungan Kapal',
+    desc: 'Alarm visual lokal di anjungan kapal seketika palka mengalami penurunan kualitas pendinginan.',
+  },
+  {
+    num: '03',
+    title: 'Log Historis & Audit Mutu',
+    tag: 'Offline RTC Logging',
+    desc: 'Pencatatan otomatis via offline RTC logging agar data suhu tetap aman terekam saat kapal berada di luar jangkauan sinyal GSM/seluler.',
+  },
+];
+
+const WORKFLOW_STEPS = [
+  {
+    step: '01',
+    title: 'Sensor Membaca Palka',
+    desc: 'Probe suhu DS18B20 tahan air garam membaca kondisi termal di dasar dan tengah palka es secara kontinu.',
+  },
+  {
+    step: '02',
+    title: 'Buffering Lokal & Offline RTC',
+    desc: 'Mikrokontroler mencatat stempel waktu RTC dan menyimpan log ke MicroSD saat kapal melaut lepas.',
+  },
+  {
+    step: '03',
+    title: 'Analisis & Peringatan Dini',
+    desc: 'Deteksi anomali kenaikan suhu memicu indikator visual & audio di kapal agar ABK segera menambah es.',
+  },
+  {
+    step: '04',
+    title: 'Sinkronisasi & Dasbor TPI',
+    desc: 'Saat bersandar di pelabuhan, data tersinkronisasi ke cloud untuk audit mutu oleh pengelola armada dan TPI.',
+  },
+];
+
+const IMPACT_METRICS = [
+  {
+    metric: '25–35%',
+    metricLabel: 'MARGIN TERJAGA',
+    title: 'Reduksi Susut Nilai Tangkapan',
+    before: 'Tanpa kontrol termal, ikan kehilangan mutu sebelum kapal bersandar.',
+    after: 'Mencegah penurunan grade kesegaran ikan saat dilelang di Tempat Pelelangan Ikan (TPI), menjaga margin keuntungan nelayan hingga 25-35%.',
+  },
+  {
+    metric: 'Terukur',
+    metricLabel: 'LAJU PENCAIRAN ES',
+    title: 'Efisiensi Logistik Es',
+    before: 'Penambahan balok es selama ini hanya mengandalkan perkiraan visual di dek.',
+    after: 'Mengeliminasi tebak-tebakan pemakaian balok es palka melalui pemantauan laju pencairan secara terukur.',
+  },
+  {
+    metric: '100%',
+    metricLabel: 'TRACEABILITY MUTU',
+    title: 'Transparansi Rantai Dingin',
+    before: 'Pembeli dan pasar modern sulit memverifikasi riwayat suhu selama pelayaran.',
+    after: 'Memberikan jaminan ketertelusuran (traceability) mutu sejak palka samudra hingga diterima distributor atau pasar modern.',
+  },
+];
+
+const ECOSYSTEM_PIPELINE = [
+  {
+    code: '01',
+    label: 'Edge Device di Palka',
+    tech: 'Probe DS18B20 • ESP32 • LCD & Alarm',
+    desc: 'Akuisisi suhu via sensor tahan garam dengan pembacaan lokal instan dan ketahanan penuh terhadap lingkungan laut.',
+  },
+  {
+    code: '02',
+    label: 'Data Gateway & Processing',
+    tech: 'RTC DS3231 • MicroSD FAT32 • Cloud Sync',
+    desc: 'Buffering data lokal saat di luar jangkauan seluler & sinkronisasi otomatis ke cloud server begitu mendeteksi jaringan pelabuhan.',
+  },
+  {
+    code: '03',
+    label: 'Telemetri & Dashboard',
+    tech: 'Web Analytics • Alert System • Audit Log',
+    desc: 'Visualisasi grafik performa palka, peringatan anomali real-time, dan riwayat suhu terverifikasi untuk armada kapal.',
+  },
+];
+
 export const LandingBelowTheFold: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[1]);
+  const visionVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Page Visibility Listener for Vision background video to prevent idle GPU leaks
+  useEffect(() => {
+    const video = visionVideoRef.current;
+    if (!video) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (!video.paused) video.pause();
+      } else {
+        if (video.paused) {
+          video.play().catch(() => {});
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (video && !video.paused) {
+        video.pause();
+      }
+    };
+  }, []);
 
   return (
     <>
       {/* ==================================================
-          3. SECTION: WHY TEMBOX
+          3. SECTION: WHY TEMBOX (Integrated Narrative + Clean Spec List)
           ================================================== */}
-      <section id="why" className="section-why">
+      <section
+        id="why"
+        style={{
+          padding: '112px 0',
+          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #E2EDF4',
+        }}
+      >
         <div className="container">
-          <div className="why-grid">
-            <div className="why-left">
-              <span className="eyebrow">WHY TEMBOX?</span>
-              <h2 className="heading-lg why-heading">
-                Teknologi untuk<br />
-                Kesegaran yang Lebih Lama
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '64px',
+              alignItems: 'start',
+            }}
+          >
+            {/* Left Side: Problem Narrative */}
+            <div style={{ maxWidth: '520px' }}>
+              <span className="eyebrow" style={{ color: '#0284C7', marginBottom: '14px' }}>
+                WHY TEMBOX? • TEKNOLOGI KESEGARAN
+              </span>
+              <h2
+                className="heading-lg"
+                style={{
+                  color: '#0B2D42',
+                  marginBottom: '22px',
+                  lineHeight: 1.2,
+                }}
+              >
+                Menjawab Titik Rawan Rantai Dingin Kapal Tradisional
               </h2>
-              <p className="body-md why-desc">
-                Dengan pemantauan suhu, kondisi es, dan notifikasi real-time,
-                TEMBOX membantu nelayan dan pelaku usaha perikanan dalam
-                menjaga kualitas ikan sejak dari laut hingga ke pasar.
+              <p
+                style={{
+                  fontSize: '15.5px',
+                  lineHeight: 1.78,
+                  color: '#475569',
+                  marginBottom: '18px',
+                }}
+              >
+                Di kapal nelayan konvensional, palka es yang mulai mencair di bagian dasar sering kali
+                tidak terlihat dari permukaan. Fluktuasi suhu yang tidak terdeteksi selama pelayaran
+                berhari-hari memicu perkembangan bakteri pembentuk histamin yang mempercepat
+                pembusukan sebelum kapal sempat bersandar.
+              </p>
+              <p
+                style={{
+                  fontSize: '15.5px',
+                  lineHeight: 1.78,
+                  color: '#475569',
+                  marginBottom: '32px',
+                }}
+              >
+                TEMBOX menggantikan tebak-tebakan di dek dengan visibilitas termal yang terukur,
+                memastikan kualitas tangkapan terjaga sejak di tengah laut hingga pelelangan.
               </p>
               <a href="#how" className="btn-pill-link">
-                <span>Lihat Selengkapnya</span>
+                <span>Lihat Alur Kerja Sistem</span>
                 <span>→</span>
               </a>
             </div>
 
-            <div className="why-features-row">
-              {/* Feature 1 */}
-              <div className="why-card">
-                <div className="why-icon-halo">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
-                  </svg>
+            {/* Right Side: Spec Pillars List (No Individual Cards) */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {TECH_PILLARS.map((pillar, idx) => (
+                <div
+                  key={pillar.num}
+                  style={{
+                    padding: '26px 0',
+                    borderTop: idx === 0 ? '1px solid #E2EDF4' : 'none',
+                    borderBottom: '1px solid #E2EDF4',
+                    display: 'flex',
+                    gap: '22px',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      color: '#0284C7',
+                      letterSpacing: '0.06em',
+                      paddingTop: '4px',
+                      flexShrink: 0,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {pillar.num}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      <h3
+                        style={{
+                          fontSize: '18px',
+                          fontWeight: 700,
+                          color: '#0B2D42',
+                          margin: 0,
+                        }}
+                      >
+                        {pillar.title}
+                      </h3>
+                      <span
+                        style={{
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          color: '#0369A1',
+                          backgroundColor: '#F0F9FF',
+                          padding: '3px 10px',
+                          borderRadius: '9999px',
+                          border: '1px solid #BAE6FD',
+                        }}
+                      >
+                        {pillar.tag}
+                      </span>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '14.5px',
+                        lineHeight: 1.68,
+                        color: '#64748B',
+                        margin: 0,
+                      }}
+                    >
+                      {pillar.desc}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="why-card-title">Real-time Monitoring</h3>
-                <p className="why-card-desc">Pantau suhu dan kondisi penyimpanan kapan saja.</p>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="why-card">
-                <div className="why-icon-halo">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                  </svg>
-                </div>
-                <h3 className="why-card-title">Smart Notification</h3>
-                <p className="why-card-desc">Dapatkan peringatan saat ada kondisi tidak normal.</p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="why-card">
-                <div className="why-icon-halo">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="20" x2="18" y2="10" />
-                    <line x1="12" y1="20" x2="12" y2="4" />
-                    <line x1="6" y1="20" x2="6" y2="14" />
-                  </svg>
-                </div>
-                <h3 className="why-card-title">Data & History</h3>
-                <p className="why-card-desc">Akses riwayat data untuk analisis yang lebih baik.</p>
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       {/* ==================================================
-          4. SECTION: HOW IT WORKS
+          4. SECTION: HOW IT WORKS (Seamless Horizontal Step Strip)
           ================================================== */}
-      <section id="how" className="section-how">
+      <section
+        id="how"
+        style={{
+          padding: '104px 0',
+          backgroundColor: '#F8FAFC',
+          borderBottom: '1px solid #E2EDF4',
+        }}
+      >
         <div className="container">
-          <div className="section-header-centered">
-            <span className="eyebrow">HOW IT WORKS</span>
-            <h2 className="heading-lg">
-              Cara Kerja<br />
-              Sederhana, tapi Berdampak Besar
+          <div style={{ maxWidth: '640px', marginBottom: '56px' }}>
+            <span className="eyebrow" style={{ color: '#0284C7', marginBottom: '12px' }}>
+              HOW IT WORKS
+            </span>
+            <h2 className="heading-lg" style={{ color: '#0B2D42', marginBottom: '14px' }}>
+              Cara Kerja Sederhana, Teruji di Laut Lepas
             </h2>
-            <p className="body-md">
-              TEMBOX bekerja dengan memantau suhu dan kondisi penyimpanan secara otomatis,
-              lalu mengirimkan data ke dashboard dan aplikasi.
+            <p style={{ fontSize: '15.5px', lineHeight: 1.7, color: '#64748B' }}>
+              Setiap tahapan dirancang agar tetap beroperasi stabil meski tanpa jaringan internet,
+              sehingga nelayan fokus melaut sementara data mutu tetap aman tercatat.
             </p>
           </div>
 
-          <div className="how-pipeline">
-            {/* Step 1 */}
-            <div className="how-step-card">
-              <div className="how-icon-circle">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="4" y="4" width="16" height="16" rx="2" />
-                  <rect x="9" y="9" width="6" height="6" />
-                  <line x1="9" y1="1" x2="9" y2="4" />
-                  <line x1="15" y1="1" x2="15" y2="4" />
-                  <line x1="9" y1="20" x2="9" y2="23" />
-                  <line x1="15" y1="20" x2="15" y2="23" />
-                  <line x1="20" y1="9" x2="23" y2="9" />
-                  <line x1="20" y1="14" x2="23" y2="14" />
-                  <line x1="1" y1="9" x2="4" y2="9" />
-                  <line x1="1" y1="14" x2="4" y2="14" />
-                </svg>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+              gap: '32px',
+              borderTop: '1px solid #CBD5E1',
+              paddingTop: '36px',
+            }}
+          >
+            {WORKFLOW_STEPS.map((item) => (
+              <div key={item.step} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    letterSpacing: '0.1em',
+                    color: '#0284C7',
+                  }}
+                >
+                  TAHAP {item.step}
+                </span>
+                <h3
+                  style={{
+                    fontSize: '17px',
+                    fontWeight: 700,
+                    color: '#0B2D42',
+                    margin: 0,
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: 1.65,
+                    color: '#64748B',
+                    margin: 0,
+                  }}
+                >
+                  {item.desc}
+                </p>
               </div>
-              <h3 className="how-step-num-title">1. Sensor Membaca</h3>
-              <p className="how-step-desc">Sensor suhu dan kondisi es bekerja secara real-time.</p>
-            </div>
-
-            {/* Step 2 */}
-            <div className="how-step-card">
-              <div className="how-icon-circle">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                  <line x1="12" y1="20" x2="12.01" y2="20" />
-                </svg>
-              </div>
-              <h3 className="how-step-num-title">2. Data Diproses</h3>
-              <p className="how-step-desc">Data dikirim ke sistem melalui konektivitas IoT.</p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="how-step-card">
-              <div className="how-icon-circle">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              </div>
-              <h3 className="how-step-num-title">3. Analisis & Notifikasi</h3>
-              <p className="how-step-desc">Sistem menganalisis data dan mengirim peringatan jika ada kondisi tidak normal.</p>
-            </div>
-
-            {/* Step 4 */}
-            <div className="how-step-card">
-              <div className="how-icon-circle">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                  <line x1="8" y1="21" x2="16" y2="21" />
-                  <line x1="12" y1="17" x2="12" y2="21" />
-                </svg>
-              </div>
-              <h3 className="how-step-num-title">4. Akses Dashboard</h3>
-              <p className="how-step-desc">Pantau semua data melalui web dan aplikasi.</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ==================================================
-          5. SECTION: MANFAAT (BENEFITS)
+          5. SECTION: MANFAAT (Before vs After Narrative Grid)
           ================================================== */}
-      <section id="benefits" className="section-benefits">
+      <section
+        id="benefits"
+        style={{
+          padding: '112px 0',
+          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #E2EDF4',
+        }}
+      >
         <div className="container">
-          <div className="section-header-centered">
-            <span className="eyebrow">MANFAAT</span>
-            <h2 className="heading-lg">Lebih dari Sekadar Monitoring</h2>
-            <p className="body-md">
-              TEMBOX memberikan banyak manfaat untuk nelayan, pelaku usaha, dan konsumen akhir.
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end',
+              gap: '24px',
+              marginBottom: '64px',
+            }}
+          >
+            <div style={{ maxWidth: '620px' }}>
+              <span className="eyebrow" style={{ color: '#0284C7', marginBottom: '12px' }}>
+                DAMPAK NYATA &amp; MANFAAT
+              </span>
+              <h2 className="heading-lg" style={{ color: '#0B2D42', margin: 0 }}>
+                Perubahan Terukur Sebelum &amp; Sesudah Menggunakan TEMBOX
+              </h2>
+            </div>
+            <p style={{ maxWidth: '380px', fontSize: '14.5px', lineHeight: 1.68, color: '#64748B', margin: 0 }}>
+              Dari asumsi manual menuju kendali rantai dingin yang menjaga nilai ekonomi setiap
+              kilogram hasil tangkapan.
             </p>
           </div>
 
-          <div className="benefits-grid">
-            {/* Benefit 1 */}
-            <div className="benefit-card">
-              <div className="benefit-icon-wrapper">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <polyline points="9 12 11 14 15 10" />
-                </svg>
-              </div>
-              <h3 className="benefit-title">Kualitas Ikan Terjaga</h3>
-              <p className="benefit-desc">Kesegaran dan nilai jual lebih tinggi.</p>
-            </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+              gap: '48px',
+            }}
+          >
+            {IMPACT_METRICS.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  borderTop: '2px solid #0B2D42',
+                  paddingTop: '28px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                  <span
+                    style={{
+                      fontSize: 'clamp(2rem, 3vw, 2.5rem)',
+                      fontWeight: 800,
+                      color: '#0284C7',
+                      letterSpacing: '-0.03em',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {item.metric}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      letterSpacing: '0.1em',
+                      color: '#64748B',
+                    }}
+                  >
+                    {item.metricLabel}
+                  </span>
+                </div>
 
-            {/* Benefit 2 */}
-            <div className="benefit-card">
-              <div className="benefit-icon-wrapper">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                  <polyline points="17 6 23 6 23 12" />
-                </svg>
-              </div>
-              <h3 className="benefit-title">Mengurangi Kerugian</h3>
-              <p className="benefit-desc">Cegah kerusakan akibat suhu tidak stabil.</p>
-            </div>
+                <h3
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: 800,
+                    color: '#0B2D42',
+                    margin: 0,
+                  }}
+                >
+                  {item.title}
+                </h3>
 
-            {/* Benefit 3 */}
-            <div className="benefit-card">
-              <div className="benefit-icon-wrapper">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
+                <div
+                  style={{
+                    paddingTop: '12px',
+                    borderTop: '1px solid #E2EDF4',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: 1.55, margin: 0 }}>
+                    <strong style={{ color: '#64748B' }}>Sebelum:</strong> {item.before}
+                  </p>
+                  <p style={{ fontSize: '14.5px', color: '#334155', lineHeight: 1.68, margin: 0 }}>
+                    <strong style={{ color: '#0284C7' }}>Dengan TEMBOX:</strong> {item.after}
+                  </p>
+                </div>
               </div>
-              <h3 className="benefit-title">Operasional Lebih Efisien</h3>
-              <p className="benefit-desc">Pantau dan kelola dengan mudah.</p>
-            </div>
-
-            {/* Benefit 4 */}
-            <div className="benefit-card">
-              <div className="benefit-icon-wrapper">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-              </div>
-              <h3 className="benefit-title">Kepercayaan Konsumen</h3>
-              <p className="benefit-desc">Produk lebih aman dan berkualitas.</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ==================================================
-          6. SECTION: ECOSYSTEM
+          6. SECTION: ECOSYSTEM (Seamless Flowing Data Pipeline)
           ================================================== */}
-      <section id="ecosystem" className="section-ecosystem">
+      <section
+        id="ecosystem"
+        style={{
+          padding: '112px 0',
+          backgroundColor: '#071A27',
+          color: '#E2E8F0',
+        }}
+      >
         <div className="container">
-          <div className="section-header-centered">
-            <span className="eyebrow">ECOSYSTEM</span>
-            <h2 className="heading-lg">
-              Ekosistem TEMBOX<br />
-              Terhubung dalam Satu Sistem
+          <div style={{ maxWidth: '660px', marginBottom: '64px' }}>
+            <span className="eyebrow" style={{ color: '#7DDCE8', marginBottom: '12px' }}>
+              ECOSYSTEM ARCHITECTURE
+            </span>
+            <h2
+              className="heading-lg"
+              style={{ color: '#FFFFFF', marginBottom: '16px', lineHeight: 1.22 }}
+            >
+              Arsitektur Alur Data Terhubung dari Palka ke Dasbor
             </h2>
-            <p className="body-md">
-              TEMBOX bukan hanya perangkat, tetapi bagian dari ekosistem digital untuk perikanan yang lebih modern dan efisien.
+            <p style={{ fontSize: '15.5px', lineHeight: 1.72, color: '#94A3B8', margin: 0 }}>
+              Tiga lapisan sistem yang bekerja berkesinambungan—mulai dari akuisisi suhu sensor
+              tahan garam, buffering lokal &amp; sinkronisasi cloud, hingga visualisasi performa armada.
             </p>
           </div>
 
-          <div className="ecosystem-diagram">
-            {/* Node 1 */}
-            <div className="ecosystem-node">
-              <div className="ecosystem-icon-wrapper">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                </svg>
+          {/* Flowing Pipeline Visualization */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '32px',
+              position: 'relative',
+            }}
+          >
+            {ECOSYSTEM_PIPELINE.map((node, index) => (
+              <div
+                key={node.code}
+                style={{
+                  position: 'relative',
+                  paddingTop: '24px',
+                  borderTop: '1px solid rgba(125, 220, 232, 0.28)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                {/* Pipeline node indicator row */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: 800,
+                      color: '#7DDCE8',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    [ {node.code}. {node.label} ]
+                  </span>
+                  {index < ECOSYSTEM_PIPELINE.length - 1 && (
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        color: 'rgba(125, 220, 232, 0.6)',
+                        fontSize: '15px',
+                        letterSpacing: '-1px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      ───►
+                    </span>
+                  )}
+                </div>
+
+                <p
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#38BDF8',
+                    letterSpacing: '0.04em',
+                    margin: 0,
+                  }}
+                >
+                  {node.tech}
+                </p>
+
+                <p
+                  style={{
+                    fontSize: '14.5px',
+                    lineHeight: 1.7,
+                    color: '#CBD5E1',
+                    margin: 0,
+                  }}
+                >
+                  {node.desc}
+                </p>
               </div>
-              <h3 className="ecosystem-node-title">Perangkat TEMBOX</h3>
-              <p className="ecosystem-node-sub">Sensor & IoT Device</p>
-            </div>
-
-            <div className="ecosystem-connector">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </div>
-
-            {/* Node 2 */}
-            <div className="ecosystem-node">
-              <div className="ecosystem-icon-wrapper">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
-                </svg>
-              </div>
-              <h3 className="ecosystem-node-title">Cloud Server</h3>
-              <p className="ecosystem-node-sub">Data Processing & Storage</p>
-            </div>
-
-            <div className="ecosystem-connector">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </div>
-
-            {/* Node 3 */}
-            <div className="ecosystem-node">
-              <div className="ecosystem-icon-wrapper">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                  <line x1="12" y1="18" x2="12.01" y2="18" />
-                </svg>
-              </div>
-              <h3 className="ecosystem-node-title">Dashboard & Mobile App</h3>
-              <p className="ecosystem-node-sub">Monitoring & Notification</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -336,7 +616,7 @@ export const LandingBelowTheFold: React.FC = () => {
           ================================================== */}
       <section id="product" className="section-product">
         <div className="container">
-          <div style={{ marginBottom: '40px' }}>
+          <div style={{ marginBottom: '48px' }}>
             <span className="eyebrow">OUR PRODUCT</span>
             <h2 className="heading-lg">Tersedia dalam Berbagai Varian</h2>
             <p className="body-md" style={{ maxWidth: '580px', marginTop: '12px' }}>
@@ -346,38 +626,83 @@ export const LandingBelowTheFold: React.FC = () => {
           </div>
 
           <div className="product-layout">
-            {/* Left: 3 Product Cards */}
-            <div className="product-cards-col">
-              {PRODUCTS.map((prod) => (
-                <div
-                  key={prod.id}
-                  className={`product-item-card ${selectedProduct.id === prod.id ? 'active' : ''}`}
-                  onClick={() => setSelectedProduct(prod)}
-                >
-                  <div className="product-thumb-box">
-                    <img
-                      src={prod.image}
-                      alt={prod.name}
-                      width={64}
-                      height={64}
-                      loading="lazy"
-                      decoding="async"
-                      style={{ width: '64px', height: '64px', objectFit: 'contain' }}
-                    />
+            {/* Left: Clean Interactive Product Selector List */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {PRODUCTS.map((prod, idx) => {
+                const isActive = selectedProduct.id === prod.id;
+                return (
+                  <div
+                    key={prod.id}
+                    onClick={() => setSelectedProduct(prod)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedProduct(prod);
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '20px',
+                      padding: '22px 16px',
+                      borderTop: idx === 0 ? '1px solid #E2EDF4' : 'none',
+                      borderBottom: '1px solid #E2EDF4',
+                      borderLeft: isActive ? '3px solid #0284C7' : '3px solid transparent',
+                      backgroundColor: isActive ? '#F8FAFD' : 'transparent',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '72px',
+                        height: '58px',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <img
+                        src={prod.image}
+                        alt={prod.name}
+                        width={64}
+                        height={58}
+                        loading="lazy"
+                        decoding="async"
+                        style={{ width: '64px', height: '58px', objectFit: 'contain' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0B2D42', margin: 0 }}>
+                          {prod.name}
+                        </h3>
+                        <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#0284C7' }}>
+                          {prod.spec}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
+                        {prod.desc}
+                      </p>
+                    </div>
+                    <span style={{ color: isActive ? '#0284C7' : '#94A3B8', fontSize: '18px' }}>
+                      →
+                    </span>
                   </div>
-                  <div className="product-info-box">
-                    <h3 className="product-name">{prod.name}</h3>
-                    <p className="product-desc">{prod.desc}</p>
-                  </div>
-                  <span className="product-arrow">→</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Right: Big Showcase with fixed pedestal dimensions */}
             <div className="product-showcase-col">
               <div className="showcase-halo" />
-              <div className="showcase-pedestal" style={{ minHeight: '340px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div
+                className="showcase-pedestal"
+                style={{ minHeight: '340px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
                 <img
                   key={selectedProduct.id}
                   src={selectedProduct.image}
@@ -401,6 +726,7 @@ export const LandingBelowTheFold: React.FC = () => {
       <section id="vision" className="section-vision">
         <div className="vision-bg-media">
           <video
+            ref={visionVideoRef}
             autoPlay
             loop
             muted
@@ -490,4 +816,3 @@ export const LandingBelowTheFold: React.FC = () => {
 };
 
 export default LandingBelowTheFold;
-

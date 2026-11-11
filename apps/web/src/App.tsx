@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,6 +20,29 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadAtmosphere, setLoadAtmosphere] = useState(false);
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Page Visibility Listener to prevent GPU memory leaks / lag when tab is hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const video = heroVideoRef.current;
+      if (!video) return;
+      if (document.hidden) {
+        if (!video.paused) video.pause();
+      } else {
+        if (video.paused) {
+          video.play().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (heroVideoRef.current && !heroVideoRef.current.paused) {
+        heroVideoRef.current.pause();
+      }
+    };
+  }, []);
 
   // Scroll detection for header backdrop
   useEffect(() => {
@@ -163,6 +186,7 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
       >
         {/* Maritime Fisherman Boat Background Video */}
         <video
+          ref={heroVideoRef}
           autoPlay
           loop
           muted

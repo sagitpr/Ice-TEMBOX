@@ -204,7 +204,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
             }}
           />
 
-          {/* Natural Top-to-Bottom Vertical Gradient (No horizontal blue pileup) */}
+          {/* Natural Top-to-Bottom Vertical Gradient */}
           <div
             style={{
               position: 'absolute',
@@ -251,11 +251,11 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
       </section>
 
       {/* ==================================================
-          3. SECTION: VISI & PENGANTAR KORPORAT (Clean Light Mode, No Icons)
+          3. SECTION: VISI & PENGANTAR KORPORAT (Borderless Numbered Editorial List)
           ================================================== */}
-      <section style={{ padding: '80px 0', background: '#FFFFFF' }}>
+      <section style={{ padding: '96px 0', background: '#FFFFFF' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '48px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '56px', alignItems: 'start' }}>
             <div>
               <span className="eyebrow" style={{ color: '#0284C7', marginBottom: '12px' }}>
                 VISI &amp; PENGANTAR KORPORAT
@@ -269,53 +269,63 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
                 hasil tangkapan laut—khususnya penanganan pasca-penangkapan (<em>post-harvest handling</em>)—masih
                 menghadapi kendala efisiensi rantai dingin (<em>cold chain logistics</em>).
               </p>
-              <p style={{ fontSize: '15px', lineHeight: 1.75, color: '#475569' }}>
+              <p style={{ fontSize: '15px', lineHeight: 1.75, color: '#475569', margin: 0 }}>
                 Kami berkomitmen menghadirkan solusi teknologi mutakhir yang inklusif, dapat dijangkau oleh nelayan skala
                 kecil hingga menengah, tanpa merombak armada kapal yang telah mereka miliki selama puluhan tahun.
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
-              {/* Card 1: Pure Minimalist Typography without Icons */}
+            {/* Numbered Features List with Neutral Hairline Dividers */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               <div
                 style={{
-                  background: '#F8FAFC',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '16px',
-                  padding: '28px',
-                  boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
+                  padding: '24px 0',
+                  borderTop: '1px solid rgba(15, 23, 42, 0.08)',
+                  borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+                  display: 'flex',
+                  gap: '20px',
+                  alignItems: 'flex-start',
                 }}
               >
-                <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
-                  INTEGRITAS MUTU TANGKAPAN
-                </p>
-                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
-                  Pengawasan Termal Presisi Tinggi
-                </h3>
-                <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.65 }}>
-                  Mencegah degradasi histamin dan pembusukan dini pada ikan dengan pengawasan termal presisi tinggi secara terus menerus sepanjang pelayaran.
-                </p>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#0284C7', paddingTop: '3px', flexShrink: 0 }}>
+                  01
+                </span>
+                <div>
+                  <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '6px' }}>
+                    INTEGRITAS MUTU TANGKAPAN
+                  </p>
+                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
+                    Pengawasan Termal Presisi Tinggi
+                  </h3>
+                  <p style={{ fontSize: '14.5px', color: '#64748B', lineHeight: 1.68, margin: 0 }}>
+                    Mencegah degradasi histamin dan pembusukan dini pada ikan dengan pengawasan termal presisi tinggi secara terus menerus sepanjang pelayaran.
+                  </p>
+                </div>
               </div>
 
-              {/* Card 2: Pure Minimalist Typography without Icons */}
               <div
                 style={{
-                  background: '#F8FAFC',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '16px',
-                  padding: '28px',
-                  boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
+                  padding: '24px 0',
+                  borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+                  display: 'flex',
+                  gap: '20px',
+                  alignItems: 'flex-start',
                 }}
               >
-                <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
-                  DAMPAK EKONOMI MARITIM
-                </p>
-                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
-                  Dampak Ekonomi Berkelanjutan
-                </h3>
-                <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.65 }}>
-                  Meningkatkan nilai jual lelang ikan di Tempat Pelelangan Ikan (TPI) berkat bukti riwayat suhu dingin terverifikasi dan dapat dipertanggungjawabkan.
-                </p>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#0284C7', paddingTop: '3px', flexShrink: 0 }}>
+                  02
+                </span>
+                <div>
+                  <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '6px' }}>
+                    DAMPAK EKONOMI MARITIM
+                  </p>
+                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
+                    Dampak Ekonomi Berkelanjutan
+                  </h3>
+                  <p style={{ fontSize: '14.5px', color: '#64748B', lineHeight: 1.68, margin: 0 }}>
+                    Meningkatkan nilai jual lelang ikan di Tempat Pelelangan Ikan (TPI) berkat bukti riwayat suhu dingin terverifikasi dan dapat dipertanggungjawabkan.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -323,66 +333,66 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
       </section>
 
       {/* ==================================================
-          4. SECTION: LATAR BELAKANG & SOLUSI INOVATIF (Soft Slate Background, No Icons)
+          4. SECTION: LATAR BELAKANG & SOLUSI INOVATIF (Dark Breathable Split, Subtle Hairlines)
           ================================================== */}
-      <section style={{ padding: '80px 0', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+      <section style={{ padding: '96px 0', background: '#071A27', color: '#E2E8F0', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 50px' }}>
-            <span className="eyebrow" style={{ color: '#0284C7' }}>
+          <div style={{ maxWidth: '640px', marginBottom: '56px' }}>
+            <span className="eyebrow" style={{ color: '#7DDCE8' }}>
               LATAR BELAKANG &amp; SOLUSI INOVATIF
             </span>
-            <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
+            <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
               Dari Kerentanan Manual ke Kepastian Terukur
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' }}>
-            {/* The Problem Card (Clean slate border, no icons, no aggressive colors) */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '48px',
+            }}
+          >
+            {/* 01: Tantangan Industri (No Card Box) */}
             <div
               style={{
-                background: '#FFFFFF',
-                border: '1px solid #E2E8F0',
-                borderRadius: '18px',
-                padding: '36px',
-                boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                paddingTop: '28px',
               }}
             >
-              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: '10px' }}>
-                TANTANGAN INDUSTRI
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#94A3B8', marginBottom: '10px' }}>
+                01 / TANTANGAN INDUSTRI
               </p>
-              <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#0F172A', marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#FFFFFF', marginBottom: '14px' }}>
                 Fluktuasi Suhu Palka Es Konvensional
               </h3>
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#475569', marginBottom: '16px' }}>
+              <p style={{ fontSize: '14.5px', lineHeight: 1.75, color: '#CBD5E1', marginBottom: '14px' }}>
                 Secara geografis, Indonesia merupakan negara kepulauan dengan potensi maritim luar biasa. Namun, nelayan
                 tradisional masih sangat bergantung pada metode penyimpanan es manual di dalam kotak palka tanpa sistem pemantauan terukur.
               </p>
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#475569' }}>
+              <p style={{ fontSize: '14.5px', lineHeight: 1.75, color: '#94A3B8', margin: 0 }}>
                 Selama pelayaran yang panjang, es mencair dan suhu naik secara perlahan tanpa disadari. Nelayan baru mengetahui
                 penurunan mutu ketika pembusukan telah terjadi saat bersandar di pelabuhan, mengakibatkan kerugian ekonomi yang fatal.
               </p>
             </div>
 
-            {/* The Solution Card (Clean brand blue border, no icons) */}
+            {/* 02: Solusi Modular TEMBOX (No Card Box) */}
             <div
               style={{
-                background: '#FFFFFF',
-                border: '1.5px solid #0284C7',
-                borderRadius: '18px',
-                padding: '36px',
-                boxShadow: '0 10px 30px -5px rgba(2, 132, 199, 0.1)',
+                borderTop: '1px solid rgba(125, 220, 232, 0.45)',
+                paddingTop: '28px',
               }}
             >
-              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '10px' }}>
-                SOLUSI MODULAR TEMBOX
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7DDCE8', marginBottom: '10px' }}>
+                02 / SOLUSI MODULAR TEMBOX
               </p>
-              <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#0B2D42', marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#FFFFFF', marginBottom: '14px' }}>
                 Perangkat Tambahan Pintar (Retrofit Device)
               </h3>
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#334155', marginBottom: '16px' }}>
-                Kami tidak berupaya menggantikan es sebagai media pendingin utama, melainkan menghadirkan <strong>TEMBOX (Temperature Box)</strong> sebagai perangkat tambahan modular cerdas.
+              <p style={{ fontSize: '14.5px', lineHeight: 1.75, color: '#CBD5E1', marginBottom: '14px' }}>
+                Kami tidak berupaya menggantikan es sebagai media pendingin utama, melainkan menghadirkan <strong style={{ color: '#FFFFFF' }}>TEMBOX (Temperature Box)</strong> sebagai perangkat tambahan modular cerdas.
               </p>
-              <p style={{ fontSize: '14px', lineHeight: 1.7, color: '#334155' }}>
+              <p style={{ fontSize: '14.5px', lineHeight: 1.75, color: '#94A3B8', margin: 0 }}>
                 Perangkat ini dipasang langsung pada wadah penyimpanan ikan yang sudah dimiliki nelayan tanpa perlu merombak fisik kapal. Memantau suhu secara real-time, memberi peringatan dini visual &amp; audio, serta mencatat data telemetri secara terukur.
               </p>
             </div>
@@ -391,71 +401,79 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
       </section>
 
       {/* ==================================================
-          5. SECTION: ARSITEKTUR SISTEM & CARA KERJA (White Background, No Icons)
+          5. SECTION: ARSITEKTUR SISTEM & CARA KERJA (Horizontal Numbered List, Subtle Dividers)
           ================================================== */}
-      <section style={{ padding: '80px 0', background: '#FFFFFF', borderTop: '1px solid #E2E8F0' }}>
+      <section style={{ padding: '96px 0', background: '#FFFFFF', borderTop: '1px solid rgba(15, 23, 42, 0.06)' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 50px' }}>
+          <div style={{ maxWidth: '640px', marginBottom: '52px' }}>
             <span className="eyebrow" style={{ color: '#0284C7' }}>
               ARSITEKTUR SISTEM &amp; CARA KERJA
             </span>
             <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
               Hardware to Cloud: Andal Tanpa Sinyal Internet
             </h2>
-            <p style={{ fontSize: '15px', color: '#64748B', marginTop: '12px' }}>
+            <p style={{ fontSize: '15px', color: '#64748B', marginTop: '12px', marginBottom: 0 }}>
               Dirancang dengan kapabilitas <em>Offline-First</em> yang tangguh untuk menghadapi kondisi ekstrem di tengah samudra.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: '32px',
+              borderTop: '1px solid rgba(15, 23, 42, 0.08)',
+              paddingTop: '36px',
+            }}
+          >
             {/* Step 1 */}
-            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
-              <p style={{ color: '#0284C7', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
-                TAHAP 01: INPUT TELEMETRI
+            <div>
+              <p style={{ color: '#0284C7', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                01 / INPUT TELEMETRI
               </p>
               <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
                 Sensor DS18B20 &amp; ESP32
               </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.65 }}>
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.68, margin: 0 }}>
                 Sensor industri tahan air (probe DS18B20 presisi tinggi ±0.5°C) membaca temperatur palka secara berkala. Pemrosesan awal dilakukan lokal oleh mikrokontroler ESP32 hemat energi.
               </p>
             </div>
 
             {/* Step 2 */}
-            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
-              <p style={{ color: '#0284C7', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
-                TAHAP 02: INDIKATOR LOKAL
+            <div>
+              <p style={{ color: '#0284C7', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                02 / INDIKATOR LOKAL
               </p>
               <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
                 Display LCD &amp; Alarm Peringatan
               </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.65 }}>
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.68, margin: 0 }}>
                 Layar LCD 16x2 I2C menampilkan nilai suhu seketika pada awak kapal di palka. Buzzer audio aktif dan indikator visual memberi peringatan instan jika suhu melampaui batas aman.
               </p>
             </div>
 
             {/* Step 3 */}
-            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
-              <p style={{ color: '#0284C7', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
-                TAHAP 03: OFFLINE-FIRST
+            <div>
+              <p style={{ color: '#0284C7', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                03 / OFFLINE-FIRST
               </p>
               <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
                 Pencatatan RTC &amp; MicroSD
               </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.65 }}>
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.68, margin: 0 }}>
                 Modul RTC DS3231 memberi penanda waktu presisi tanpa internet, sementara slot MicroSD FAT32 menyimpan riwayat data secara kontinu tanpa risiko kehilangan data saat melaut lepas.
               </p>
             </div>
 
             {/* Step 4 */}
-            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px' }}>
-              <p style={{ color: '#0284C7', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
-                TAHAP 04: CLOUD SYNC
+            <div>
+              <p style={{ color: '#0284C7', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                04 / CLOUD SYNC
               </p>
               <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#0F172A', marginBottom: '10px' }}>
                 Sinkronisasi Cloud &amp; Next.js
               </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.65 }}>
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.68, margin: 0 }}>
                 Saat kapal bersandar dan mendeteksi jaringan Wi-Fi/Hotspot pelabuhan, data batch tersinkronisasi otomatis ke cloud. Pengelola TPI dapat memantau grafik tren 24 jam via web.
               </p>
             </div>
@@ -464,71 +482,73 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
       </section>
 
       {/* ==================================================
-          6. SECTION: CORE TECHNOLOGY STACK & CLOUD ARCHITECTURE (Soft Slate, No Icons)
+          6. SECTION: CORE TECHNOLOGY STACK (Clean Hairline Spec List)
           ================================================== */}
-      <section style={{ padding: '80px 0', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+      <section style={{ padding: '96px 0', background: '#F8FAFC', borderTop: '1px solid rgba(15, 23, 42, 0.06)' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 48px' }}>
+          <div style={{ maxWidth: '640px', marginBottom: '52px' }}>
             <span className="eyebrow" style={{ color: '#0284C7' }}>
               CORE TECHNOLOGY STACK &amp; CLOUD ARCHITECTURE
             </span>
             <h2 style={{ fontSize: 'clamp(1.85rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#0F172A', lineHeight: 1.25 }}>
               Fondasi Performa &amp; Keandalan Skala Industri
             </h2>
-            <p style={{ fontSize: '15px', color: '#64748B', marginTop: '12px' }}>
-              Arsitektur hibrida modern yang menggabungkan keandalan komputasi tepi (*edge hardware*) dengan skalabilitas komputasi awan.
+            <p style={{ fontSize: '15px', color: '#64748B', marginTop: '12px', marginBottom: 0 }}>
+              Arsitektur hibrida modern yang menggabungkan keandalan komputasi tepi (<em>edge hardware</em>) dengan skalabilitas komputasi awan.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-            {/* Tech 1: Next.js 15 App Router */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '36px',
+            }}
+          >
+            <div style={{ borderTop: '1px solid rgba(15, 23, 42, 0.08)', paddingTop: '24px' }}>
               <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
-                FRONTEND ARCHITECTURE
+                01 / FRONTEND ARCHITECTURE
               </p>
               <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
                 Next.js 15 App Router &amp; Server Components
               </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.7 }}>
-                Fondasi aplikasi web performa tinggi dengan React Server Components (RSC) untuk streaming telemetri instan, code-splitting dinamis, serta optimasi bundle yang mengeliminasi Total Blocking Time (TBT) dan Cumulative Layout Shift (CLS).
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.7, margin: 0 }}>
+                Fondasi aplikasi web performa tinggi dengan React Server Components (RSC) untuk streaming telemetri instan, code-splitting dinamis, serta optimasi bundle yang mengeliminasi Total Blocking Time (TBT).
               </p>
             </div>
 
-            {/* Tech 2: Supabase Realtime Database */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
+            <div style={{ borderTop: '1px solid rgba(15, 23, 42, 0.08)', paddingTop: '24px' }}>
               <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
-                DATABASE &amp; REAL-TIME
+                02 / DATABASE &amp; REAL-TIME
               </p>
               <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
                 Supabase &amp; Real-Time Data Pipeline
               </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.7 }}>
-                Infrastruktur basis data relasional enterprise berbasis PostgreSQL yang dilengkapi otentikasi aman berbasis Row Level Security (RLS) serta channel WebSocket real-time untuk pembaruan status suhu otomatis tanpa refresh.
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.7, margin: 0 }}>
+                Infrastruktur basis data relasional enterprise berbasis PostgreSQL yang dilengkapi otentikasi aman berbasis Row Level Security (RLS) serta channel WebSocket real-time untuk pembaruan suhu otomatis.
               </p>
             </div>
 
-            {/* Tech 3: ESP32 IoT Firmware */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
+            <div style={{ borderTop: '1px solid rgba(15, 23, 42, 0.08)', paddingTop: '24px' }}>
               <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
-                EDGE COMPUTING
+                03 / EDGE COMPUTING
               </p>
               <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
                 Dual-Mode IoT Firmware (ESP32)
               </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.7 }}>
-                Firmware C++ mikrokontroler teroptimasi dengan mekanisme fault-tolerance tinggi: pencatatan lokal pada MicroSD saat di luar jangkauan jaringan, dan transmisi batch otomatis aman seketika kapal bersandar di pelabuhan.
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.7, margin: 0 }}>
+                Firmware C++ mikrokontroler teroptimasi dengan mekanisme fault-tolerance tinggi: pencatatan lokal pada MicroSD saat di luar jangkauan jaringan, dan transmisi batch otomatis saat bersandar.
               </p>
             </div>
 
-            {/* Tech 4: Tailwind Design System */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '28px', boxShadow: '0 4px 20px -2px rgba(11, 45, 66, 0.04)' }}>
+            <div style={{ borderTop: '1px solid rgba(15, 23, 42, 0.08)', paddingTop: '24px' }}>
               <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0284C7', marginBottom: '8px' }}>
-                DESIGN SYSTEM
+                04 / DESIGN SYSTEM
               </p>
               <h4 style={{ color: '#0F172A', fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>
-                Tailwind CSS &amp; Visual Design System
+                Calibrated Maritime Visual System
               </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.7 }}>
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.7, margin: 0 }}>
                 Antarmuka visual terkalibrasi dengan tipografi modern Plus Jakarta Sans, menjamin keterbacaan data grafik telemetri tetap tajam dan ergonomis di bawah terik matahari pantai maupun pencahayaan minim.
               </p>
             </div>
@@ -537,11 +557,11 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
       </section>
 
       {/* ==================================================
-          7. SECTION: THE ENGINEERING TEAM (Clean Profile Card, No Text Overlay, No Icons)
+          7. SECTION: THE ENGINEERING TEAM (Clean Editorial Profile)
           ================================================== */}
-      <section style={{ padding: '90px 0', background: '#FFFFFF', borderTop: '1px solid #E2E8F0' }}>
+      <section style={{ padding: '96px 0', background: '#FFFFFF', borderTop: '1px solid rgba(15, 23, 42, 0.06)' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 50px' }}>
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 56px' }}>
             <span className="eyebrow" style={{ color: '#0284C7' }}>
               THE ENGINEERING TEAM
             </span>
@@ -557,21 +577,21 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
             style={{
               maxWidth: '920px',
               margin: '0 auto',
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 20px 45px -10px rgba(11, 45, 66, 0.08)',
+              borderTop: '1px solid rgba(15, 23, 42, 0.08)',
+              borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+              padding: '40px 0',
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '0',
+              gap: '48px',
+              alignItems: 'center',
             }}
           >
-            {/* Left: 3:4 Portrait Image (Clean, No Text Overlays, Next.js Image Optimized) */}
+            {/* Left: 3:4 Portrait Image */}
             <div
               style={{
                 position: 'relative',
-                minHeight: '440px',
+                minHeight: '420px',
+                borderRadius: '16px',
                 background: '#F1F5F9',
                 overflow: 'hidden',
               }}
@@ -580,7 +600,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
                 src={devPhoto}
                 alt="Sagit Faturrakhman - Full-Stack & IoT Engineer"
                 fill
-                sizes="(max-width: 768px) 100vw, 460px"
+                sizes="(max-width: 768px) 100vw, 440px"
                 loading="lazy"
                 onError={() => {
                   if (devPhoto !== '/Sagit-Faturrakhman.jpg') {
@@ -595,7 +615,7 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
             </div>
 
             {/* Right: Bio & Profile Details */}
-            <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{ marginBottom: '20px' }}>
                 <p
                   style={{
@@ -628,16 +648,14 @@ export const AboutView: React.FC<{ onNavigate?: (view: string) => void }> = () =
                 Berdedikasi penuh untuk menghadirkan solusi teknologi terapan yang memberikan dampak nyata bagi pemberdayaan nelayan dan peningkatan kualitas hasil tangkapan laut nasional.
               </p>
 
-              {/* Motto Banner */}
+              {/* Motto Quote */}
               <div
                 style={{
-                  background: '#F0F9FF',
-                  borderLeft: '4px solid #0284C7',
-                  borderRadius: '0 8px 8px 0',
-                  padding: '16px 20px',
+                  borderLeft: '3px solid #0284C7',
+                  paddingLeft: '18px',
                 }}
               >
-                <p style={{ fontSize: '15px', fontStyle: 'italic', fontWeight: 700, color: '#0369A1', margin: 0 }}>
+                <p style={{ fontSize: '15.5px', fontStyle: 'italic', fontWeight: 700, color: '#0369A1', margin: 0 }}>
                   &ldquo;Untuk Nelayan, Untuk Laut Kita.&rdquo;
                 </p>
               </div>

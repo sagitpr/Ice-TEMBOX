@@ -69,7 +69,7 @@ const FAQS: FAQItem[] = [
   },
 ];
 
-export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
+export const ContactView: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -80,18 +80,11 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   // Accordion State for FAQ
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
-
-  const handleNav = (view: string, e: React.MouseEvent) => {
-    if (onNavigate) {
-      e.preventDefault();
-      onNavigate(view);
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -103,21 +96,31 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && categoryModalOpen) {
-        setCategoryModalOpen(false);
+      if (e.key === 'Escape') {
+        if (categoryModalOpen) setCategoryModalOpen(false);
+        if (toastOpen) setToastOpen(false);
       }
     };
     if (categoryModalOpen) {
       document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
     } else {
       document.body.style.overflow = '';
     }
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [categoryModalOpen]);
+  }, [categoryModalOpen, toastOpen]);
+
+  // Auto-dismiss floating success toast with strict cleanup
+  useEffect(() => {
+    if (!toastOpen) return;
+    const timerId = setTimeout(() => {
+      setToastOpen(false);
+    }, 6500);
+    return () => clearTimeout(timerId);
+  }, [toastOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +147,11 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
         throw new Error(data.error || 'Gagal mengirim pesan. Silakan coba kembali beberapa saat lagi.');
       }
 
-      setSubmitted(true);
+      setFullName('');
+      setContactInfo('');
+      setCategory('Konsultasi Perangkat');
+      setMessage('');
+      setToastOpen(true);
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : 'Terjadi kendala jaringan saat mengirim pesan.';
@@ -152,15 +159,6 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleReset = () => {
-    setFullName('');
-    setContactInfo('');
-    setCategory('Konsultasi Perangkat');
-    setMessage('');
-    setErrorMessage('');
-    setSubmitted(false);
   };
 
   return (
@@ -175,7 +173,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
           background: scrolled ? 'rgba(7, 26, 39, 0.92)' : 'transparent',
           backdropFilter: scrolled ? 'blur(8px)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(8px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(125, 220, 232, 0.15)' : 'none',
+          borderBottom: scrolled ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
           boxShadow: scrolled ? '0 4px 20px rgba(0, 0, 0, 0.25)' : 'none',
           willChange: 'transform',
         }}
@@ -204,7 +202,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
               <Link
                 href="/contact"
                 className="nav-link"
-                style={{ color: '#0284C7', fontWeight: 700 }}
+                style={{ color: '#7DDCE8', fontWeight: 700 }}
               >
                 Contact
               </Link>
@@ -254,7 +252,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
             className="mobile-nav-menu"
             style={{
               background: '#0B2D42',
-              borderBottom: '1px solid rgba(125, 220, 232, 0.2)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
               boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
             }}
           >
@@ -262,7 +260,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
               href="/contact"
               className="nav-link"
               onClick={() => setMobileMenuOpen(false)}
-              style={{ color: '#0284C7', fontWeight: 700 }}
+              style={{ color: '#7DDCE8', fontWeight: 700 }}
             >
               Contact
             </Link>
@@ -274,7 +272,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
             >
               About
             </Link>
-            <hr style={{ border: 'none', borderTop: '1px solid rgba(125, 220, 232, 0.2)' }} />
+            <hr style={{ border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }} />
             <Link
               href="/login"
               className="nav-link"
@@ -287,7 +285,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
               href="/register"
               className="nav-link"
               onClick={() => setMobileMenuOpen(false)}
-              style={{ color: '#0284C7', fontWeight: 600 }}
+              style={{ color: '#7DDCE8', fontWeight: 600 }}
             >
               Sign up
             </Link>
@@ -296,18 +294,18 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
       </header>
 
       {/* ==================================================
-          2. HERO SECTION
+          2. HERO SECTION (Clean & Breathable Editorial Header)
           ================================================== */}
       <section
         style={{
           position: 'relative',
-          paddingTop: '150px',
-          paddingBottom: '60px',
-          background: 'linear-gradient(180deg, #071A27 0%, #0B2D42 65%, #071A27 100%)',
-          borderBottom: '1px solid rgba(125, 220, 232, 0.12)',
+          paddingTop: '148px',
+          paddingBottom: '56px',
+          backgroundColor: '#071A27',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
-        <div className="container" style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto' }}>
+        <div className="container" style={{ maxWidth: '1140px' }}>
           <p
             style={{
               fontSize: '12px',
@@ -324,9 +322,9 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
             className="heading-xl"
             style={{
               color: '#FFFFFF',
-              fontSize: 'clamp(2.3rem, 4.2vw, 3.8rem)',
+              fontSize: 'clamp(2.3rem, 4.2vw, 3.6rem)',
               fontWeight: 800,
-              lineHeight: 1.18,
+              lineHeight: 1.15,
               letterSpacing: '-0.03em',
               marginBottom: '18px',
             }}
@@ -336,10 +334,10 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
           <p
             style={{
               fontSize: '16.5px',
-              lineHeight: 1.7,
+              lineHeight: 1.72,
               color: '#CBD5E1',
-              maxWidth: '680px',
-              margin: '0 auto',
+              maxWidth: '640px',
+              margin: 0,
             }}
           >
             Terhubung dengan kami untuk konsultasi perangkat IoT, kerja sama strategis, atau
@@ -349,35 +347,32 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
       </section>
 
       {/* ==================================================
-          3. MAIN INTERACTIVE SECTION: Form + Contact Info
+          3. MAIN INTERACTIVE SECTION: Seamless Two-Column Layout (No Box Containers)
           ================================================== */}
-      <section style={{ padding: '70px 0', background: '#071A27' }}>
-        <div className="container">
+      <section style={{ padding: '72px 0 88px 0', backgroundColor: '#071A27' }}>
+        <div className="container" style={{ maxWidth: '1140px' }}>
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: '40px',
+              gap: '64px',
               alignItems: 'start',
             }}
           >
-            {/* Left Column: Interactive Contact Form */}
-            <div
-              style={{
-                background: 'rgba(11, 45, 66, 0.45)',
-                border: '1px solid rgba(125, 220, 232, 0.22)',
-                borderRadius: '20px',
-                padding: '40px',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <div style={{ marginBottom: '28px' }}>
+            {/* Left Column: Direct Seamless Form on Dark Surface */}
+            <div>
+              <div
+                style={{
+                  paddingBottom: '20px',
+                  marginBottom: '28px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                }}
+              >
                 <p
                   style={{
                     fontSize: '11px',
                     fontWeight: 800,
-                    letterSpacing: '0.12em',
+                    letterSpacing: '0.14em',
                     textTransform: 'uppercase',
                     color: '#7DDCE8',
                     marginBottom: '6px',
@@ -385,320 +380,279 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                 >
                   FORMULIR INTERAKTIF
                 </p>
-                <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+                <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#FFFFFF', marginBottom: '6px' }}>
                   Kirimkan Pesan Anda
                 </h2>
-                <p style={{ fontSize: '14px', color: '#94A3B8', lineHeight: 1.6 }}>
-                  Isi formulir di bawah ini. Tim teknis dan kemitraan kami akan menindaklanjuti pesan Anda secara profesional.
+                <p style={{ fontSize: '14px', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                  Isi formulir di bawah ini. Tim teknis dan kemitraan kami akan menindaklanjuti pesan Anda secara langsung.
                 </p>
               </div>
 
-              {submitted ? (
-                /* Success Notification Card */
-                <div
-                  style={{
-                    background: 'rgba(125, 220, 232, 0.08)',
-                    border: '1px solid rgba(125, 220, 232, 0.35)',
-                    borderRadius: '16px',
-                    padding: '36px 28px',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                {/* Full Name */}
+                <div>
+                  <label
+                    htmlFor="fullName"
                     style={{
-                      width: '54px',
-                      height: '54px',
-                      borderRadius: '50%',
-                      background: 'rgba(125, 220, 232, 0.18)',
-                      color: '#7DDCE8',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 18px',
-                      fontSize: '24px',
-                      fontWeight: 800,
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#E2E8F0',
+                      marginBottom: '8px',
                     }}
                   >
-                    ✓
-                  </div>
-                  <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#FFFFFF', marginBottom: '10px' }}>
-                    Pesan berhasil dikirim ke tim Ice-TEMBOX!
-                  </h3>
-                  <p style={{ fontSize: '14px', color: '#CBD5E1', lineHeight: 1.7, marginBottom: '24px' }}>
-                    Terima kasih telah menghubungi TEMBOX. Pesan Anda telah diteruskan langsung ke email resmi{' '}
-                    <strong style={{ color: '#7DDCE8' }}>sagitistaratas465@gmail.com</strong> dan tim kami akan segera menindaklanjuti dalam 1x24 jam kerja.
-                  </p>
+                    Nama Lengkap <span style={{ color: '#7DDCE8' }}>*</span>
+                  </label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    required
+                    placeholder="Contoh: Budi Santoso"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderRadius: '10px',
+                      padding: '13px 16px',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease, background-color 0.2s ease',
+                    }}
+                  />
+                </div>
+
+                {/* Email / WhatsApp */}
+                <div>
+                  <label
+                    htmlFor="contactInfo"
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#E2E8F0',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    Email atau Nomor WhatsApp <span style={{ color: '#7DDCE8' }}>*</span>
+                  </label>
+                  <input
+                    id="contactInfo"
+                    type="text"
+                    required
+                    placeholder="Contoh: budi@gmail.com / 081234567890"
+                    value={contactInfo}
+                    onChange={(e) => setContactInfo(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderRadius: '10px',
+                      padding: '13px 16px',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease, background-color 0.2s ease',
+                    }}
+                  />
+                </div>
+
+                {/* Category Selection (Custom Popup / Modal Trigger) */}
+                <div>
+                  <label
+                    id="category-label"
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#E2E8F0',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    Kategori Kebutuhan
+                  </label>
                   <button
                     type="button"
-                    onClick={handleReset}
+                    aria-haspopup="dialog"
+                    aria-expanded={categoryModalOpen}
+                    onClick={() => setCategoryModalOpen(true)}
                     style={{
-                      background: '#0284C7',
-                      color: '#FFFFFF',
-                      fontWeight: 700,
-                      fontSize: '14px',
-                      padding: '12px 28px',
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.14)',
                       borderRadius: '10px',
-                      border: 'none',
+                      padding: '13px 16px',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                       cursor: 'pointer',
-                      transition: 'background-color 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#0369A1';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#0284C7';
+                      textAlign: 'left',
+                      transition: 'border-color 0.2s ease, background 0.2s ease',
                     }}
                   >
-                    Kirim Pesan Lain
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontWeight: 600, color: '#FFFFFF' }}>{category}</span>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(125, 220, 232, 0.12)',
+                          color: '#7DDCE8',
+                        }}
+                      >
+                        {CATEGORY_OPTIONS.find((c) => c.id === category)?.badge || 'Pilihan'}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#7DDCE8' }}>▼</span>
                   </button>
                 </div>
-              ) : (
-                /* Contact Input Form */
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {/* Full Name */}
-                  <div>
-                    <label
-                      htmlFor="fullName"
-                      style={{
-                        display: 'block',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        color: '#E2E8F0',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      Nama Lengkap <span style={{ color: '#7DDCE8' }}>*</span>
-                    </label>
-                    <input
-                      id="fullName"
-                      type="text"
-                      required
-                      placeholder="Contoh: Budi Santoso"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(7, 26, 39, 0.85)',
-                        border: '1px solid rgba(125, 220, 232, 0.25)',
-                        borderRadius: '10px',
-                        padding: '13px 16px',
-                        color: '#FFFFFF',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease',
-                      }}
-                    />
-                  </div>
 
-                  {/* Email / WhatsApp */}
-                  <div>
-                    <label
-                      htmlFor="contactInfo"
-                      style={{
-                        display: 'block',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        color: '#E2E8F0',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      Email atau Nomor WhatsApp <span style={{ color: '#7DDCE8' }}>*</span>
-                    </label>
-                    <input
-                      id="contactInfo"
-                      type="text"
-                      required
-                      placeholder="Contoh: budi@gmail.com / 081234567890"
-                      value={contactInfo}
-                      onChange={(e) => setContactInfo(e.target.value)}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(7, 26, 39, 0.85)',
-                        border: '1px solid rgba(125, 220, 232, 0.25)',
-                        borderRadius: '10px',
-                        padding: '13px 16px',
-                        color: '#FFFFFF',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease',
-                      }}
-                    />
-                  </div>
-
-                  {/* Category Selection (Custom Popup / Modal Trigger) */}
-                  <div>
-                    <label
-                      id="category-label"
-                      style={{
-                        display: 'block',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        color: '#E2E8F0',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      Kategori Kebutuhan
-                    </label>
-                    <button
-                      type="button"
-                      aria-haspopup="dialog"
-                      aria-expanded={categoryModalOpen}
-                      onClick={() => setCategoryModalOpen(true)}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(7, 26, 39, 0.95)',
-                        border: '1px solid rgba(125, 220, 232, 0.3)',
-                        borderRadius: '10px',
-                        padding: '13px 16px',
-                        color: '#FFFFFF',
-                        fontSize: '14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'border-color 0.2s ease, background 0.2s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontWeight: 600, color: '#FFFFFF' }}>{category}</span>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            background: 'rgba(125, 220, 232, 0.15)',
-                            color: '#7DDCE8',
-                          }}
-                        >
-                          {CATEGORY_OPTIONS.find((c) => c.id === category)?.badge || 'Pilihan'}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '12px', color: '#7DDCE8' }}>▼</span>
-                    </button>
-                  </div>
-
-                  {/* Message Textarea */}
-                  <div>
-                    <label
-                      htmlFor="message"
-                      style={{
-                        display: 'block',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        color: '#E2E8F0',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      Pesan atau Kebutuhan Spesifik <span style={{ color: '#7DDCE8' }}>*</span>
-                    </label>
-                    <textarea
-                      id="message"
-                      required
-                      rows={5}
-                      placeholder="Jelaskan kebutuhan armada kapal, pertanyaan telemetri palka, atau topik kerja sama yang ingin didiskusikan..."
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(7, 26, 39, 0.85)',
-                        border: '1px solid rgba(125, 220, 232, 0.25)',
-                        borderRadius: '10px',
-                        padding: '14px 16px',
-                        color: '#FFFFFF',
-                        fontSize: '14px',
-                        lineHeight: 1.6,
-                        outline: 'none',
-                        resize: 'vertical',
-                      }}
-                    />
-                  </div>
-
-                  {/* Error Notification Alert */}
-                  {errorMessage && (
-                    <div
-                      style={{
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        border: '1px solid rgba(239, 68, 68, 0.4)',
-                        borderRadius: '10px',
-                        padding: '12px 16px',
-                        color: '#FCA5A5',
-                        fontSize: '13.5px',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {errorMessage}
-                    </div>
-                  )}
-
-                  {/* Submit Button (Flat & Professional Minimalist Design) */}
-                  <button
-                    type="submit"
-                    disabled={submitting}
+                {/* Message Textarea */}
+                <div>
+                  <label
+                    htmlFor="message"
                     style={{
-                      background: '#0284C7',
-                      color: '#FFFFFF',
-                      fontWeight: 700,
-                      fontSize: '15px',
-                      padding: '14px 24px',
-                      borderRadius: '10px',
-                      border: 'none',
-                      cursor: submitting ? 'not-allowed' : 'pointer',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-                      transition: 'background-color 0.2s ease, opacity 0.2s ease',
-                      opacity: submitting ? 0.75 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!submitting) e.currentTarget.style.backgroundColor = '#0369A1';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!submitting) e.currentTarget.style.backgroundColor = '#0284C7';
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#E2E8F0',
+                      marginBottom: '8px',
                     }}
                   >
-                    {submitting ? 'Mengirim...' : 'Kirim Pesan Sekarang'}
-                  </button>
-                </form>
-              )}
-            </div>
+                    Pesan atau Kebutuhan Spesifik <span style={{ color: '#7DDCE8' }}>*</span>
+                  </label>
+                  <textarea
+                    id="message"
+                    required
+                    rows={5}
+                    placeholder="Jelaskan kebutuhan armada kapal, pertanyaan telemetri palka, atau topik kerja sama yang ingin didiskusikan..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderRadius: '10px',
+                      padding: '14px 16px',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      lineHeight: 1.6,
+                      outline: 'none',
+                      resize: 'vertical',
+                    }}
+                  />
+                </div>
 
-            {/* Right Column: Contact Cards & Operational Base */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {/* Card 1: Direct Official Contact */}
-              <div
-                style={{
-                  background: 'rgba(11, 45, 66, 0.45)',
-                  border: '1px solid rgba(125, 220, 232, 0.2)',
-                  borderRadius: '18px',
-                  padding: '30px',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-                }}
-              >
-                <p
+                {/* Error Notification Alert */}
+                {errorMessage && (
+                  <div
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      borderRadius: '10px',
+                      padding: '12px 16px',
+                      color: '#FCA5A5',
+                      fontSize: '13.5px',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {errorMessage}
+                  </div>
+                )}
+
+                {/* Submit Button (Flat & Professional Minimalist Design) */}
+                <button
+                  type="submit"
+                  disabled={submitting}
                   style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: '#7DDCE8',
-                    marginBottom: '8px',
+                    background: '#0284C7',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '15px',
+                    padding: '14px 24px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    cursor: submitting ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+                    transition: 'background-color 0.2s ease, opacity 0.2s ease',
+                    opacity: submitting ? 0.75 : 1,
+                    alignSelf: 'flex-start',
+                    minWidth: '220px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!submitting) e.currentTarget.style.backgroundColor = '#0369A1';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!submitting) e.currentTarget.style.backgroundColor = '#0284C7';
                   }}
                 >
-                  SALURAN RESMI
-                </p>
-                <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#FFFFFF', marginBottom: '16px' }}>
+                  {submitting ? 'Mengirim...' : 'Kirim Pesan Sekarang'}
+                </button>
+              </form>
+            </div>
+
+            {/* Right Column: Seamless Typography Contact Directory & University Base */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
+              {/* Block 1: Official Channels */}
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: '#7DDCE8',
+                    }}
+                  >
+                    SALURAN RESMI
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      background: 'rgba(125, 220, 232, 0.12)',
+                      color: '#7DDCE8',
+                    }}
+                  >
+                    Respon ≤ 24 Jam
+                  </span>
+                </div>
+
+                <h3 style={{ fontSize: '21px', fontWeight: 800, color: '#FFFFFF', marginBottom: '20px' }}>
                   Kontak Langsung
                 </h3>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div>
-                    <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '3px' }}>
-                      Email Resmi Layanan:
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div
+                    style={{
+                      padding: '16px 0',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>
+                      Email Resmi Layanan
                     </span>
                     <a
                       href="mailto:sagitistaratas465@gmail.com"
                       style={{
-                        fontSize: '15px',
+                        fontSize: '15.5px',
                         color: '#7DDCE8',
                         fontWeight: 700,
                         textDecoration: 'none',
@@ -708,16 +662,21 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                     </a>
                   </div>
 
-                  <div>
-                    <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '3px' }}>
-                      WhatsApp Bisnis &amp; Konsultasi Cepat:
+                  <div
+                    style={{
+                      padding: '16px 0',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>
+                      WhatsApp Bisnis &amp; Konsultasi Cepat
                     </span>
                     <a
                       href="https://wa.me/6287833847895"
                       target="_blank"
                       rel="noreferrer"
                       style={{
-                        fontSize: '15px',
+                        fontSize: '15.5px',
                         color: '#7DDCE8',
                         fontWeight: 700,
                         textDecoration: 'none',
@@ -727,46 +686,70 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                     </a>
                   </div>
 
-                  <div>
-                    <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '3px' }}>
-                      Jam Operasional Layanan:
+                  <div
+                    style={{
+                      padding: '16px 0',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>
+                      Jam Operasional Layanan
                     </span>
-                    <p style={{ fontSize: '14px', color: '#E2E8F0', fontWeight: 600, margin: 0 }}>
+                    <p style={{ fontSize: '14.5px', color: '#E2E8F0', fontWeight: 600, margin: 0 }}>
                       Senin – Jumat, 08.00 – 17.00 WIB
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Card 2: Development Base / University */}
+              {/* Block 2: Institutional Base */}
               <div
                 style={{
-                  background: 'rgba(11, 45, 66, 0.45)',
-                  border: '1px solid rgba(125, 220, 232, 0.2)',
-                  borderRadius: '18px',
-                  padding: '30px',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                  paddingTop: '12px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                  paddingBottom: '28px',
                 }}
               >
-                <p
+                <div
                   style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: '#7DDCE8',
-                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '10px',
                   }}
                 >
-                  BASIS PENGEMBANGAN INSTITUSIONAL
-                </p>
-                <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#FFFFFF', marginBottom: '12px' }}>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: '#7DDCE8',
+                    }}
+                  >
+                    BASIS PENGEMBANGAN INSTITUSIONAL
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      color: '#CBD5E1',
+                    }}
+                  >
+                    Tasikmalaya
+                  </span>
+                </div>
+
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#FFFFFF', marginBottom: '10px' }}>
                   Universitas Bakti Tunas Husada
                 </h3>
-                <p style={{ fontSize: '14px', lineHeight: 1.65, color: '#CBD5E1', marginBottom: '12px' }}>
+                <p style={{ fontSize: '14.5px', lineHeight: 1.65, color: '#CBD5E1', marginBottom: '8px' }}>
                   Fakultas Teknologi dan Bisnis — Program Studi S1 Sistem Informasi
                 </p>
-                <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: 1.6 }}>
+                <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
                   Jl. Letjen Mashudi No. 20, Kota Tasikmalaya, Jawa Barat 46196, Indonesia.
                 </p>
               </div>
@@ -776,22 +759,22 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
       </section>
 
       {/* ==================================================
-          4. SECTION: FAQ CEPAT (Quick Support / Tanya-Jawab Singkat)
+          4. SECTION: FAQ CEPAT (Clean Borderless Accordion Rows)
           ================================================== */}
       <section
         style={{
-          padding: '80px 0',
-          background: 'linear-gradient(180deg, #071A27 0%, #0B2D42 50%, #071A27 100%)',
-          borderTop: '1px solid rgba(125, 220, 232, 0.12)',
+          padding: '80px 0 96px 0',
+          background: '#051420',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
         <div className="container" style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '44px' }}>
+          <div style={{ marginBottom: '44px' }}>
             <p
               style={{
                 fontSize: '11px',
                 fontWeight: 800,
-                letterSpacing: '0.12em',
+                letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 color: '#7DDCE8',
                 marginBottom: '8px',
@@ -799,28 +782,22 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
             >
               DUKUNGAN INSTAN
             </p>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 2.8vw, 2.4rem)', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 2.8vw, 2.3rem)', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
               Pertanyaan yang Sering Diajukan (FAQ)
             </h2>
-            <p style={{ fontSize: '14.5px', color: '#94A3B8', marginTop: '10px' }}>
+            <p style={{ fontSize: '14.5px', color: '#94A3B8', marginTop: '10px', marginBottom: 0 }}>
               Jawaban ringkas seputar spesifikasi teknis, mekanisme pemasangan, dan operasional TEMBOX.
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
             {FAQS.map((faq, index) => {
               const isOpen = openFAQ === index;
               return (
                 <div
                   key={index}
                   style={{
-                    background: 'rgba(11, 45, 66, 0.45)',
-                    border: isOpen
-                      ? '1px solid #7DDCE8'
-                      : '1px solid rgba(125, 220, 232, 0.18)',
-                    borderRadius: '14px',
-                    overflow: 'hidden',
-                    transition: 'border-color 0.2s ease',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                   }}
                 >
                   <button
@@ -828,7 +805,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                     onClick={() => setOpenFAQ(isOpen ? null : index)}
                     style={{
                       width: '100%',
-                      padding: '22px 26px',
+                      padding: '22px 0',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -836,17 +813,18 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
-                      color: '#FFFFFF',
+                      color: isOpen ? '#7DDCE8' : '#FFFFFF',
                       fontSize: '16px',
                       fontWeight: 700,
                       gap: '16px',
+                      transition: 'color 0.2s ease',
                     }}
                   >
                     <span>{faq.question}</span>
                     <span
                       style={{
-                        fontSize: '18px',
-                        color: isOpen ? '#7DDCE8' : '#94A3B8',
+                        fontSize: '20px',
+                        color: isOpen ? '#7DDCE8' : '#64748B',
                         transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
                         transition: 'transform 0.25s ease, color 0.2s ease',
                         flexShrink: 0,
@@ -859,12 +837,10 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
                   {isOpen && (
                     <div
                       style={{
-                        padding: '0 26px 24px 26px',
+                        paddingBottom: '24px',
                         fontSize: '14.5px',
                         lineHeight: 1.75,
                         color: '#CBD5E1',
-                        borderTop: '1px solid rgba(125, 220, 232, 0.08)',
-                        paddingTop: '16px',
                       }}
                     >
                       {faq.answer}
@@ -904,7 +880,7 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
               <Link href="/contact" className="footer-link" style={{ color: '#7DDCE8' }}>
                 Contact
               </Link>
-              <Link href="/about" onClick={(e) => handleNav('about', e)} className="footer-link" style={{ color: '#CBD5E1' }}>
+              <Link href="/about" className="footer-link" style={{ color: '#CBD5E1' }}>
                 About
               </Link>
             </div>
@@ -940,184 +916,269 @@ export const ContactView: React.FC<{ onNavigate?: (view: string) => void }> = ({
       </footer>
 
       {/* ==================================================
-          6. MODAL / POPUP: Custom Interactive Category Selector
+          6. FLOATING SUCCESS TOAST NOTIFICATION
           ================================================== */}
-      {categoryModalOpen && (
+      <div
+        role="status"
+        aria-live="polite"
+        className={toastOpen ? '' : 'pointer-events-none'}
+        style={{
+          position: 'fixed',
+          bottom: '28px',
+          right: '28px',
+          zIndex: 9998,
+          pointerEvents: toastOpen ? 'auto' : 'none',
+          opacity: toastOpen ? 1 : 0,
+          transform: toastOpen ? 'translateY(0)' : 'translateY(16px)',
+          transition: 'opacity 0.25s ease, transform 0.25s ease',
+        }}
+      >
         <div
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setCategoryModalOpen(false)}
           style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'rgba(5, 20, 32, 0.78)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
+            gap: '14px',
+            background: '#0B2D42',
+            border: '1px solid rgba(125, 220, 232, 0.35)',
+            borderRadius: '14px',
+            padding: '14px 18px',
+            boxShadow: '0 18px 40px rgba(0, 0, 0, 0.45)',
+            maxWidth: '380px',
           }}
         >
           <div
-            onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#0B2D42',
-              border: '1px solid rgba(125, 220, 232, 0.35)',
-              borderRadius: '20px',
-              maxWidth: '560px',
-              width: '100%',
-              padding: '32px 28px',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.55)',
-              position: 'relative',
-              maxHeight: '90vh',
-              overflowY: 'auto',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'rgba(16, 185, 129, 0.16)',
+              color: '#34D399',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: 900,
+              flexShrink: 0,
             }}
           >
-            {/* Modal Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '22px' }}>
-              <div>
-                <p
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: '#7DDCE8',
-                    marginBottom: '4px',
-                  }}
-                >
-                  PILIHAN KATEGORI
-                </p>
-                <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                  Pilih Kategori Kebutuhan
-                </h3>
-                <p style={{ fontSize: '13.5px', color: '#94A3B8', marginTop: '6px', marginBottom: 0 }}>
-                  Tentukan topik konsultasi atau layanan yang paling sesuai dengan keperluan Anda.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCategoryModalOpen(false)}
-                aria-label="Tutup Jendela Kategori"
+            ✓
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '14px', fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+              Pesan Terkirim ke Tim TEMBOX
+            </p>
+            <p style={{ fontSize: '12px', color: '#94A3B8', margin: '2px 0 0 0' }}>
+              Diteruskan ke sagitistaratas465@gmail.com
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastOpen(false)}
+            aria-label="Tutup Notifikasi"
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: 'none',
+              color: '#CBD5E1',
+              width: '26px',
+              height: '26px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '12px',
+              flexShrink: 0,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      {/* ==================================================
+          7. MODAL / POPUP: Custom Interactive Category Selector
+          (Uses pointer-events-none when closed so it never blocks clicks)
+          ================================================== */}
+      <div
+        role="dialog"
+        aria-modal={categoryModalOpen}
+        aria-hidden={!categoryModalOpen}
+        onClick={() => categoryModalOpen && setCategoryModalOpen(false)}
+        className={categoryModalOpen ? '' : 'pointer-events-none'}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          backgroundColor: 'rgba(5, 20, 32, 0.78)',
+          backdropFilter: categoryModalOpen ? 'blur(8px)' : 'none',
+          WebkitBackdropFilter: categoryModalOpen ? 'blur(8px)' : 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          opacity: categoryModalOpen ? 1 : 0,
+          visibility: categoryModalOpen ? 'visible' : 'hidden',
+          pointerEvents: categoryModalOpen ? 'auto' : 'none',
+          transition: 'opacity 0.2s ease, visibility 0.2s ease',
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: '#0B2D42',
+            border: '1px solid rgba(125, 220, 232, 0.35)',
+            borderRadius: '20px',
+            maxWidth: '560px',
+            width: '100%',
+            padding: '32px 28px',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.55)',
+            position: 'relative',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}
+        >
+          {/* Modal Header */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '22px' }}>
+            <div>
+              <p
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  color: '#CBD5E1',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  lineHeight: 1,
-                  flexShrink: 0,
-                  transition: 'background-color 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.18)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: '#7DDCE8',
+                  marginBottom: '4px',
                 }}
               >
-                ✕
-              </button>
+                PILIHAN KATEGORI
+              </p>
+              <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                Pilih Kategori Kebutuhan
+              </h3>
+              <p style={{ fontSize: '13.5px', color: '#94A3B8', marginTop: '6px', marginBottom: 0 }}>
+                Tentukan topik konsultasi atau layanan yang paling sesuai dengan keperluan Anda.
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setCategoryModalOpen(false)}
+              aria-label="Tutup Jendela Kategori"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#CBD5E1',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '15px',
+                lineHeight: 1,
+                flexShrink: 0,
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.18)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+              }}
+            >
+              ✕
+            </button>
+          </div>
 
-            {/* Category Options List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {CATEGORY_OPTIONS.map((opt) => {
-                const isSelected = category === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => {
-                      setCategory(opt.id);
-                      setCategoryModalOpen(false);
-                    }}
+          {/* Category Options List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {CATEGORY_OPTIONS.map((opt) => {
+              const isSelected = category === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setCategory(opt.id);
+                    setCategoryModalOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    background: isSelected ? 'rgba(125, 220, 232, 0.12)' : 'rgba(7, 26, 39, 0.65)',
+                    border: isSelected ? '1.5px solid #7DDCE8' : '1px solid rgba(125, 220, 232, 0.2)',
+                    borderRadius: '14px',
+                    padding: '16px 18px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.borderColor = 'rgba(125, 220, 232, 0.45)';
+                      e.currentTarget.style.backgroundColor = 'rgba(7, 26, 39, 0.9)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.borderColor = 'rgba(125, 220, 232, 0.2)';
+                      e.currentTarget.style.backgroundColor = 'rgba(7, 26, 39, 0.65)';
+                    }
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF' }}>
+                        {opt.title}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          background: isSelected ? 'rgba(125, 220, 232, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                          color: isSelected ? '#7DDCE8' : '#94A3B8',
+                          letterSpacing: '0.03em',
+                        }}
+                      >
+                        {opt.badge}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '12.5px', color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
+                      {opt.description}
+                    </p>
+                  </div>
+
+                  {/* Radio / Check indicator */}
+                  <div
                     style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      background: isSelected ? 'rgba(125, 220, 232, 0.12)' : 'rgba(7, 26, 39, 0.65)',
-                      border: isSelected ? '1.5px solid #7DDCE8' : '1px solid rgba(125, 220, 232, 0.2)',
-                      borderRadius: '14px',
-                      padding: '16px 18px',
-                      cursor: 'pointer',
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      border: isSelected ? '2px solid #7DDCE8' : '2px solid rgba(255, 255, 255, 0.3)',
+                      background: isSelected ? '#7DDCE8' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '16px',
-                      transition: 'all 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'rgba(125, 220, 232, 0.45)';
-                        e.currentTarget.style.backgroundColor = 'rgba(7, 26, 39, 0.9)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'rgba(125, 220, 232, 0.2)';
-                        e.currentTarget.style.backgroundColor = 'rgba(7, 26, 39, 0.65)';
-                      }
+                      justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF' }}>
-                          {opt.title}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: '10.5px',
-                            fontWeight: 700,
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            background: isSelected ? 'rgba(125, 220, 232, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                            color: isSelected ? '#7DDCE8' : '#94A3B8',
-                            letterSpacing: '0.03em',
-                          }}
-                        >
-                          {opt.badge}
-                        </span>
-                      </div>
-                      <p style={{ fontSize: '12.5px', color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
-                        {opt.description}
-                      </p>
-                    </div>
-
-                    {/* Radio / Check indicator */}
-                    <div
-                      style={{
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: '50%',
-                        border: isSelected ? '2px solid #7DDCE8' : '2px solid rgba(255, 255, 255, 0.3)',
-                        background: isSelected ? '#7DDCE8' : 'transparent',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {isSelected && (
-                        <span style={{ color: '#071A27', fontSize: '13px', fontWeight: 900, lineHeight: 1 }}>
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    {isSelected && (
+                      <span style={{ color: '#071A27', fontSize: '13px', fontWeight: 900, lineHeight: 1 }}>
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

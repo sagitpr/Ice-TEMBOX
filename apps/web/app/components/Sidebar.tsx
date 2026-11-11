@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const Icon = item.icon;
             const isActive = currentTab === item.id;
             return (
-              <a
+              <Link
                 key={item.id}
                 href={item.href}
                 onClick={(e) => handleNavClick(item.id, e)}
@@ -101,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
-              </a>
+              </Link>
             );
           })}
         </nav>

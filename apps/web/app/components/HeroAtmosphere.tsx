@@ -80,10 +80,10 @@ export const HeroAtmosphere: React.FC = () => {
 
       window.addEventListener('resize', handleResize, { passive: true });
 
-      // Animation Loop
+      // Animation Loop with Page Visibility pause to eliminate idle GPU leaks
       let clock = 0;
       const animate = () => {
-        if (isDisposed || !renderer) return;
+        if (isDisposed || !renderer || document.hidden) return;
         clock += 0.01;
 
         currentX += (targetX - currentX) * 0.035;
@@ -109,9 +109,22 @@ export const HeroAtmosphere: React.FC = () => {
         animationFrameId = requestAnimationFrame(animate);
       };
 
-      animate();
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        } else if (!isDisposed) {
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+          animationFrameId = requestAnimationFrame(animate);
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      if (!document.hidden) {
+        animate();
+      }
 
       return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('resize', handleResize);
         waveGeometry.dispose();

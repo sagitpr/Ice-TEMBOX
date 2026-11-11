@@ -24,3 +24,7 @@
   background-size: 200% 100%;
   animation: oceanWave 2s ease-in-out infinite;
 }
+
+.pointer-events-none {
+  pointer-events: none !important;
+}
