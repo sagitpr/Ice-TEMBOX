@@ -14,6 +14,7 @@ let lastTransporterPass: string | null = null;
 function getMailTransporter(): nodemailer.Transporter {
   const host = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
   const port = Number(process.env.SMTP_PORT || 465);
+  const isSecure = port === 465;
   const user = process.env.SMTP_USER?.trim() || '';
   const pass = process.env.SMTP_PASS?.replace(/\s+/g, '') || '';
 
@@ -24,11 +25,15 @@ function getMailTransporter(): nodemailer.Transporter {
   mailTransporterInstance = nodemailer.createTransport({
     host,
     port,
-    secure: port === 465,
+    secure: isSecure,
+    requireTLS: !isSecure,
     auth: {
       user,
       pass,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
   lastTransporterPass = pass;
 

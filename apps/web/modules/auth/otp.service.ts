@@ -43,12 +43,12 @@ export async function createAndSaveOtp(
   purpose: 'register' | 'reset_password' = 'register'
 ): Promise<GenerateOtpResult> {
   const cleanEmail = email.toLowerCase().trim();
-  // Generate 6-digit cryptographically secure number: 100000 to 999999
-  const otpCode = String(crypto.randomInt(100000, 1000000));
+  // Generate 6-digit numeric OTP code
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   const otpHash = hashOtp(cleanEmail, otpCode);
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
-  // 1. Save in in-memory fallback
+  // 1. Save in in-memory fallback cache
   memoryOtpCache.set(`${cleanEmail}:${purpose}`, {
     email: cleanEmail,
     otpHash,
@@ -59,27 +59,33 @@ export async function createAndSaveOtp(
     verified: false,
   });
 
-  // 2. Persist in Supabase otp_verifications table if available
-  try {
-    const admin = getSupabaseAdmin();
-    // Invalidate prior codes
-    await admin
-      .from('otp_verifications')
-      .delete()
-      .eq('email', cleanEmail)
-      .eq('purpose', purpose);
+  // 2. Strict persistence to Supabase otp_verifications table (No silent fallback)
+  const admin = getSupabaseAdmin();
 
-    // Insert new record
-    await admin.from('otp_verifications').insert({
-      email: cleanEmail,
-      otp_hash: otpHash,
-      purpose,
-      attempts: 0,
-      max_attempts: MAX_ATTEMPTS,
-      expires_at: expiresAt.toISOString(),
-    });
-  } catch (dbErr) {
-    console.warn('[OTP Service] Supabase DB storage failed, using resilient in-memory cache:', dbErr);
+  // Invalidate previous pending codes for this email and purpose
+  const { error: delErr } = await admin
+    .from('otp_verifications')
+    .delete()
+    .eq('email', cleanEmail)
+    .eq('purpose', purpose);
+
+  if (delErr) {
+    console.warn('[OTP Service] Warning deleting prior OTPs:', delErr.message);
+  }
+
+  // Insert new OTP verification record
+  const { error: insertErr } = await admin.from('otp_verifications').insert({
+    email: cleanEmail,
+    otp_hash: otpHash,
+    purpose,
+    attempts: 0,
+    max_attempts: MAX_ATTEMPTS,
+    expires_at: expiresAt.toISOString(),
+  });
+
+  if (insertErr) {
+    console.error('[OTP Service] Gagal insert ke tabel otp_verifications di Supabase:', insertErr);
+    throw new Error(`Database error: Gagal menyimpan data OTP ke Supabase (${insertErr.code || 'DB_ERROR'}): ${insertErr.message}`);
   }
 
   return { otpCode, expiresAt };
