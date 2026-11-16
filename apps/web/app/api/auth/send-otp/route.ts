@@ -8,18 +8,22 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const { email, recipientName, recaptchaToken } = body;
 
-    // 0. Anti-bot validation via Google reCAPTCHA v3 (safe bypass if RECAPTCHA_SECRET_KEY unset)
-    const recaptchaCheck = await verifyRecaptchaToken(recaptchaToken, 'send_otp');
-    if (!recaptchaCheck.success) {
-      return NextResponse.json(
-        { success: false, error: recaptchaCheck.error || 'Verifikasi keamanan reCAPTCHA gagal.' },
-        { status: 403 }
-      );
+    // 0. Anti-bot validation via Google reCAPTCHA v3 (lewati jika RECAPTCHA_SECRET_KEY tidak disetel)
+    if (process.env.RECAPTCHA_SECRET_KEY?.trim()) {
+      const recaptchaCheck = await verifyRecaptchaToken(recaptchaToken, 'send_otp');
+      if (!recaptchaCheck.success) {
+        const errMsg = recaptchaCheck.error || 'Verifikasi keamanan reCAPTCHA gagal.';
+        return NextResponse.json(
+          { success: false, error: errMsg, message: errMsg },
+          { status: 403 }
+        );
+      }
     }
 
     if (!email || !email.includes('@')) {
+      const errMsg = 'Alamat email penerima tidak valid.';
       return NextResponse.json(
-        { success: false, error: 'Alamat email penerima tidak valid.' },
+        { success: false, error: errMsg, message: errMsg },
         { status: 400 }
       );
     }
@@ -29,9 +33,10 @@ export async function POST(request: Request) {
     const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '');
 
     if (!smtpUser || !smtpPass) {
-      console.error('[Send OTP] Konfigurasi email server belum lengkap: SMTP_USER atau SMTP_PASS belum disetel.');
+      const errMsg = 'Konfigurasi email server belum lengkap: SMTP_USER atau SMTP_PASS belum disetel.';
+      console.error(`[Send OTP] ${errMsg}`);
       return NextResponse.json(
-        { success: false, error: 'Konfigurasi email server belum lengkap' },
+        { success: false, error: errMsg, message: errMsg },
         { status: 500 }
       );
     }
@@ -39,14 +44,22 @@ export async function POST(request: Request) {
     // 2. Cryptographically secure hashed OTP generation with 10-minute expiration & attempt throttling
     const { otpCode } = await createAndSaveOtp(email, 'register');
 
-    // 3. Wajib await proses pengiriman email OTP secara eksplisit sebelum return response (mencegah termination di Vercel Serverless)
-    const mailInfo = await sendOtpEmail({
-      to: email.trim(),
-      otpCode,
-      recipientName,
-    });
-
-    console.log(`[Send OTP] Email OTP berhasil dikirim ke ${email}:`, mailInfo?.messageId);
+    // 3. Wajib await proses pengiriman email OTP secara eksplisit sebelum return response
+    try {
+      const mailInfo = await sendOtpEmail({
+        to: email.trim(),
+        otpCode,
+        recipientName,
+      });
+      console.log(`[Send OTP] Email OTP berhasil dikirim ke ${email}:`, mailInfo?.messageId);
+    } catch (smtpErr: unknown) {
+      console.error('[Send OTP SMTP Error]:', smtpErr);
+      const errMsg = smtpErr instanceof Error ? smtpErr.message : 'Gagal mengirim email OTP melalui SMTP server.';
+      return NextResponse.json(
+        { success: false, error: errMsg, message: errMsg },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -54,9 +67,9 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     console.error('[Send OTP Error]:', error);
-    const message = error instanceof Error ? error.message : 'Gagal mengirimkan kode OTP ke email.';
+    const errMsg = error instanceof Error ? error.message : 'Gagal mengirimkan kode OTP ke email.';
     return NextResponse.json(
-      { success: false, error: message },
+      { success: false, error: errMsg, message: errMsg },
       { status: 500 }
     );
   }

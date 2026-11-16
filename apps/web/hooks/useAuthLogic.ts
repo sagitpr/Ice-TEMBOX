@@ -128,31 +128,52 @@ export function useAuthLogic() {
     setRegisterLoading(true);
 
     try {
+      // Safe Google reCAPTCHA v3 execution (non-blocking fallback)
+      let recaptchaToken = '';
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      if (typeof window !== 'undefined' && siteKey) {
+        try {
+          const win = window as unknown as {
+            grecaptcha?: {
+              ready: (cb: () => void) => void;
+              execute: (key: string, options: { action: string }) => Promise<string>;
+            };
+          };
+          if (win.grecaptcha && typeof win.grecaptcha.execute === 'function') {
+            await new Promise<void>((resolve) => {
+              win.grecaptcha!.ready(() => resolve());
+            });
+            recaptchaToken = await win.grecaptcha.execute(siteKey, { action: 'send_otp' });
+          }
+        } catch (recaptchaErr) {
+          console.warn('[reCAPTCHA v3] Gagal mengeksekusi reCAPTCHA, melanjutkan dengan token kosong:', recaptchaErr);
+        }
+      }
+
       // Send branded OTP verification email via SMTP and await response
-      const response = await fetch('/api/auth/send-otp', {
+      const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: registerEmail.trim(),
           recipientName: registerFullName.trim(),
+          recaptchaToken,
         }),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
 
-      // Jika API send-otp gagal, tampilkan error di form dan JANGAN pindah ke layar OTP
-      if (!response.ok) {
-        setRegisterErrorMsg(data.error || 'Gagal mengirim kode OTP ke email.');
-        setRegisterLoading(false);
-        return;
+      // Tangkap pesan error dari semua format (error / message / HTTP status)
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error || data.message || `Gagal mengirim OTP (Status ${res.status})`);
       }
 
-      setRegisterLoading(false);
       setRegisterStep('otp');
     } catch (err: unknown) {
       console.error('Error saat menghubungi endpoint send-otp:', err);
       const errMsg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan saat mengirim kode OTP.';
       setRegisterErrorMsg(errMsg);
+    } finally {
       setRegisterLoading(false);
     }
   };
@@ -164,23 +185,46 @@ export function useAuthLogic() {
     setRegisterLoading(true);
 
     try {
-      const response = await fetch('/api/auth/send-otp', {
+      let recaptchaToken = '';
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      if (typeof window !== 'undefined' && siteKey) {
+        try {
+          const win = window as unknown as {
+            grecaptcha?: {
+              ready: (cb: () => void) => void;
+              execute: (key: string, options: { action: string }) => Promise<string>;
+            };
+          };
+          if (win.grecaptcha && typeof win.grecaptcha.execute === 'function') {
+            await new Promise<void>((resolve) => {
+              win.grecaptcha!.ready(() => resolve());
+            });
+            recaptchaToken = await win.grecaptcha.execute(siteKey, { action: 'send_otp' });
+          }
+        } catch (recaptchaErr) {
+          console.warn('[reCAPTCHA v3] Gagal mengeksekusi reCAPTCHA saat resend:', recaptchaErr);
+        }
+      }
+
+      const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: registerEmail.trim(),
           recipientName: registerFullName.trim(),
+          recaptchaToken,
         }),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
 
-      if (!response.ok) {
-        setRegisterOtpError(data.error || 'Gagal mengirim ulang kode OTP.');
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error || data.message || `Gagal mengirim ulang kode OTP (Status ${res.status})`);
       }
     } catch (err: unknown) {
       console.error('Error saat kirim ulang OTP:', err);
-      setRegisterOtpError('Terjadi kesalahan jaringan saat mengirim ulang kode OTP.');
+      const errMsg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan saat mengirim ulang kode OTP.';
+      setRegisterOtpError(errMsg);
     } finally {
       setRegisterLoading(false);
     }
@@ -211,13 +255,17 @@ export function useAuthLogic() {
       });
 
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setRegisterOtpError(data.error || 'Verifikasi OTP gagal. Silakan coba lagi.');
+      if (!res.ok || data.success === false) {
+        setRegisterOtpError(data.error || data.message || `Verifikasi OTP gagal (Status ${res.status}).`);
         setRegisterLoading(false);
         return;
       }
-    } catch (err) {
-      console.warn('Verifikasi OTP background dispatch fallback:', err);
+    } catch (err: unknown) {
+      console.error('Verifikasi OTP error:', err);
+      const errMsg = err instanceof Error ? err.message : 'Terjadi kesalahan saat memverifikasi OTP.';
+      setRegisterOtpError(errMsg);
+      setRegisterLoading(false);
+      return;
     }
 
     setRegisterLoading(false);

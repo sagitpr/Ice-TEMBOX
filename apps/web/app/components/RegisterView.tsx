@@ -240,7 +240,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               </div>
 
               <button type="submit" className="btn-primary-block" disabled={registerLoading}>
-                <span>{registerLoading ? 'Memverifikasi...' : 'Verifikasi'}</span>
+                <span>{registerLoading ? 'Memverifikasi...' : 'Verifikasi & Aktifkan Akun'}</span>
               </button>
             </form>
 

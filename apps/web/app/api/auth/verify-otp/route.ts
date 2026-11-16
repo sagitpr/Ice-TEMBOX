@@ -8,15 +8,17 @@ export async function POST(request: Request) {
     const { email, recipientName, otpCode } = body;
 
     if (!email || !email.includes('@')) {
+      const errMsg = 'Alamat email pengguna tidak valid.';
       return NextResponse.json(
-        { error: 'Alamat email pengguna tidak valid.' },
+        { success: false, error: errMsg, message: errMsg },
         { status: 400 }
       );
     }
 
     if (!otpCode || String(otpCode).trim().length < 6) {
+      const errMsg = 'Kode OTP 6-digit tidak valid.';
       return NextResponse.json(
-        { error: 'Kode OTP 6-digit tidak valid.' },
+        { success: false, error: errMsg, message: errMsg },
         { status: 400 }
       );
     }
@@ -24,9 +26,12 @@ export async function POST(request: Request) {
     // Cryptographic validation against stored hash, expiry, max attempts & single-use consumption
     const verification = await verifyAndConsumeOtp(email, String(otpCode).trim(), 'register');
     if (!verification.valid) {
+      const errMsg = verification.error || 'Verifikasi kode OTP gagal.';
       return NextResponse.json(
         {
-          error: verification.error || 'Verifikasi kode OTP gagal.',
+          success: false,
+          error: errMsg,
+          message: errMsg,
           remainingAttempts: verification.remainingAttempts,
         },
         { status: 400 }
@@ -75,7 +80,7 @@ export async function POST(request: Request) {
     console.error('Verify OTP server error:', error);
     const message = error instanceof Error ? error.message : 'Gagal memproses verifikasi OTP.';
     return NextResponse.json(
-      { error: message },
+      { success: false, error: message, message },
       { status: 500 }
     );
   }
