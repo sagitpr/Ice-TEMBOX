@@ -77,6 +77,7 @@ export default function MarketPage() {
                   width={380}
                   height={285}
                   loading="lazy"
+                  decoding="async"
                   style={{
                     maxWidth: '100%',
                     maxHeight: '300px',

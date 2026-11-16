@@ -178,6 +178,7 @@ export function PublicSiteHeader() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
             <Link
               href="/contact"
+              prefetch={false}
               className={navLinkClass}
               style={navLinkBaseStyle}
             >
@@ -217,6 +218,7 @@ export function PublicSiteHeader() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <Link
                 href="/login"
+                prefetch={false}
                 className={navLinkClass}
                 style={navLinkBaseStyle}
               >
@@ -233,6 +235,7 @@ export function PublicSiteHeader() {
               />
               <Link
                 href="/register"
+                prefetch={false}
                 className={navLinkClass}
                 style={navLinkBaseStyle}
               >
@@ -275,6 +278,7 @@ export function PublicSiteHeader() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <Link
               href="/contact"
+              prefetch={false}
               className={navLinkClass}
               style={{ ...navLinkBaseStyle, display: 'block', padding: '6px 0' }}
               onClick={() => setMobileMenuOpen(false)}
@@ -324,6 +328,7 @@ export function PublicSiteHeader() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingTop: '4px' }}>
               <Link
                 href="/login"
+                prefetch={false}
                 className={navLinkClass}
                 style={navLinkBaseStyle}
                 onClick={() => setMobileMenuOpen(false)}
@@ -341,6 +346,7 @@ export function PublicSiteHeader() {
               />
               <Link
                 href="/register"
+                prefetch={false}
                 className={navLinkClass}
                 style={navLinkBaseStyle}
                 onClick={() => setMobileMenuOpen(false)}

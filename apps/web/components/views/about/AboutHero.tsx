@@ -37,6 +37,7 @@ export const AboutHero: React.FC = () => {
           fill
           priority
           sizes="100vw"
+          quality={80}
           onError={() => {
             if (heroBg === '/Penangkap-ikan.jpg') {
               setHeroBg('/Penangkap-Ikan.jpg');

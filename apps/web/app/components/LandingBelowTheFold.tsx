@@ -1,9 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
-import SystemWorkflowModal from '../../components/views/home/SystemWorkflowModal';
+
+// Lazy load heavy interactive workflow modal
+const SystemWorkflowModal = dynamic(
+  () => import('../../components/views/home/SystemWorkflowModal'),
+  { ssr: false }
+);
 
 // Existing local assets
 import box1ImgRaw from '../../src/assets/Box-1.png';
@@ -140,12 +146,42 @@ const ECOSYSTEM_PIPELINE = [
 export const LandingBelowTheFold: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[1]);
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
+  const [loadVisionVideo, setLoadVisionVideo] = useState(false);
   const visionVideoRef = useRef<HTMLVideoElement | null>(null);
+  const visionSectionRef = useRef<HTMLElement | null>(null);
+
+  // Lazy load Vision video via IntersectionObserver & respect Data-Saver mode
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const nav = navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string } };
+    const isSaveData = nav?.connection?.saveData === true;
+    const isSlow = nav?.connection?.effectiveType === '2g' || nav?.connection?.effectiveType === 'slow-2g';
+    if (isSaveData || isSlow) {
+      return; // Do not load video on data-saver mode
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setLoadVisionVideo(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '250px' }
+    );
+
+    if (visionSectionRef.current) {
+      observer.observe(visionSectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   // Page Visibility Listener for Vision background video to prevent idle GPU leaks
   useEffect(() => {
     const video = visionVideoRef.current;
-    if (!video) return;
+    if (!video || !loadVisionVideo) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -715,7 +751,7 @@ export const LandingBelowTheFold: React.FC = () => {
       {/* ==================================================
           8. SECTION: OUR VISION
           ================================================== */}
-      <section id="vision" className="section-vision">
+      <section id="vision" ref={visionSectionRef} className="section-vision">
         <div className="vision-bg-media">
           <video
             ref={visionVideoRef}
@@ -724,8 +760,11 @@ export const LandingBelowTheFold: React.FC = () => {
             muted
             playsInline
             preload="none"
+            poster="/Penangkap-ikan.jpg"
           >
-            <source src={heroVideo} type="video/mp4" />
+            {loadVisionVideo && (
+              <source src={heroVideo || '/Nelayan-kapal-Horizontal.mp4'} type="video/mp4" />
+            )}
           </video>
         </div>
         <div className="vision-overlay-gradient" />
@@ -741,7 +780,7 @@ export const LandingBelowTheFold: React.FC = () => {
               Kami percaya bahwa teknologi dapat menjadi solusi nyata untuk
               menjaga keberlanjutan laut dan meningkatkan kesejahteraan nelayan.
             </p>
-            <Link href="/contact" className="btn-vision-cta">
+            <Link href="/contact" prefetch={false} className="btn-vision-cta">
               <span>Hubungi Kami</span>
               <span>→</span>
             </Link>
@@ -763,13 +802,14 @@ export const LandingBelowTheFold: React.FC = () => {
                 width={130}
                 height={34}
                 loading="lazy"
+                decoding="async"
                 style={{ width: '130px', height: '34px', objectFit: 'contain' }}
               />
               <p className="footer-tagline">Fresh Catch, Better Tomorrow.</p>
             </div>
 
             <div className="footer-nav">
-              <Link href="/contact" className="footer-link">Contact</Link>
+              <Link href="/contact" prefetch={false} className="footer-link">Contact</Link>
               <Link href="/about" className="footer-link">About</Link>
             </div>
 

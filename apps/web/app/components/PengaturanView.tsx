@@ -1,16 +1,19 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { useSettingsLogic } from '../../hooks/useSettingsLogic';
 import SettingsStatusBanner from '../../components/views/settings/SettingsStatusBanner';
 import SettingsDevices from '../../components/views/settings/SettingsDevices';
 import SettingsAccount from '../../components/views/settings/SettingsAccount';
 import SettingsNotificationSync from '../../components/views/settings/SettingsNotificationSync';
 import SettingsSystemInfo from '../../components/views/settings/SettingsSystemInfo';
-import AddDeviceModal from '../../components/views/settings/AddDeviceModal';
-import DeviceDetailModal from '../../components/views/settings/DeviceDetailModal';
-import EditAccountModal from '../../components/views/settings/EditAccountModal';
 import SettingsToast from '../../components/views/settings/SettingsToast';
+
+// Lazy load heavy interactive modals (slashes initial settings JavaScript bundle)
+const AddDeviceModal = dynamic(() => import('../../components/views/settings/AddDeviceModal'), { ssr: false });
+const DeviceDetailModal = dynamic(() => import('../../components/views/settings/DeviceDetailModal'), { ssr: false });
+const EditAccountModal = dynamic(() => import('../../components/views/settings/EditAccountModal'), { ssr: false });
 
 export const PengaturanView: React.FC = () => {
   const {

@@ -3,10 +3,21 @@ import {
   sendContactMessageEmail,
   sendContactAutoReplyEmail,
 } from '../../../modules/email/email.service';
+import { verifyRecaptchaToken } from '../../../modules/security/recaptcha.service';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
+
+    // 0. Anti-bot validation via Google reCAPTCHA v3 (safe bypass if RECAPTCHA_SECRET_KEY unset)
+    const recaptchaToken = body.recaptchaToken;
+    const recaptchaCheck = await verifyRecaptchaToken(recaptchaToken, 'contact_form');
+    if (!recaptchaCheck.success) {
+      return NextResponse.json(
+        { success: false, error: recaptchaCheck.error || 'Verifikasi keamanan reCAPTCHA gagal.' },
+        { status: 403 }
+      );
+    }
 
     // Support flexible property names from frontend
     const userName = (body.fullName || body.name || '').trim();
@@ -28,16 +39,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Dispatch incoming inquiry to official admin inbox (temboxofficial.id@gmail.com)
-    try {
-      await sendContactMessageEmail({
-        name: userName,
-        senderContact: userContact,
-        category: userCategory,
-        message: userMessage,
-      });
-    } catch (smtpErr) {
-      console.error('[SMTP ERROR] Failed sending notification to admin:', smtpErr);
+    // Regex check for valid email address in userContact
+    const emailMatch = userContact.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
+    const userEmail = emailMatch ? emailMatch[0] : null;
+
+    // Parallel dispatch: execute admin notification & user auto-reply concurrently (eliminates waterfall latency)
+    const adminMailPromise = sendContactMessageEmail({
+      name: userName,
+      senderContact: userContact,
+      category: userCategory,
+      message: userMessage,
+    });
+
+    const userAutoReplyPromise = userEmail
+      ? sendContactAutoReplyEmail({
+          toEmail: userEmail,
+          recipientName: userName,
+          category: userCategory,
+          message: userMessage,
+        })
+      : Promise.resolve(false);
+
+    const [adminResult, userResult] = await Promise.allSettled([adminMailPromise, userAutoReplyPromise]);
+
+    if (adminResult.status === 'rejected') {
+      console.error('[SMTP ERROR] Failed sending notification to admin:', adminResult.reason);
       return NextResponse.json(
         {
           success: false,
@@ -47,25 +73,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Simple regex check for valid email address in userContact
-    let autoReplySent = false;
-    const emailMatch = userContact.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
-    const userEmail = emailMatch ? emailMatch[0] : null;
+    const autoReplySent = userResult.status === 'fulfilled' && Boolean(userResult.value);
 
-    if (userEmail) {
-      try {
-        autoReplySent = await sendContactAutoReplyEmail({
-          toEmail: userEmail,
-          recipientName: userName,
-          category: userCategory,
-          message: userMessage,
-        });
-      } catch (userErr) {
-        console.error('[SMTP ERROR] Failed sending auto-reply to user:', userEmail, userErr);
-      }
-    }
-
-    // 3. Return structured response after awaiting both dispatches
+    // Return structured response
     return NextResponse.json({
       success: true,
       autoReplySent,

@@ -23,8 +23,28 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadAtmosphere, setLoadAtmosphere] = useState(false);
+  const [loadHeroVideo, setLoadHeroVideo] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const { user, isAuthenticated, logout } = useAuthSession();
+
+  // Defer video loading to prevent network blocking during FCP / LCP & respect Data-Saver
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check user data-saver mode / 2g slow connection
+    const nav = navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string } };
+    const isSaveData = nav?.connection?.saveData === true;
+    const isSlow = nav?.connection?.effectiveType === '2g' || nav?.connection?.effectiveType === 'slow-2g';
+    if (isSaveData || isSlow) {
+      return; // Never load heavy video on data-saver or 2g connections
+    }
+
+    const timer = setTimeout(() => {
+      setLoadHeroVideo(true);
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Page Visibility Listener to prevent GPU memory leaks / lag when tab is hidden
   useEffect(() => {
@@ -102,29 +122,50 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
           backgroundColor: '#071A27',
         }}
       >
-        {/* Maritime Fisherman Boat Background Video */}
-        <video
-          ref={heroVideoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          poster="/hero-boat.jpg"
-          className="hero-video absolute inset-0 w-full h-full object-cover -z-10"
+        {/* LCP Optimized Poster Image (Instant FCP/LCP via Next.js Image) */}
+        <Image
+          src="/hero-boat.jpg"
+          alt="TEMBOX Smart Marine Cold Chain - Kapal Nelayan Maritim"
+          fill
+          priority
+          fetchPriority="high"
+          sizes="100vw"
+          quality={80}
           style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
             objectFit: 'cover',
             objectPosition: '72% 52%',
             zIndex: 0,
             pointerEvents: 'none',
           }}
-        >
-          <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
-        </video>
+        />
+
+        {/* Deferred Maritime Fisherman Boat Background Video */}
+        {loadHeroVideo && (
+          <video
+            ref={heroVideoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="none"
+            poster="/hero-boat.jpg"
+            className="hero-video absolute inset-0 w-full h-full object-cover -z-10"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: '72% 52%',
+              zIndex: 0,
+              pointerEvents: 'none',
+              opacity: 0.9,
+              transition: 'opacity 0.6s ease',
+            }}
+          >
+            <source src="/Nelayan-kapal-Horizontal.mp4" type="video/mp4" />
+          </video>
+        )}
 
         {/* Soft Dark Neutral Overlay (bg-slate-950/40 or bg-slate-900/50 equivalent) */}
         <div

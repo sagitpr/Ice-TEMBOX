@@ -71,7 +71,17 @@ export function setStoredAuthSession(userData: Partial<AuthUser> & { email: stri
       localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
       // Save full profile cache for seamless name retrieval
       localStorage.setItem('tembox_user_profile', JSON.stringify({ fullName: session.name, email: session.email }));
-      document.cookie = `${COOKIE_KEY}=${session.token}; path=/; max-age=604800; SameSite=Lax`;
+      
+      const isSecure = window.location.protocol === 'https:';
+      const secureFlag = isSecure ? '; Secure' : '';
+      document.cookie = `${COOKIE_KEY}=${session.token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
+
+      // Synchronize HttpOnly server session cookie for middleware
+      fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: session, token: session.token }),
+      }).catch((syncErr) => console.warn('Server session cookie sync note:', syncErr));
 
       // Broadcast auth change event to all components & tabs
       window.dispatchEvent(new CustomEvent('tembox:auth-changed', { detail: session }));
@@ -93,7 +103,15 @@ export function clearStoredAuthSession(): void {
 
   try {
     clearUserSessionCache();
-    document.cookie = `${COOKIE_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    const isSecure = window.location.protocol === 'https:';
+    const secureFlag = isSecure ? '; Secure' : '';
+    document.cookie = `${COOKIE_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
+
+    // Clear server-side HttpOnly session cookie
+    fetch('/api/auth/session', {
+      method: 'DELETE',
+    }).catch(() => {});
+
     window.dispatchEvent(new CustomEvent('tembox:auth-changed', { detail: null }));
   } catch (err) {
     console.warn('Gagal menghapus sesi auth:', err);

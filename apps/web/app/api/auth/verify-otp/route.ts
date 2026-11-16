@@ -45,15 +45,32 @@ export async function POST(request: Request) {
       console.error('[Verify OTP] Gagal mengirimkan welcome email (verifikasi akun tetap berhasil):', emailErr);
     }
 
-    return NextResponse.json({
+    const cleanUserId = (email.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'nelayan';
+    const sessionToken = `tbx_token_${cleanUserId}_${Date.now().toString(36)}`;
+
+    const response = NextResponse.json({
       success: true,
       message: 'Akun Anda berhasil diverifikasi. Selamat datang di TEMBOX.',
       user: {
+        id: `usr_${cleanUserId}`,
+        userId: `usr_${cleanUserId}`,
         email,
         name: cleanName,
         verified: true,
+        token: sessionToken,
       },
     });
+
+    // Set secure HttpOnly session cookie for middleware route guards
+    response.cookies.set('tembox_auth_token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+    });
+
+    return response;
   } catch (error: unknown) {
     console.error('Verify OTP server error:', error);
     const message = error instanceof Error ? error.message : 'Gagal memproses verifikasi OTP.';

@@ -1,11 +1,21 @@
 import { NextResponse } from 'next/server';
 import { sendOtpEmail } from '../../../../modules/email/email.service';
 import { createAndSaveOtp } from '../../../../modules/auth/otp.service';
+import { verifyRecaptchaToken } from '../../../../modules/security/recaptcha.service';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { email, recipientName } = body;
+    const { email, recipientName, recaptchaToken } = body;
+
+    // 0. Anti-bot validation via Google reCAPTCHA v3 (safe bypass if RECAPTCHA_SECRET_KEY unset)
+    const recaptchaCheck = await verifyRecaptchaToken(recaptchaToken, 'send_otp');
+    if (!recaptchaCheck.success) {
+      return NextResponse.json(
+        { success: false, error: recaptchaCheck.error || 'Verifikasi keamanan reCAPTCHA gagal.' },
+        { status: 403 }
+      );
+    }
 
     if (!email || !email.includes('@')) {
       return NextResponse.json(

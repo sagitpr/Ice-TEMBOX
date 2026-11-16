@@ -2,8 +2,15 @@ import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import fs from 'node:fs';
 import path from 'node:path';
+import dynamic from 'next/dynamic';
 import PersistentBackgroundVideo from './components/PersistentBackgroundVideo';
+import { GoogleAnalytics } from './components/GoogleAnalytics';
 import './globals.css';
+
+// Lazy load non-critical consent banner to prioritize initial paint
+const CookieConsentBanner = dynamic(
+  () => import('./components/CookieConsentBanner')
+);
 
 // Server-side asset sync for public media across standalone and monorepo setups
 try {
@@ -140,10 +147,12 @@ export default function RootLayout({
   return (
     <html lang="id" className={plusJakartaSans.variable}>
       <body className={plusJakartaSans.className}>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         <PersistentBackgroundVideo />
         <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
           {children}
         </div>
+        <CookieConsentBanner />
       </body>
     </html>
   );
