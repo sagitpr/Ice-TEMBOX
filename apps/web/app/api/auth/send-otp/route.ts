@@ -29,6 +29,8 @@ export async function POST(request: Request) {
     }
 
     // 1. Validasi keberadaan konfigurasi SMTP di server sebelum proses pengiriman
+    const smtpHost = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
+    const smtpPort = process.env.SMTP_PORT?.trim() || '465';
     const smtpUser = process.env.SMTP_USER?.trim();
     const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '');
 
@@ -41,17 +43,28 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Cryptographically secure hashed OTP generation with 10-minute expiration & attempt throttling
-    const { otpCode } = await createAndSaveOtp(email, 'register');
+    // 2. Simpan record OTP ke tabel otp_verifications di Supabase terlebih dahulu
+    let otpCode: string;
+    try {
+      const otpRecord = await createAndSaveOtp(email, 'register');
+      otpCode = otpRecord.otpCode;
+    } catch (dbErr: unknown) {
+      console.error('[Send OTP Database Insert Error]:', dbErr);
+      const errMsg = dbErr instanceof Error ? dbErr.message : 'Gagal menyimpan verifikasi OTP ke database Supabase.';
+      return NextResponse.json(
+        { success: false, error: errMsg, message: errMsg },
+        { status: 500 }
+      );
+    }
 
-    // 3. Wajib await proses pengiriman email OTP secara eksplisit sebelum return response
+    // 3. Setelah record berhasil tersimpan di tabel otp_verifications, kirimkan email OTP via SMTP
     try {
       const mailInfo = await sendOtpEmail({
         to: email.trim(),
         otpCode,
         recipientName,
       });
-      console.log(`[Send OTP] Email OTP berhasil dikirim ke ${email}:`, mailInfo?.messageId);
+      console.log(`[Send OTP] Email OTP berhasil dikirim ke ${email} via ${smtpHost}:${smtpPort}:`, mailInfo?.messageId);
     } catch (smtpErr: unknown) {
       console.error('[Send OTP SMTP Error]:', smtpErr);
       const errMsg = smtpErr instanceof Error ? smtpErr.message : 'Gagal mengirim email OTP melalui SMTP server.';

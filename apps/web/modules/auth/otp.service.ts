@@ -16,7 +16,7 @@ const memoryOtpCache = new Map<string, OtpStoreRecord>();
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
-const OTP_PEPPER = process.env.SUPABASE_SECRET_KEY || process.env.SMTP_PASS || 'tembox-otp-salt-2026';
+const OTP_PEPPER = process.env.SUPABASE_SECRET_KEY || process.env.SMTP_PASS?.replace(/\s+/g, '') || 'tembox-otp-salt-2026';
 
 /**
  * Computes a secure SHA-256 HMAC hash of the OTP code combined with the target email and secret pepper.

@@ -4,21 +4,26 @@ import { buildContactAutoReplyEmail } from './contactAutoReply.template';
 import { buildWelcomeEmail } from './welcomeEmail.template';
 
 let mailTransporterInstance: nodemailer.Transporter | null = null;
-let lastTransporterPass: string | null = null;
+let lastTransporterKey: string | null = null;
 
 /**
- * Returns a singleton Nodemailer Transporter instance using strictly server-side SMTP environment variables.
- * Automatically cleans any unintentional spaces in SMTP_USER or SMTP_PASS (e.g. Gmail App Password spacing).
- * Prevents redundant TCP/TLS handshakes and pool exhaustion across requests.
+ * Returns a singleton Nodemailer Transporter instance using strictly server-side SMTP environment variables:
+ * - SMTP_HOST (defaults to 'smtp.gmail.com')
+ * - SMTP_PORT (defaults to 465)
+ * - SMTP_USER (e.g. your Gmail address)
+ * - SMTP_PASS (cleaned of any whitespace, e.g. 16-character Gmail App Password)
+ * Prevents redundant TCP/TLS handshakes and connection pool exhaustion across serverless requests.
  */
 function getMailTransporter(): nodemailer.Transporter {
   const host = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
-  const port = Number(process.env.SMTP_PORT || 465);
+  const port = Number(process.env.SMTP_PORT?.trim() || 465);
   const isSecure = port === 465;
   const user = process.env.SMTP_USER?.trim() || '';
   const pass = process.env.SMTP_PASS?.replace(/\s+/g, '') || '';
 
-  if (mailTransporterInstance && lastTransporterPass === pass) {
+  const cacheKey = `${host}:${port}:${user}:${pass}`;
+
+  if (mailTransporterInstance && lastTransporterKey === cacheKey) {
     return mailTransporterInstance;
   }
 
@@ -35,7 +40,7 @@ function getMailTransporter(): nodemailer.Transporter {
     greetingTimeout: 10000,
     socketTimeout: 10000,
   });
-  lastTransporterPass = pass;
+  lastTransporterKey = cacheKey;
 
   return mailTransporterInstance;
 }
@@ -82,7 +87,7 @@ export async function sendContactMessageEmail({
   message,
 }: SendContactMessageParams) {
   const transporter = getMailTransporter();
-  const officialEmail = process.env.SMTP_USER || 'temboxofficial.id@gmail.com';
+  const officialEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
   const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB';
 
   const isEmail = senderContact.includes('@');
