@@ -3,7 +3,7 @@ import { buildOtpVerificationEmail } from './otpEmail.template';
 import { buildContactAutoReplyEmail } from './contactAutoReply.template';
 import { buildWelcomeEmail } from './welcomeEmail.template';
 
-export { buildOtpVerificationEmail };
+export { buildOtpVerificationEmail, buildContactAutoReplyEmail, buildWelcomeEmail };
 
 let mailTransporterInstance: nodemailer.Transporter | null = null;
 let lastTransporterKey: string | null = null;

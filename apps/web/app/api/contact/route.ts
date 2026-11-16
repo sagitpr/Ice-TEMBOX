@@ -5,6 +5,9 @@ import {
 } from '../../../modules/email/email.service';
 import { verifyRecaptchaToken } from '../../../modules/security/recaptcha.service';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
