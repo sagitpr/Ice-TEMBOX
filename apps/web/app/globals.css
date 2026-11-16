@@ -30,7 +30,7 @@
 }
 
 /* ==================================================
-   RESPONSIVE HEADER NAVIGATION (< 768px vs >= 768px)
+   PUBLIC SITE HEADER NAVIGATION BREAKPOINTS (< 768px vs >= 768px)
    ================================================== */
 .header-mobile-toggle {
   display: none !important;
@@ -46,6 +46,8 @@
   }
   .header-mobile-toggle {
     display: flex !important;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -54,6 +56,31 @@
     display: flex !important;
   }
   .header-mobile-toggle {
+    display: none !important;
+  }
+}
+
+/* ==================================================
+   DASHBOARD TOPBAR SIDEBAR TOGGLE (< 768px vs >= 768px)
+   Sembunyikan tombol hamburger palka di desktop secara absolut
+   ================================================== */
+.topbar-menu-btn,
+.sidebar-toggle-btn {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .topbar-menu-btn,
+  .sidebar-toggle-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 769px) {
+  .topbar-menu-btn,
+  .sidebar-toggle-btn {
     display: none !important;
   }
 }

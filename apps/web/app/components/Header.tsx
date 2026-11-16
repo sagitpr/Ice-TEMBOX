@@ -580,14 +580,22 @@ function DashboardHeader({
 
   return (
     <header className="app-topbar" id="appTopbar">
-      <div className="topbar-left">
+      <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         {onToggleSidebar && (
           <button
             type="button"
-            className="topbar-menu-btn"
+            className="topbar-menu-btn sidebar-toggle-btn"
             id="sidebarToggleBtn"
             onClick={onToggleSidebar}
             aria-label="Buka Menu Navigasi"
+            style={{
+              background: 'none',
+              border: '1px solid #E2E8F0',
+              borderRadius: '8px',
+              padding: '8px',
+              color: '#475569',
+              cursor: 'pointer',
+            }}
           >
             <Menu size={20} />
           </button>
@@ -602,9 +610,21 @@ function DashboardHeader({
         </div>
       </div>
 
-      <div className="topbar-actions">
+      <div
+        className="topbar-actions"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          position: 'relative',
+        }}
+      >
         {/* Notifications Dropdown */}
-        <div className="topbar-action-item" ref={notifRef}>
+        <div
+          className="topbar-action-item topbar-notif-wrap"
+          ref={notifRef}
+          style={{ position: 'relative' }}
+        >
           <button
             type="button"
             className="topbar-icon-btn"
@@ -615,53 +635,199 @@ function DashboardHeader({
               setNotifOpen((prev) => !prev);
               setUserMenuOpen(false);
             }}
+            style={{
+              position: 'relative',
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              border: '1px solid #E2EDF4',
+              backgroundColor: notifOpen ? '#F0F9FF' : '#FFFFFF',
+              color: notifOpen ? '#0284C7' : '#475569',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
           >
             <Bell size={18} />
-            {hasUnread && <span className="topbar-badge" id="notifBadge" />}
+            {hasUnread && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '6px',
+                  right: '6px',
+                  width: '8px',
+                  height: '8px',
+                  backgroundColor: '#EF4444',
+                  borderRadius: '50%',
+                  border: '1.5px solid #FFFFFF',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
           </button>
 
-          <div
-            className={`topbar-dropdown ${notifOpen ? 'open' : 'pointer-events-none'}`}
-            id="notifDropdown"
-          >
-            <div className="dropdown-header">
-              <span className="dropdown-title">Notifikasi Sistem</span>
-              {hasUnread && (
-                <button
-                  type="button"
-                  className="dropdown-action-btn"
-                  id="markAllReadBtn"
-                  onClick={handleMarkAllRead}
+          {/* Panel Notifikasi: HANYA dirender saat notifOpen === true */}
+          {notifOpen && (
+            <div
+              id="notifDropdown"
+              style={{
+                position: 'absolute',
+                top: '100%',
+                marginTop: '8px',
+                right: 0,
+                zIndex: 50,
+                width: '340px',
+                maxWidth: 'calc(100vw - 32px)',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px',
+                border: '1px solid #E1EFF6',
+                boxShadow: '0 12px 32px rgba(11, 45, 66, 0.15)',
+                overflow: 'hidden',
+                animation: 'fadeIn 0.15s ease',
+              }}
+            >
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderBottom: '1px solid #F1F5F9',
+                  backgroundColor: '#FAFDFE',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '13.5px',
+                    fontWeight: 700,
+                    color: 'var(--color-ocean, #0B2D42)',
+                  }}
                 >
-                  Tandai dibaca
-                </button>
-              )}
-            </div>
+                  Notifikasi Sistem
+                </span>
+                {hasUnread && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      color: '#0284C7',
+                      cursor: 'pointer',
+                      padding: '2px 4px',
+                    }}
+                  >
+                    Tandai dibaca
+                  </button>
+                )}
+              </div>
 
-            <div className="dropdown-body" id="notifList">
-              {notifications.map((item) => (
-                <div
-                  key={item.id}
-                  className={`notif-item ${item.severity} ${item.unread ? 'unread' : ''}`}
-                >
-                  <div className="notif-icon">
-                    {item.severity === 'warning' && <Thermometer size={14} />}
-                    {item.severity === 'info' && <Info size={14} />}
-                    {item.severity === 'success' && <ShieldCheck size={14} />}
+              <div
+                style={{
+                  maxHeight: '320px',
+                  overflowY: 'auto',
+                  padding: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                }}
+              >
+                {notifications.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '24px 16px',
+                      textAlign: 'center',
+                      fontSize: '12.5px',
+                      color: '#64748B',
+                    }}
+                  >
+                    Tidak ada notifikasi baru
                   </div>
-                  <div className="notif-content">
-                    <div className="notif-title">{item.title}</div>
-                    <div className="notif-message">{item.message}</div>
-                    <div className="notif-time">{item.time}</div>
-                  </div>
-                </div>
-              ))}
+                ) : (
+                  notifications.map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        padding: '10px',
+                        borderRadius: '10px',
+                        backgroundColor: item.unread ? '#F0F9FF' : '#FFFFFF',
+                        border: item.unread ? '1px solid #BAE6FD' : '1px solid #F1F5F9',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '7px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          backgroundColor:
+                            item.severity === 'warning'
+                              ? 'rgba(245, 158, 11, 0.12)'
+                              : item.severity === 'success'
+                                ? 'rgba(16, 185, 129, 0.12)'
+                                : 'rgba(2, 132, 199, 0.12)',
+                          color:
+                            item.severity === 'warning'
+                              ? '#D97706'
+                              : item.severity === 'success'
+                                ? '#059669'
+                                : '#0284C7',
+                        }}
+                      >
+                        {item.severity === 'warning' && <Thermometer size={14} />}
+                        {item.severity === 'info' && <Info size={14} />}
+                        {item.severity === 'success' && <ShieldCheck size={14} />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            color: 'var(--color-ocean, #0B2D42)',
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {item.title}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '11.5px',
+                            color: '#64748B',
+                            marginTop: '2px',
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {item.message}
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: '#94A3B8', marginTop: '4px' }}>
+                          {item.time}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* User Profile Menu */}
-        <div className="topbar-action-item" ref={userMenuRef}>
+        <div
+          className="topbar-action-item"
+          ref={userMenuRef}
+          style={{ position: 'relative' }}
+        >
           <button
             type="button"
             className="topbar-user-pill"
@@ -671,101 +837,152 @@ function DashboardHeader({
               setUserMenuOpen((prev) => !prev);
               setNotifOpen(false);
             }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '4px 10px 4px 4px',
+              borderRadius: '24px',
+              backgroundColor: '#F4FAFD',
+              border: '1px solid #E1EFF6',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
           >
-            <div className="topbar-avatar">
+            <div
+              className="topbar-avatar"
+              style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#0284C7',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '13px',
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
               <User size={16} />
             </div>
-            <span className="topbar-username" id="topbarUsername">
+            <span
+              className="topbar-username"
+              id="topbarUsername"
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--color-ocean, #0B2D42)',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {accountName}
             </span>
             <ChevronDown size={14} color="#64748B" />
           </button>
 
-          <div
-            role="menu"
-            className={`topbar-user-menu ${userMenuOpen ? 'open' : 'pointer-events-none'}`}
-            id="topbarUserMenu"
-            style={{ width: '220px' }}
-          >
+          {/* User Profile Dropdown: HANYA dirender saat userMenuOpen === true */}
+          {userMenuOpen && (
             <div
+              role="menu"
+              id="topbarUserMenu"
               style={{
-                padding: '8px 12px',
-                borderBottom: '1px solid #F1F5F9',
-                marginBottom: '4px',
+                position: 'absolute',
+                top: '100%',
+                marginTop: '8px',
+                right: 0,
+                zIndex: 50,
+                width: '220px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px',
+                border: '1px solid #E1EFF6',
+                boxShadow: '0 12px 32px rgba(11, 45, 66, 0.15)',
+                padding: '6px',
+                overflow: 'hidden',
+                animation: 'fadeIn 0.15s ease',
               }}
             >
-              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ocean)' }}>
-                {accountName}
+              <div
+                style={{
+                  padding: '8px 12px',
+                  borderBottom: '1px solid #F1F5F9',
+                  marginBottom: '4px',
+                }}
+              >
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ocean, #0B2D42)' }}>
+                  {accountName}
+                </div>
+                <div style={{ fontSize: '11.5px', color: '#64748B', wordBreak: 'break-all' }}>
+                  {accountEmail}
+                </div>
               </div>
-              <div style={{ fontSize: '11.5px', color: '#64748B', wordBreak: 'break-all' }}>
-                {accountEmail}
-              </div>
-            </div>
 
-            <Link
-              href="/pengaturan"
-              role="menuitem"
-              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('pengaturan', e)}
-              className="user-menu-item"
-            >
-              <User size={15} />
-              <span>Profil Saya</span>
-            </Link>
-            <Link
-              href="/dashboard"
-              role="menuitem"
-              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('dashboard', e)}
-              className="user-menu-item"
-            >
-              <LayoutDashboard size={15} />
-              <span>Dashboard</span>
-            </Link>
-            <Link
-              href="/pengaturan"
-              role="menuitem"
-              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('pengaturan', e)}
-              className="user-menu-item"
-            >
-              <Settings size={15} />
-              <span>Pengaturan</span>
-            </Link>
-            <Link
-              href="/"
-              role="menuitem"
-              className="user-menu-item"
-              onClick={() => setUserMenuOpen(false)}
-            >
-              <ArrowLeft size={15} />
-              <span>Kembali ke Beranda</span>
-            </Link>
-            <hr style={{ border: 'none', borderTop: '1px solid #E2EDF4', margin: '4px 0' }} />
-            <button
-              type="button"
-              role="menuitem"
-              className="user-menu-item"
-              style={{
-                color: '#DC2626',
-                background: 'none',
-                border: 'none',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '13px',
-                cursor: 'pointer',
-              }}
-              onClick={() => {
-                clearStoredAuthSession();
-                setUserMenuOpen(false);
-                router.push('/login');
-              }}
-            >
-              <LogOut size={15} />
-              <span>Keluar</span>
-            </button>
-          </div>
+              <Link
+                href="/pengaturan"
+                role="menuitem"
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('pengaturan', e)}
+                className="user-menu-item"
+              >
+                <User size={15} />
+                <span>Profil Saya</span>
+              </Link>
+              <Link
+                href="/dashboard"
+                role="menuitem"
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('dashboard', e)}
+                className="user-menu-item"
+              >
+                <LayoutDashboard size={15} />
+                <span>Dashboard</span>
+              </Link>
+              <Link
+                href="/pengaturan"
+                role="menuitem"
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('pengaturan', e)}
+                className="user-menu-item"
+              >
+                <Settings size={15} />
+                <span>Pengaturan</span>
+              </Link>
+              <Link
+                href="/"
+                role="menuitem"
+                className="user-menu-item"
+                onClick={() => setUserMenuOpen(false)}
+              >
+                <ArrowLeft size={15} />
+                <span>Kembali ke Beranda</span>
+              </Link>
+              <hr style={{ border: 'none', borderTop: '1px solid #E2EDF4', margin: '4px 0' }} />
+              <button
+                type="button"
+                role="menuitem"
+                className="user-menu-item"
+                style={{
+                  color: '#DC2626',
+                  background: 'none',
+                  border: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  clearStoredAuthSession();
+                  setUserMenuOpen(false);
+                  router.push('/login');
+                }}
+              >
+                <LogOut size={15} />
+                <span>Keluar</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -5,20 +5,17 @@ export interface OtpEmailOptions {
 }
 
 /**
- * Builds a maritime-minimalist HTML email template for TEMBOX OTP verification.
- * Follows table-based layouts and inline CSS with a strict 3-color palette
- * (White #FFFFFF, Deep Navy #0F172A, Ocean Blue #0284C7).
- * Zero raw <svg> tags and zero emojis for rock-solid Gmail and Outlook deliverability.
+ * Builds a clean, cross-client compatible HTML email template for TEMBOX OTP verification.
+ * Features a full-width header poster banner, clean typography, soft background OTP container,
+ * and zero boxy nested structures.
  */
 export function buildOtpVerificationEmail({
   otpCode,
   recipientName,
+  bannerUrl = 'https://ice-tembox.vercel.app/Verifikasi-OTP-TEMBOX.png',
 }: OtpEmailOptions): string {
   const displayName = recipientName && recipientName.trim() ? recipientName.trim() : 'Pengguna TEMBOX';
   const registerUrl = 'https://ice-tembox.vercel.app/register';
-  const portalUrl = 'https://ice-tembox.vercel.app';
-  const waUrl = 'https://wa.me/6287833847895';
-  const igUrl = 'https://instagram.com';
 
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="id">
@@ -32,238 +29,123 @@ export function buildOtpVerificationEmail({
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
     table { border-collapse: collapse !important; }
-    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #F1F5F9; }
-    @media screen and (max-width: 600px) {
+    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #050a0f; }
+    @media screen and (max-width: 620px) {
       .email-container { width: 100% !important; }
-      .stack-column { display: block !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
-      .stack-spacing { padding-top: 20px !important; padding-left: 0 !important; }
-      .mobile-padding { padding: 18px 16px !important; }
-      .mobile-btn { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
+      .email-content { padding: 26px 20px !important; }
+      .otp-code { font-size: 30px !important; letter-spacing: 6px !important; }
+      .cta-btn { display: block !important; width: 100% !important; box-sizing: border-box !important; }
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #F1F5F9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: #050a0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
   <!-- Outer Center Wrapper -->
-  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F1F5F9; table-layout: fixed;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #050a0f; table-layout: fixed;">
     <tr>
-      <td align="center" style="padding: 28px 12px;">
+      <td align="center" style="padding: 30px 12px;">
         
-        <!-- Main Email Card (Max 600px, White, Clean Border) -->
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width: 600px; background-color: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);">
+        <!-- Main Email Card (Max 600px, Clean Dark Theme) -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width: 600px; background-color: #0b131b; border: 1px solid #1a2736; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);">
           
-          <!-- BAGIAN 1: TOP HEADER -->
+          <!-- 1. TOP HEADER BRAND BAR -->
           <tr>
-            <td style="padding: 18px 24px; border-bottom: 1px solid #E2E8F0; background-color: #FFFFFF;">
+            <td style="background-color: #091017; padding: 18px 28px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
               <table border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="left" valign="middle">
-                    <table border="0" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td valign="middle" style="padding-right: 10px;">
-                          <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #0F172A; text-decoration: none;">
-                            TEMBOX<span style="color: #0284C7;">.</span>
-                          </span>
-                        </td>
-                        <td valign="middle">
-                          <span style="display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0284C7; background-color: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 9999px;">
-                            Maritime IoT
-                          </span>
-                        </td>
-                      </tr>
-                    </table>
+                    <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; text-decoration: none;">
+                      TEMBOX<span style="color: #38bdf8;">.</span>
+                    </span>
                   </td>
                   <td align="right" valign="middle">
-                    <table border="0" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding-right: 8px;">
-                          <a href="${portalUrl}" target="_blank" style="display: inline-block; padding: 4px 10px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 11px; font-weight: 600; color: #0F172A; text-decoration: none; background-color: #FFFFFF;">
-                            Buka Portal
-                          </a>
-                        </td>
-                        <td style="padding-right: 4px;">
-                          <a href="${portalUrl}" target="_blank" style="display: inline-block; padding: 3px 6px; border: 1px solid #CBD5E1; border-radius: 4px; font-size: 10px; font-weight: 700; color: #64748B; text-decoration: none; background-color: #F8FAFC;">
-                            Web
-                          </a>
-                        </td>
-                        <td style="padding-right: 4px;">
-                          <a href="${igUrl}" target="_blank" style="display: inline-block; padding: 3px 6px; border: 1px solid #CBD5E1; border-radius: 4px; font-size: 10px; font-weight: 700; color: #64748B; text-decoration: none; background-color: #F8FAFC;">
-                            IG
-                          </a>
-                        </td>
-                        <td>
-                          <a href="${waUrl}" target="_blank" style="display: inline-block; padding: 3px 6px; border: 1px solid #CBD5E1; border-radius: 4px; font-size: 10px; font-weight: 700; color: #64748B; text-decoration: none; background-color: #F8FAFC;">
-                            WA
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
+                    <span style="display: inline-block; padding: 4px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #38bdf8; background-color: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 9999px;">
+                      Verifikasi Akun
+                    </span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- BAGIAN 2: HERO HEADLINE BANNER -->
+          <!-- 2. FULL WIDTH POSTER BANNER -->
           <tr>
-            <td style="padding: 20px 24px 0 24px;">
-              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 22px 20px; text-align: center;">
+            <td align="center" style="background-color: #071520; padding: 0; line-height: 0;">
+              <img
+                src="${bannerUrl}"
+                alt="Verifikasi OTP TEMBOX"
+                width="600"
+                style="display: block; width: 100%; max-width: 600px; height: auto; border: 0; outline: none; text-decoration: none;"
+              />
+            </td>
+          </tr>
+
+          <!-- 3. CLEAN INNER CONTENT (NO BOXY NESTED LAYOUT) -->
+          <tr>
+            <td class="email-content" style="padding: 32px 28px; background-color: #0b131b; color: #e2e8f0;">
+              
+              <!-- Sapaan Personal -->
+              <h2 style="margin: 0 0 14px 0; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">
+                Halo, ${displayName}!
+              </h2>
+
+              <!-- Pengantar Singkat 2 Baris -->
+              <p style="margin: 0 0 24px 0; font-size: 14.5px; line-height: 1.7; color: #94a3b8;">
+                Terima kasih telah mendaftar di platform <strong style="color: #ffffff;">TEMBOX</strong>. Gunakan kode verifikasi One-Time Password (OTP) berikut untuk menyelesaikan aktivasi akun Anda:
+              </p>
+
+              <!-- AREA KODE OTP (Latar Lembut Tunggal, Tanpa Border Tebal, Tanpa Badge Tambahan) -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 24px 0;">
+                <tr>
+                  <td align="center" style="background-color: #121c27; border-radius: 10px; padding: 24px 16px;">
+                    <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #64748b; margin-bottom: 8px;">
+                      KODE VERIFIKASI OTP
+                    </div>
+                    <div class="otp-code" style="font-family: 'Courier New', Courier, monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #38bdf8; user-select: all; line-height: 1.2;">
+                      ${otpCode}
+                    </div>
+                    <div style="font-size: 12.5px; color: #64748b; margin-top: 10px; line-height: 1.5;">
+                      Kode ini berlaku aktif selama <strong style="color: #cbd5e1;">10 menit</strong>. Masukkan pada layar verifikasi pendaftaran.
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Keterangan Keamanan Ringkas & Bersih -->
+              <p style="margin: 0 0 26px 0; font-size: 13px; line-height: 1.6; color: #64748b;">
+                Demi keamanan armada dan palka Anda, jangan pernah membagikan kode ini kepada siapa pun. Jika Anda tidak merasa melakukan pendaftaran di TEMBOX, abaikan email ini.
+              </p>
+
+              <!-- Tombol CTA Utama -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 8px 0;">
                 <tr>
                   <td align="center">
-                    <!-- Subtle Maritime Geometric Line Accent -->
-                    <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">
-                      <tr>
-                        <td width="28" height="2" style="background-color: #0284C7; font-size: 0; line-height: 0;">&nbsp;</td>
-                        <td width="6" height="2" style="background-color: transparent; font-size: 0; line-height: 0;">&nbsp;</td>
-                        <td width="6" height="6" style="background-color: #0F172A; border-radius: 50%; font-size: 0; line-height: 0;">&nbsp;</td>
-                        <td width="6" height="2" style="background-color: transparent; font-size: 0; line-height: 0;">&nbsp;</td>
-                        <td width="28" height="2" style="background-color: #0284C7; font-size: 0; line-height: 0;">&nbsp;</td>
-                      </tr>
-                    </table>
-                    <h1 style="margin: 0 0 6px 0; font-size: 19px; font-weight: 800; color: #0F172A; line-height: 1.35; letter-spacing: -0.02em;">
-                      Satu Langkah Lagi Mengamankan Akun TEMBOX Anda
-                    </h1>
-                    <p style="margin: 0; font-size: 13px; color: #64748B; line-height: 1.5;">
-                      Verifikasi identitas pendaftaran untuk mengakses ekosistem telemetri palka es terpadu.
-                    </p>
+                    <a
+                      href="${registerUrl}"
+                      target="_blank"
+                      class="cta-btn"
+                      style="display: inline-block; background-color: #0284c7; color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: none; padding: 13px 32px; border-radius: 8px; text-align: center;"
+                    >
+                      Buka Halaman Verifikasi
+                    </a>
                   </td>
                 </tr>
               </table>
+
             </td>
           </tr>
 
-          <!-- BAGIAN 3: ASYMMETRIC 2-COLUMN CONTENT -->
+          <!-- 4. FOOTER BERSIH (TANPA MOTIF CSS ANEH) -->
           <tr>
-            <td style="padding: 24px;" class="mobile-padding">
-              <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <!-- Left Column (58%): Sapaan & Panduan Langkah -->
-                  <td width="58%" class="stack-column" valign="top" style="padding-right: 14px;">
-                    <h2 style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: #0F172A;">
-                      Halo, ${displayName}!
-                    </h2>
-                    <p style="margin: 0 0 16px 0; font-size: 13.5px; line-height: 1.6; color: #334155;">
-                      Gunakan kode autentikasi berikut untuk mengonfirmasi kepemilikan akun Anda pada platform TEMBOX:
-                    </p>
-                    
-                    <!-- 3 Numbered Steps -->
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                      <tr>
-                        <td width="24" valign="top" style="padding-bottom: 10px;">
-                          <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #0284C7; color: #FFFFFF; font-size: 11px; font-weight: 700; text-align: center; line-height: 20px;">
-                            1
-                          </div>
-                        </td>
-                        <td valign="top" style="padding-left: 8px; padding-bottom: 10px; font-size: 12.5px; line-height: 1.5; color: #334155;">
-                          Masukkan kode 6 digit pada formulir pendaftaran akun.
-                        </td>
-                      </tr>
-                      <tr>
-                        <td width="24" valign="top" style="padding-bottom: 10px;">
-                          <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #0284C7; color: #FFFFFF; font-size: 11px; font-weight: 700; text-align: center; line-height: 20px;">
-                            2
-                          </div>
-                        </td>
-                        <td valign="top" style="padding-left: 8px; padding-bottom: 10px; font-size: 12.5px; line-height: 1.5; color: #334155;">
-                          Kode verifikasi ini berlaku aktif selama <strong>10 menit</strong>.
-                        </td>
-                      </tr>
-                      <tr>
-                        <td width="24" valign="top">
-                          <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #0284C7; color: #FFFFFF; font-size: 11px; font-weight: 700; text-align: center; line-height: 20px;">
-                            3
-                          </div>
-                        </td>
-                        <td valign="top" style="padding-left: 8px; font-size: 12.5px; line-height: 1.5; color: #334155;">
-                          Jaga kerahasiaan kode ini demi privasi armada dan palka Anda.
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-
-                  <!-- Right Column (42%): Focus Card Kode OTP -->
-                  <td width="42%" class="stack-column stack-spacing" valign="middle">
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F0F9FF; border: 1.5px solid #0284C7; border-radius: 10px; padding: 18px 14px; text-align: center;">
-                      <tr>
-                        <td align="center">
-                          <div style="font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0284C7; margin-bottom: 6px;">
-                            KODE VERIFIKASI RESMI
-                          </div>
-                          <div style="font-family: 'Courier New', Courier, monospace; font-size: 28px; font-weight: 800; letter-spacing: 6px; color: #0F172A; padding: 6px 0; user-select: all;">
-                            ${otpCode}
-                          </div>
-                          <div style="margin-top: 8px;">
-                            <span style="display: inline-block; background-color: #0284C7; color: #FFFFFF; font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 9999px;">
-                              Berlaku 10 Menit
-                            </span>
-                          </div>
-                          <div style="font-size: 11px; color: #64748B; margin-top: 8px; line-height: 1.4;">
-                            Satu kali penggunaan
-                          </div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- BAGIAN 4: PRIMARY CTA BUTTON -->
-          <tr>
-            <td align="center" style="padding: 0 24px 26px 24px;">
-              <a
-                href="${registerUrl}"
-                target="_blank"
-                class="mobile-btn"
-                style="display: inline-block; background-color: #0F172A; color: #FFFFFF; font-size: 14px; font-weight: 700; text-decoration: none; padding: 13px 28px; border-radius: 8px; text-align: center; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);"
-              >
-                Buka Halaman Verifikasi TEMBOX
-              </a>
-              <div style="margin-top: 12px; font-size: 11.5px; color: #64748B;">
-                Abaikan email ini jika Anda tidak merasa mendaftarkan akun di sistem TEMBOX.
-              </div>
-            </td>
-          </tr>
-
-          <!-- BAGIAN 5: FOOTER & CLOSING -->
-          <tr>
-            <td style="background-color: #F8FAFC; border-top: 1px solid #E2E8F0; padding: 22px 24px; text-align: center;">
-              <p style="margin: 0 0 4px 0; font-size: 12.5px; color: #64748B;">
-                Salam hangat dari tim laut kami,
+            <td style="background-color: #091017; padding: 24px 28px; border-top: 1px solid rgba(255, 255, 255, 0.08); text-align: center;">
+              <p style="margin: 0 0 6px 0; font-size: 12.5px; font-weight: 700; color: #7ddce8; letter-spacing: 0.02em;">
+                Fresh Catch, Better Tomorrow.
               </p>
-              <p style="margin: 0 0 12px 0; font-size: 13.5px; font-weight: 700; color: #0F172A;">
-                Tim Operasional &amp; Dukungan TEMBOX
+              <p style="margin: 0 0 10px 0; font-size: 11.5px; color: #64748b; line-height: 1.5;">
+                Platform Pemantauan Suhu Palka Es &amp; Telemetri Maritim Berbasis IoT
               </p>
-              <p style="margin: 0 0 14px 0; font-size: 11.5px; color: #64748B; line-height: 1.5;">
-                Platform Pemantauan Suhu Palka Es &amp; Telemetri Maritim Berbasis IoT<br />
-                <a href="${portalUrl}" target="_blank" style="color: #0284C7; text-decoration: none; font-weight: 600;">
-                  ice-tembox.vercel.app
-                </a>
+              <p style="margin: 0; font-size: 11px; color: #475569;">
+                &copy; 2026 TEMBOX. All rights reserved.
               </p>
-              <p style="margin: 0; font-size: 11px; color: #94A3B8;">
-                &copy; 2026 TEMBOX. Seluruh hak cipta dilindungi undang-undang.
-              </p>
-            </td>
-          </tr>
-
-          <!-- PURE CSS BOTTOM MARITIME WAVE SILHOUETTE BAR (No SVG, No External Image) -->
-          <tr>
-            <td style="padding: 0; line-height: 0; font-size: 0; background-color: #F8FAFC;">
-              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="line-height: 0; font-size: 0; border-collapse: collapse;">
-                <tr>
-                  <td width="12%" height="7" style="background-color: #0284C7; border-top-left-radius: 5px; border-top-right-radius: 5px;">&nbsp;</td>
-                  <td width="4%" height="3" style="background-color: transparent;">&nbsp;</td>
-                  <td width="18%" height="11" style="background-color: #0F172A; border-top-left-radius: 7px; border-top-right-radius: 7px;">&nbsp;</td>
-                  <td width="4%" height="4" style="background-color: transparent;">&nbsp;</td>
-                  <td width="26%" height="14" style="background-color: #0284C7; border-top-left-radius: 9px; border-top-right-radius: 9px;">&nbsp;</td>
-                  <td width="4%" height="5" style="background-color: transparent;">&nbsp;</td>
-                  <td width="20%" height="10" style="background-color: #0F172A; border-top-left-radius: 6px; border-top-right-radius: 6px;">&nbsp;</td>
-                  <td width="12%" height="8" style="background-color: #0284C7; border-top-left-radius: 5px; border-top-right-radius: 5px;">&nbsp;</td>
-                </tr>
-                <tr>
-                  <td colspan="8" height="4" style="background-color: #0F172A;">&nbsp;</td>
-                </tr>
-              </table>
             </td>
           </tr>
 
