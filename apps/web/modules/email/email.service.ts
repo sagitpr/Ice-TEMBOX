@@ -84,6 +84,7 @@ export async function sendOtpEmail(
     from: `"TEMBOX Security" <${fromEmail}>`,
     to: to.trim(),
     subject: `Kode Verifikasi OTP TEMBOX`,
+    text: `Halo ${recipientName?.trim() || 'Pengguna TEMBOX'},\n\nKode verifikasi OTP TEMBOX Anda adalah: ${otpCode}\n\nKode ini berlaku selama 10 menit. Masukkan kode ini pada layar verifikasi untuk mengaktifkan akun Anda.\n\nJangan berikan kode ini kepada siapapun demi keamanan akun Anda.\n\nSalam,\nTim Keamanan TEMBOX`,
     html: htmlContent,
   };
 
