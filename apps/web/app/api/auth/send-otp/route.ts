@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendOtpEmail } from '../../../../modules/email/email.service';
-import { createAndSaveOtp } from '../../../../modules/auth/otp.service';
+import { createAndSaveOtp, deleteOtp } from '../../../../modules/auth/otp.service';
 import { verifyRecaptchaToken } from '../../../../modules/security/recaptcha.service';
 
 export async function POST(request: Request) {
@@ -57,16 +57,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Setelah record berhasil tersimpan di tabel otp_verifications, kirimkan email OTP via SMTP
+    // 3. Setelah record berhasil tersimpan di tabel otp_verifications, WAJIB kirimkan email OTP via SMTP
     try {
-      const mailInfo = await sendOtpEmail({
-        to: email.trim(),
-        otpCode,
-        recipientName,
-      });
-      console.log(`[Send OTP] Email OTP berhasil dikirim ke ${email} via ${smtpHost}:${smtpPort}:`, mailInfo?.messageId);
+      const cleanTargetEmail = email.toLowerCase().trim();
+      const mailInfo = await sendOtpEmail(cleanTargetEmail, otpCode, recipientName);
+      console.log(`[Send OTP] Email OTP berhasil dikirim ke ${cleanTargetEmail} via ${smtpHost}:${smtpPort}:`, mailInfo?.messageId);
     } catch (smtpErr: unknown) {
       console.error('[Send OTP SMTP Error]:', smtpErr);
+      // Hapus kembali record OTP yang baru di-insert agar tidak meninggalkan OTP menggantung saat email gagal
+      await deleteOtp(email, 'register').catch(() => {});
       const errMsg = smtpErr instanceof Error ? smtpErr.message : 'Gagal mengirim email OTP melalui SMTP server.';
       return NextResponse.json(
         { success: false, error: errMsg, message: errMsg },

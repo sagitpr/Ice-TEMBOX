@@ -53,15 +53,40 @@ export interface SendOtpEmailParams {
 
 /**
  * Dispatches an OTP verification email using the branded HTML template.
+ * Supports both object signature ({ to, otpCode, recipientName })
+ * and positional arguments (toEmail, otpCode, recipientName).
+ * Actively verifies SMTP connection via transporter.verify() before dispatch.
  */
-export async function sendOtpEmail({ to, otpCode, recipientName }: SendOtpEmailParams) {
+export async function sendOtpEmail(
+  toOrParams: string | SendOtpEmailParams,
+  otpCodeParam?: string,
+  recipientNameParam?: string
+) {
+  let to: string;
+  let otpCode: string;
+  let recipientName: string | undefined;
+
+  if (typeof toOrParams === 'object' && toOrParams !== null) {
+    to = toOrParams.to;
+    otpCode = toOrParams.otpCode;
+    recipientName = toOrParams.recipientName;
+  } else {
+    to = toOrParams;
+    otpCode = otpCodeParam || '';
+    recipientName = recipientNameParam;
+  }
+
   const transporter = getMailTransporter();
+
+  // Test and verify SMTP server connection & credentials before dispatching
+  await transporter.verify();
+
   const htmlContent = buildOtpVerificationEmail({ otpCode, recipientName });
   const fromEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
 
   const mailOptions = {
     from: `"TEMBOX Security" <${fromEmail}>`,
-    to,
+    to: to.trim(),
     subject: `[${otpCode}] Kode Verifikasi Akun TEMBOX`,
     html: htmlContent,
   };

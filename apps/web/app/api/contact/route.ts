@@ -39,9 +39,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Regex check for valid email address in userContact
-    const emailMatch = userContact.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
-    const userEmail = emailMatch ? emailMatch[0] : null;
+    // Check for valid email address in user inputs (body.email, senderContact, or contactInfo)
+    const rawEmailCandidate = (body.email || userContact).trim();
+    const emailMatch = rawEmailCandidate.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
+    const userEmail = emailMatch ? emailMatch[0] : (rawEmailCandidate.includes('@') ? rawEmailCandidate : null);
 
     // Parallel dispatch: execute admin notification & user auto-reply concurrently (eliminates waterfall latency)
     const adminMailPromise = sendContactMessageEmail({

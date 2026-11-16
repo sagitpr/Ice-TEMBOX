@@ -91,6 +91,28 @@ export async function createAndSaveOtp(
   return { otpCode, expiresAt };
 }
 
+/**
+ * Deletes pending OTP records for a specific email and purpose.
+ * Used for rollbacks when downstream operations (e.g. SMTP dispatch) fail.
+ */
+export async function deleteOtp(
+  email: string,
+  purpose: 'register' | 'reset_password' = 'register'
+): Promise<void> {
+  const cleanEmail = email.toLowerCase().trim();
+  memoryOtpCache.delete(`${cleanEmail}:${purpose}`);
+  try {
+    const admin = getSupabaseAdmin();
+    await admin
+      .from('otp_verifications')
+      .delete()
+      .eq('email', cleanEmail)
+      .eq('purpose', purpose);
+  } catch (err) {
+    console.warn('[OTP Service] Warning rolling back OTP record:', err);
+  }
+}
+
 export interface VerifyOtpResult {
   valid: boolean;
   error?: string;
