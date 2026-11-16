@@ -227,3 +227,10 @@ export const ShieldCheck: React.FC<IconProps> = ({ size = 20, className = '', co
     <path d="m9 12 2 2 4-4" />
   </svg>
 );
+
+export const X: React.FC<IconProps> = ({ size = 20, className = '', color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-x ${className}`} {...props}>
+    <path d="M18 6 6 18" />
+    <path d="m6 6 12 12" />
+  </svg>
+);

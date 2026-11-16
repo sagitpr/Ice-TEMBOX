@@ -28,3 +28,32 @@
 .pointer-events-none {
   pointer-events: none !important;
 }
+
+/* ==================================================
+   RESPONSIVE HEADER NAVIGATION (< 768px vs >= 768px)
+   ================================================== */
+.header-mobile-toggle {
+  display: none !important;
+}
+
+.header-nav-desktop {
+  display: flex !important;
+}
+
+@media (max-width: 767px) {
+  .header-nav-desktop {
+    display: none !important;
+  }
+  .header-mobile-toggle {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .header-nav-desktop {
+    display: flex !important;
+  }
+  .header-mobile-toggle {
+    display: none !important;
+  }
+}

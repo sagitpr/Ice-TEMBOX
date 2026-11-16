@@ -237,7 +237,7 @@ export async function sendContactAutoReplyEmail({
     const mailOptions = {
       from: `"TEMBOX Support" <${fromEmail}>`,
       to: toEmail,
-      subject: `Konfirmasi Penerimaan Pesan - TEMBOX (${category})`,
+      subject: 'Terima Kasih Telah Menghubungi TEMBOX',
       html: htmlContent,
     };
 

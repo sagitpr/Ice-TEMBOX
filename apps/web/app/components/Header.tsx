@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Menu,
+  X,
   Bell,
   BellOff,
   User,
@@ -125,6 +126,7 @@ export function PublicSiteHeader() {
     fontWeight: 500,
     color: textColor,
     textDecoration: 'none',
+    whiteSpace: 'nowrap',
     transition: 'color 0.2s ease',
   };
 
@@ -152,10 +154,20 @@ export function PublicSiteHeader() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: '16px',
         }}
       >
-        {/* Logo Kiri: Tetap warna asli tanpa filter atau invert */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        {/* Logo Kiri: Dilindungi dengan flexShrink: 0 dan minWidth: 110px agar tidak mengecil di HP */}
+        <Link
+          href="/"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            textDecoration: 'none',
+            flexShrink: 0,
+            minWidth: '110px',
+          }}
+        >
           <Image
             src={logoHorizontal}
             alt="TEMBOX"
@@ -168,12 +180,18 @@ export function PublicSiteHeader() {
               objectFit: 'contain',
               filter: 'none',
               display: 'block',
+              flexShrink: 0,
             }}
           />
         </Link>
 
-        {/* Tata Letak & Jarak Menu Kanan Desktop */}
-        <nav className="header-nav" style={{ display: 'flex', alignItems: 'center' }}>
+        {/* Tata Letak & Jarak Menu Kanan Desktop (Hanya muncul di layar >= 768px) */}
+        <nav
+          className="header-nav header-nav-desktop"
+          style={{
+            alignItems: 'center',
+          }}
+        >
           {/* Kelompok 1: Contact & About dengan jarak 28px */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
             <Link
@@ -201,6 +219,7 @@ export function PublicSiteHeader() {
               backgroundColor: mainDividerBg,
               margin: '0 28px',
               display: 'inline-block',
+              flexShrink: 0,
             }}
             aria-hidden="true"
           />
@@ -215,7 +234,7 @@ export function PublicSiteHeader() {
               {user.name}
             </Link>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
               <Link
                 href="/login"
                 prefetch={false}
@@ -230,6 +249,7 @@ export function PublicSiteHeader() {
                   height: '14px',
                   backgroundColor: authDividerBg,
                   display: 'inline-block',
+                  flexShrink: 0,
                 }}
                 aria-hidden="true"
               />
@@ -245,42 +265,64 @@ export function PublicSiteHeader() {
           )}
         </nav>
 
-        {/* Mobile Menu Toggle Button */}
+        {/* Mobile Menu Toggle Button (Hanya tampil di layar HP < 768px) */}
         <button
-          className="mobile-toggle"
+          type="button"
+          className="header-mobile-toggle"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle navigation menu"
+          aria-label={mobileMenuOpen ? 'Tutup navigasi menu' : 'Buka navigasi menu'}
           style={{
-            display: 'none',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            padding: '4px',
+            padding: '6px',
+            color: textColor,
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: textColor, margin: '4px 0' }} />
-          <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: textColor, margin: '4px 0' }} />
-          <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: textColor, margin: '4px 0' }} />
+          {mobileMenuOpen ? (
+            <X size={24} color={textColor} />
+          ) : (
+            <Menu size={24} color={textColor} />
+          )}
         </button>
       </div>
 
-      {/* Mobile Navigation Dropdown */}
+      {/* Mobile Navigation Dropdown (< 768px) */}
       {mobileMenuOpen && (
         <div
           className="mobile-nav-menu"
           style={{
-            backgroundColor: isDarkPage ? 'rgba(7, 19, 29, 0.98)' : isLightText ? '#07131d' : '#FFFFFF',
-            borderTop: isLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #F1F5F9',
-            padding: '16px 20px',
+            backgroundColor: isDarkPage
+              ? 'rgba(7, 19, 29, 0.98)'
+              : isScrolled
+                ? '#FFFFFF'
+                : 'rgba(7, 26, 39, 0.98)',
+            borderTop: isLightText ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #E2E8F0',
+            borderBottom: isLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #E2E8F0',
+            boxShadow: isLightText
+              ? '0 14px 28px rgba(0, 0, 0, 0.45)'
+              : '0 12px 24px rgba(0, 0, 0, 0.08)',
+            borderRadius: '0 0 12px 12px',
+            padding: '18px 22px',
             marginTop: '12px',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <Link
               href="/contact"
               prefetch={false}
               className={navLinkClass}
-              style={{ ...navLinkBaseStyle, display: 'block', padding: '6px 0' }}
+              style={{
+                ...navLinkBaseStyle,
+                display: 'block',
+                padding: '8px 0',
+                fontSize: '15px',
+                fontWeight: 600,
+              }}
               onClick={() => setMobileMenuOpen(false)}
             >
               Contact
@@ -288,22 +330,45 @@ export function PublicSiteHeader() {
             <Link
               href="/about"
               className={navLinkClass}
-              style={{ ...navLinkBaseStyle, display: 'block', padding: '6px 0' }}
+              style={{
+                ...navLinkBaseStyle,
+                display: 'block',
+                padding: '8px 0',
+                fontSize: '15px',
+                fontWeight: 600,
+              }}
               onClick={() => setMobileMenuOpen(false)}
             >
               About
             </Link>
           </div>
-          <hr style={{ border: 'none', borderTop: isLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #F1F5F9', margin: '12px 0' }} />
+
+          <hr
+            style={{
+              border: 'none',
+              borderTop: isLightText ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #E2E8F0',
+              margin: '14px 0',
+            }}
+          />
+
           {isAuthenticated && user ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '4px' }}>
               <Link
                 href="/dashboard"
                 className={navLinkClass}
-                style={{ ...navLinkBaseStyle, padding: '6px 0' }}
+                style={{
+                  ...navLinkBaseStyle,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 0',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {user.name} (Dashboard)
+                <LayoutDashboard size={16} />
+                <span>Dashboard ({user.name})</span>
               </Link>
               <button
                 type="button"
@@ -314,41 +379,55 @@ export function PublicSiteHeader() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  padding: '6px 0',
+                  padding: '8px 12px',
                   color: '#EF4444',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   fontWeight: 600,
                   cursor: 'pointer',
+                  borderRadius: '6px',
                 }}
               >
                 Keluar
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingTop: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '6px' }}>
               <Link
                 href="/login"
                 prefetch={false}
-                className={navLinkClass}
-                style={navLinkBaseStyle}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  border: isLightText ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid #CBD5E1',
+                  color: textColor,
+                  backgroundColor: 'transparent',
+                }}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Sign in
               </Link>
-              <span
-                style={{
-                  width: '1px',
-                  height: '14px',
-                  backgroundColor: authDividerBg,
-                  display: 'inline-block',
-                }}
-                aria-hidden="true"
-              />
               <Link
                 href="/register"
                 prefetch={false}
-                className={navLinkClass}
-                style={navLinkBaseStyle}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  backgroundColor: '#0284C7',
+                  color: '#FFFFFF',
+                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+                }}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Sign up
