@@ -3,6 +3,8 @@ import { buildOtpVerificationEmail } from './otpEmail.template';
 import { buildContactAutoReplyEmail } from './contactAutoReply.template';
 import { buildWelcomeEmail } from './welcomeEmail.template';
 
+export { buildOtpVerificationEmail };
+
 let mailTransporterInstance: nodemailer.Transporter | null = null;
 let lastTransporterKey: string | null = null;
 
@@ -14,7 +16,7 @@ let lastTransporterKey: string | null = null;
  * - SMTP_PASS (cleaned of any whitespace, e.g. 16-character Gmail App Password)
  * Prevents redundant TCP/TLS handshakes and connection pool exhaustion across serverless requests.
  */
-function getMailTransporter(): nodemailer.Transporter {
+export function getMailTransporter(): nodemailer.Transporter {
   const host = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
   const port = Number(process.env.SMTP_PORT?.trim() || 465);
   const isSecure = port === 465;
@@ -53,9 +55,7 @@ export interface SendOtpEmailParams {
 
 /**
  * Dispatches an OTP verification email using the branded HTML template.
- * Supports both object signature ({ to, otpCode, recipientName })
- * and positional arguments (toEmail, otpCode, recipientName).
- * Actively verifies SMTP connection via transporter.verify() before dispatch.
+ * Uses the exact same transporter configuration as contact email.
  */
 export async function sendOtpEmail(
   toOrParams: string | SendOtpEmailParams,
@@ -77,17 +77,13 @@ export async function sendOtpEmail(
   }
 
   const transporter = getMailTransporter();
-
-  // Test and verify SMTP server connection & credentials before dispatching
-  await transporter.verify();
-
   const htmlContent = buildOtpVerificationEmail({ otpCode, recipientName });
   const fromEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
 
   const mailOptions = {
     from: `"TEMBOX Security" <${fromEmail}>`,
     to: to.trim(),
-    subject: `[${otpCode}] Kode Verifikasi Akun TEMBOX`,
+    subject: `Kode Verifikasi OTP TEMBOX`,
     html: htmlContent,
   };
 

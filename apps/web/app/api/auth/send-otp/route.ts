@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendOtpEmail } from '../../../../modules/email/email.service';
+import { getMailTransporter, buildOtpVerificationEmail } from '../../../../modules/email/email.service';
 import { createAndSaveOtp, deleteOtp } from '../../../../modules/auth/otp.service';
 import { verifyRecaptchaToken } from '../../../../modules/security/recaptcha.service';
 
@@ -57,11 +57,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Setelah record berhasil tersimpan di tabel otp_verifications, WAJIB kirimkan email OTP via SMTP
+    // 3. Setelah record berhasil tersimpan di tabel otp_verifications, kirimkan email OTP langsung menggunakan transporter milik Contact
     try {
-      const cleanTargetEmail = email.toLowerCase().trim();
-      const mailInfo = await sendOtpEmail(cleanTargetEmail, otpCode, recipientName);
-      console.log(`[Send OTP] Email OTP berhasil dikirim ke ${cleanTargetEmail} via ${smtpHost}:${smtpPort}:`, mailInfo?.messageId);
+      const transporter = getMailTransporter();
+      const fromEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
+      const cleanEmail = email.toLowerCase().trim();
+      const htmlContent = buildOtpVerificationEmail({ otpCode, recipientName });
+
+      const mailOptions = {
+        from: `"TEMBOX Security" <${fromEmail}>`,
+        to: cleanEmail,
+        subject: 'Kode Verifikasi OTP TEMBOX',
+        html: htmlContent,
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[Send OTP] Email OTP berhasil dikirim ke ${cleanEmail} via ${smtpHost}:${smtpPort}:`, info?.messageId);
     } catch (smtpErr: unknown) {
       console.error('[Send OTP SMTP Error]:', smtpErr);
       // Hapus kembali record OTP yang baru di-insert agar tidak meninggalkan OTP menggantung saat email gagal
@@ -79,7 +90,7 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     console.error('[Send OTP Error]:', error);
-    const errMsg = error instanceof Error ? error.message : 'Gagal mengirimkan kode OTP ke email.';
+    const errMsg = error instanceof Error ? error.message : 'Gagal memproses pengiriman OTP.';
     return NextResponse.json(
       { success: false, error: errMsg, message: errMsg },
       { status: 500 }
