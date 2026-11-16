@@ -4,20 +4,22 @@ import { buildContactAutoReplyEmail } from './contactAutoReply.template';
 import { buildWelcomeEmail } from './welcomeEmail.template';
 
 let mailTransporterInstance: nodemailer.Transporter | null = null;
+let lastTransporterPass: string | null = null;
 
 /**
  * Returns a singleton Nodemailer Transporter instance using strictly server-side SMTP environment variables.
+ * Automatically cleans any unintentional spaces in SMTP_USER or SMTP_PASS (e.g. Gmail App Password spacing).
  * Prevents redundant TCP/TLS handshakes and pool exhaustion across requests.
  */
 function getMailTransporter(): nodemailer.Transporter {
-  if (mailTransporterInstance) {
+  const host = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
+  const port = Number(process.env.SMTP_PORT || 465);
+  const user = process.env.SMTP_USER?.trim() || '';
+  const pass = process.env.SMTP_PASS?.replace(/\s+/g, '') || '';
+
+  if (mailTransporterInstance && lastTransporterPass === pass) {
     return mailTransporterInstance;
   }
-
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '465', 10);
-  const user = process.env.SMTP_USER || 'temboxofficial.id@gmail.com';
-  const pass = process.env.SMTP_PASS || '';
 
   mailTransporterInstance = nodemailer.createTransport({
     host,
@@ -28,6 +30,7 @@ function getMailTransporter(): nodemailer.Transporter {
       pass,
     },
   });
+  lastTransporterPass = pass;
 
   return mailTransporterInstance;
 }
@@ -44,7 +47,7 @@ export interface SendOtpEmailParams {
 export async function sendOtpEmail({ to, otpCode, recipientName }: SendOtpEmailParams) {
   const transporter = getMailTransporter();
   const htmlContent = buildOtpVerificationEmail({ otpCode, recipientName });
-  const fromEmail = process.env.SMTP_USER || 'temboxofficial.id@gmail.com';
+  const fromEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
 
   const mailOptions = {
     from: `"TEMBOX Security" <${fromEmail}>`,
@@ -193,7 +196,7 @@ export async function sendContactAutoReplyEmail({
 }: SendContactAutoReplyParams): Promise<boolean> {
   try {
     const transporter = getMailTransporter();
-    const fromEmail = process.env.SMTP_USER || 'temboxofficial.id@gmail.com';
+    const fromEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
     const htmlContent = buildContactAutoReplyEmail({
       recipientName,
       category,
@@ -233,7 +236,7 @@ export async function sendWelcomeEmail({
 }: SendWelcomeEmailParams): Promise<boolean> {
   try {
     const transporter = getMailTransporter();
-    const fromEmail = process.env.SMTP_USER || 'temboxofficial.id@gmail.com';
+    const fromEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
     const htmlContent = buildWelcomeEmail({
       recipientName,
       dashboardUrl,

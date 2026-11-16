@@ -4,34 +4,49 @@ import { createAndSaveOtp } from '../../../../modules/auth/otp.service';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const { email, recipientName } = body;
 
     if (!email || !email.includes('@')) {
       return NextResponse.json(
-        { error: 'Alamat email penerima tidak valid.' },
+        { success: false, error: 'Alamat email penerima tidak valid.' },
         { status: 400 }
       );
     }
 
-    // Cryptographically secure hashed OTP generation with 10-minute expiration & attempt throttling
+    // 1. Validasi keberadaan konfigurasi SMTP di server sebelum proses pengiriman
+    const smtpUser = process.env.SMTP_USER?.trim();
+    const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '');
+
+    if (!smtpUser || !smtpPass) {
+      console.error('[Send OTP] Konfigurasi email server belum lengkap: SMTP_USER atau SMTP_PASS belum disetel.');
+      return NextResponse.json(
+        { success: false, error: 'Konfigurasi email server belum lengkap' },
+        { status: 500 }
+      );
+    }
+
+    // 2. Cryptographically secure hashed OTP generation with 10-minute expiration & attempt throttling
     const { otpCode } = await createAndSaveOtp(email, 'register');
 
-    await sendOtpEmail({
-      to: email,
+    // 3. Wajib await proses pengiriman email OTP secara eksplisit sebelum return response (mencegah termination di Vercel Serverless)
+    const mailInfo = await sendOtpEmail({
+      to: email.trim(),
       otpCode,
       recipientName,
     });
+
+    console.log(`[Send OTP] Email OTP berhasil dikirim ke ${email}:`, mailInfo?.messageId);
 
     return NextResponse.json({
       success: true,
       message: 'Kode verifikasi OTP berhasil dikirimkan ke email Anda.',
     });
   } catch (error: unknown) {
-    console.error('Send OTP error:', error);
-    const message = error instanceof Error ? error.message : 'Gagal mengirimkan kode OTP.';
+    console.error('[Send OTP Error]:', error);
+    const message = error instanceof Error ? error.message : 'Gagal mengirimkan kode OTP ke email.';
     return NextResponse.json(
-      { error: message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

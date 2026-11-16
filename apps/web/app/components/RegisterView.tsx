@@ -45,6 +45,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
     registerErrorMsg,
     handleRegisterSubmitForm,
     handleVerifyOtp,
+    handleResendOtp,
   } = useAuthLogic();
 
   const onVerifyOtpSubmit = (e: React.FormEvent) => {
@@ -234,15 +235,12 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     setRegisterOtpError('');
                   }}
                   error={registerOtpError}
-                  onResend={() => {
-                    setRegisterOtp('');
-                    setRegisterOtpError('');
-                  }}
+                  onResend={handleResendOtp}
                 />
               </div>
 
               <button type="submit" className="btn-primary-block" disabled={registerLoading}>
-                <span>{registerLoading ? 'Memverifikasi...' : 'Verifikasi &amp; Aktifkan Akun'}</span>
+                <span>{registerLoading ? 'Memverifikasi...' : 'Verifikasi'}</span>
               </button>
             </form>
 

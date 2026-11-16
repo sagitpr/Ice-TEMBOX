@@ -95,8 +95,8 @@ export function useAuthLogic() {
     }, 350);
   };
 
-  // Register Form submission (proceed to OTP)
-  const handleRegisterSubmitForm = (e: React.FormEvent) => {
+  // Register Form submission (proceed to OTP only on successful dispatch)
+  const handleRegisterSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterErrorMsg('');
 
@@ -126,23 +126,64 @@ export function useAuthLogic() {
     }
 
     setRegisterLoading(true);
-    // Send branded OTP verification email via SMTP
-    fetch('/api/auth/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: registerEmail,
-        recipientName: registerFullName,
-      }),
-    }).catch((err) => {
-      console.warn('Background OTP email dispatch:', err);
-    });
 
-    if (registerTimerRef.current) clearTimeout(registerTimerRef.current);
-    registerTimerRef.current = setTimeout(() => {
+    try {
+      // Send branded OTP verification email via SMTP and await response
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: registerEmail.trim(),
+          recipientName: registerFullName.trim(),
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      // Jika API send-otp gagal, tampilkan error di form dan JANGAN pindah ke layar OTP
+      if (!response.ok) {
+        setRegisterErrorMsg(data.error || 'Gagal mengirim kode OTP ke email.');
+        setRegisterLoading(false);
+        return;
+      }
+
       setRegisterLoading(false);
       setRegisterStep('otp');
-    }, 450);
+    } catch (err: unknown) {
+      console.error('Error saat menghubungi endpoint send-otp:', err);
+      const errMsg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan saat mengirim kode OTP.';
+      setRegisterErrorMsg(errMsg);
+      setRegisterLoading(false);
+    }
+  };
+
+  // Resend OTP handler for OTP input screen
+  const handleResendOtp = async () => {
+    setRegisterOtp('');
+    setRegisterOtpError('');
+    setRegisterLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: registerEmail.trim(),
+          recipientName: registerFullName.trim(),
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setRegisterOtpError(data.error || 'Gagal mengirim ulang kode OTP.');
+      }
+    } catch (err: unknown) {
+      console.error('Error saat kirim ulang OTP:', err);
+      setRegisterOtpError('Terjadi kesalahan jaringan saat mengirim ulang kode OTP.');
+    } finally {
+      setRegisterLoading(false);
+    }
   };
 
   // OTP Verification & Automatic Welcome Email Trigger
@@ -253,6 +294,7 @@ export function useAuthLogic() {
     registerErrorMsg,
     handleRegisterSubmitForm,
     handleVerifyOtp,
+    handleResendOtp,
     resetRegisterState,
   };
 }
