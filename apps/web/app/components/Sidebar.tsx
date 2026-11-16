@@ -95,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Link
                 key={item.id}
                 href={item.href}
-                onClick={(e) => handleNavClick(item.id, e)}
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick(item.id, e)}
                 className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
                 data-nav={item.id}
               >

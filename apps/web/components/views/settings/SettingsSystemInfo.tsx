@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info } from '../../app/components/Icons';
+import { Info } from '../../../app/components/Icons';
 
 export const SettingsSystemInfo: React.FC = () => {
   return (

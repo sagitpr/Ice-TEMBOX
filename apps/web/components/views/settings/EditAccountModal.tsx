@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X } from '../../app/components/Icons';
+import { X } from '../../../app/components/Icons';
 
 interface EditAccountModalProps {
   accountModalOpen: boolean;

@@ -350,8 +350,8 @@ function CheckoutSuccessContent() {
                 marginLeft: 'auto',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#7DDCE8')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#94A3B8')}
+              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = '#7DDCE8')}
+              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = '#94A3B8')}
             >
               Pesan Unit Tambahan →
             </Link>

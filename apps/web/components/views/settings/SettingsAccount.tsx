@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from '../../app/components/Icons';
+import { User } from '../../../app/components/Icons';
 import type { UserAccount } from '../../../lib/services/dashboardService';
 
 interface SettingsAccountProps {

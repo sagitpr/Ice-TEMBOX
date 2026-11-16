@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X } from '../../app/components/Icons';
+import { X } from '../../../app/components/Icons';
 import { PALKA_OPTIONS } from '../../../hooks/useSettingsLogic';
 import type { PalkaPlacement } from '../../../lib/services/dashboardService';
 

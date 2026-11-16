@@ -181,8 +181,8 @@ export function PublicUserMenu({
               textDecoration: 'none',
               transition: 'background-color 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = activeLight ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.backgroundColor = activeLight ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9')}
+            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <span>Dashboard</span>
           </Link>
@@ -202,8 +202,8 @@ export function PublicUserMenu({
               textDecoration: 'none',
               transition: 'background-color 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = activeLight ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.backgroundColor = activeLight ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9')}
+            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <span>Pengaturan</span>
           </Link>
@@ -232,8 +232,8 @@ export function PublicUserMenu({
               cursor: 'pointer',
               transition: 'background-color 0.15s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = activeLight ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.backgroundColor = activeLight ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2')}
+            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <span>Keluar</span>
           </button>

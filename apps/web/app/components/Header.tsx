@@ -84,48 +84,65 @@ export function PublicSiteHeader() {
   }, []);
 
   const isHeroToWhitePage = pathname === '/' || pathname === '' || pathname === '/about';
-  const isDarkPage = !isHeroToWhitePage; // /market, /contact, /checkout, /login, /register, etc.
+  const isDarkPage = !isHeroToWhitePage; // /contact, /market, /checkout, /login, /register, etc.
 
-  // 1. Kelompokkan Halaman Berdasarkan Tema Latar:
-  // - Halaman Tema Gelap (isDarkPage: /market, /contact, /checkout, /login, /register):
-  //   * Latar <header> WAJIB selalu gelap (bg-[#07131d]/95 backdrop-blur-md border-b border-white/10) baik sebelum maupun sesudah di-scroll.
-  //   * SEMUA teks navigasi (Contact, About, Sign in, Sign up, Nama User) wajib selalu putih (useLightText = true).
-  // - Halaman Hero-ke-Putih (isHeroToWhitePage: / dan /about):
-  //   * Sebelum di-scroll (!isScrolled): Latar transparan (bg-transparent), semua teks putih (useLightText = true).
-  //   * Setelah di-scroll (isScrolled): Latar berubah putih (bg-white/95 backdrop-blur-md), semua teks navy gelap (useLightText = false).
-  const useLightText = isDarkPage ? true : !isScrolled;
+  // 1. Aturan Warna Latar & Teks:
+  // - Dark-Mode (/contact, /market, /checkout, /login, /register): selalu gelap, teks selalu putih (#FFFFFF)
+  // - Beranda (/) & /about:
+  //     * Saat di atas (!isScrolled): latar transparan, semua teks putih (#FFFFFF)
+  //     * Saat di-scroll (isScrolled): latar putih (#FFFFFF), semua teks navy gelap (#072538)
+  const isLightText = isDarkPage ? true : !isScrolled;
+
+  const textColor = isLightText ? '#FFFFFF' : '#072538';
+  const mainDividerBg = isLightText ? 'rgba(255, 255, 255, 0.35)' : '#CBD5E1';
+  const authDividerBg = isLightText ? 'rgba(255, 255, 255, 0.35)' : '#CBD5E1';
 
   // Background Header
-  const headerBgClass = isDarkPage
-    ? 'bg-[#07131d]/95 backdrop-blur-md border-b border-white/10 shadow-md'
+  const headerBg = isDarkPage
+    ? 'rgba(7, 19, 29, 0.95)'
     : isScrolled
-      ? 'bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm'
-      : 'bg-transparent border-b border-transparent';
+      ? 'rgba(255, 255, 255, 0.95)'
+      : 'transparent';
 
-  // Single unified navigation link class for ALL links (Contact, About, Sign in, Sign up, Nama User)
-  const navLinkClass = useLightText
-    ? 'text-white font-medium hover:text-sky-300 transition-colors'
-    : 'text-[#072538] font-medium hover:text-sky-600 transition-colors';
+  const headerBorder = isDarkPage
+    ? '1px solid rgba(255, 255, 255, 0.1)'
+    : isScrolled
+      ? '1px solid rgba(226, 232, 240, 0.8)'
+      : '1px solid transparent';
 
-  const sepClass = useLightText
-    ? 'text-white/40 select-none'
-    : 'text-slate-300 select-none';
+  const headerShadow = isDarkPage
+    ? '0 4px 20px rgba(0, 0, 0, 0.25)'
+    : isScrolled
+      ? '0 2px 10px rgba(0, 0, 0, 0.05)'
+      : 'none';
 
-  // Only apply CSS class 'scrolled' on Hero-to-White pages when scrolled,
-  // preventing global .site-header.scrolled in index.css from forcing a white background on dark pages!
-  const shouldApplyScrolledClass = isHeroToWhitePage && isScrolled;
+  const navLinkClass = isLightText
+    ? 'text-sm font-medium text-white/95 hover:text-white transition-colors'
+    : 'text-sm font-medium text-[#072538] hover:text-sky-600 transition-colors';
+
+  const navLinkBaseStyle: React.CSSProperties = {
+    fontSize: '14px',
+    fontWeight: 500,
+    color: textColor,
+    textDecoration: 'none',
+    transition: 'color 0.2s ease',
+  };
 
   return (
     <header
-      className={`site-header fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${headerBgClass} ${shouldApplyScrolledClass ? 'scrolled' : ''}`}
       style={{
-        padding: '14px 20px',
-        ...(isDarkPage
-          ? {
-              backgroundColor: 'rgba(7, 19, 29, 0.95)',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-            }
-          : {}),
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        backgroundColor: headerBg,
+        borderBottom: headerBorder,
+        boxShadow: headerShadow,
+        backdropFilter: isScrolled || isDarkPage ? 'blur(12px)' : 'none',
+        WebkitBackdropFilter: isScrolled || isDarkPage ? 'blur(12px)' : 'none',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
+        padding: '16px 24px',
       }}
     >
       <div
@@ -137,8 +154,8 @@ export function PublicSiteHeader() {
           justifyContent: 'space-between',
         }}
       >
-        {/* Brand Logo - Selalu warna asli tanpa filter invert */}
-        <Link href="/" className="brand-link flex items-center" style={{ textDecoration: 'none' }}>
+        {/* Logo Kiri: Tetap warna asli tanpa filter atau invert */}
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
           <Image
             src={logoHorizontal}
             alt="TEMBOX"
@@ -150,54 +167,74 @@ export function PublicSiteHeader() {
               height: '35px',
               objectFit: 'contain',
               filter: 'none',
-              transition: 'opacity 0.2s ease',
+              display: 'block',
             }}
           />
         </Link>
 
-        {/* Desktop Navigation - ALL elements share identical navLinkClass */}
-        <nav className="header-nav flex items-center gap-6">
-          <Link
-            href="/contact"
-            className={navLinkClass}
-            style={{ fontSize: '14.5px', textDecoration: 'none' }}
-          >
-            Contact
-          </Link>
-          <Link
-            href="/about"
-            className={navLinkClass}
-            style={{ fontSize: '14.5px', textDecoration: 'none' }}
-          >
-            About
-          </Link>
+        {/* Tata Letak & Jarak Menu Kanan Desktop */}
+        <nav className="header-nav" style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Kelompok 1: Contact & About dengan jarak 28px */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+            <Link
+              href="/contact"
+              className={navLinkClass}
+              style={navLinkBaseStyle}
+            >
+              Contact
+            </Link>
+            <Link
+              href="/about"
+              className={navLinkClass}
+              style={navLinkBaseStyle}
+            >
+              About
+            </Link>
+          </div>
 
-          <span className={sepClass} style={{ fontSize: '13px' }} aria-hidden="true">
-            |
-          </span>
+          {/* Garis Pemisah Utama (lebar 1px, tinggi 16px, jarak kiri-kanan 28px) */}
+          <span
+            style={{
+              width: '1px',
+              height: '16px',
+              backgroundColor: mainDividerBg,
+              margin: '0 28px',
+              display: 'inline-block',
+            }}
+            aria-hidden="true"
+          />
 
+          {/* Kelompok 2: Auth / Profil User */}
           {isAuthenticated && user ? (
-            <PublicUserMenu
-              useLightText={useLightText}
-              navLinkClass={navLinkClass}
-              sepClass={sepClass}
-            />
+            <Link
+              href="/dashboard"
+              className={navLinkClass}
+              style={navLinkBaseStyle}
+            >
+              {user.name}
+            </Link>
           ) : (
-            <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <Link
                 href="/login"
                 className={navLinkClass}
-                style={{ fontSize: '14.5px', textDecoration: 'none' }}
+                style={navLinkBaseStyle}
               >
                 Sign in
               </Link>
-              <span className={sepClass} aria-hidden="true" style={{ fontSize: '13px', padding: '0 2px' }}>
-                |
-              </span>
+              <span
+                style={{
+                  width: '1px',
+                  height: '14px',
+                  backgroundColor: authDividerBg,
+                  display: 'inline-block',
+                }}
+                aria-hidden="true"
+              />
               <Link
                 href="/register"
                 className={navLinkClass}
-                style={{ fontSize: '14.5px', textDecoration: 'none' }}
+                style={navLinkBaseStyle}
               >
                 Sign up
               </Link>
@@ -205,7 +242,7 @@ export function PublicSiteHeader() {
           )}
         </nav>
 
-        {/* Mobile Menu Toggle */}
+        {/* Mobile Menu Toggle Button */}
         <button
           className="mobile-toggle"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -218,9 +255,9 @@ export function PublicSiteHeader() {
             padding: '4px',
           }}
         >
-          <span style={{ display: 'block', width: '22px', height: '2px', background: useLightText ? '#FFFFFF' : '#072538', margin: '4px 0' }} />
-          <span style={{ display: 'block', width: '22px', height: '2px', background: useLightText ? '#FFFFFF' : '#072538', margin: '4px 0' }} />
-          <span style={{ display: 'block', width: '22px', height: '2px', background: useLightText ? '#FFFFFF' : '#072538', margin: '4px 0' }} />
+          <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: textColor, margin: '4px 0' }} />
+          <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: textColor, margin: '4px 0' }} />
+          <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: textColor, margin: '4px 0' }} />
         </button>
       </div>
 
@@ -229,41 +266,40 @@ export function PublicSiteHeader() {
         <div
           className="mobile-nav-menu"
           style={{
-            backgroundColor: useLightText ? '#07131d' : '#FFFFFF',
-            borderTop: useLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #F1F5F9',
+            backgroundColor: isDarkPage ? 'rgba(7, 19, 29, 0.98)' : isLightText ? '#07131d' : '#FFFFFF',
+            borderTop: isLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #F1F5F9',
             padding: '16px 20px',
             marginTop: '12px',
           }}
         >
-          <Link
-            href="/contact"
-            className={navLinkClass}
-            style={{ display: 'block', padding: '8px 0', textDecoration: 'none', fontSize: '15px' }}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Contact
-          </Link>
-          <Link
-            href="/about"
-            className={navLinkClass}
-            style={{ display: 'block', padding: '8px 0', textDecoration: 'none', fontSize: '15px' }}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            About
-          </Link>
-          <hr style={{ border: 'none', borderTop: useLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #F1F5F9', margin: '10px 0' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <Link
+              href="/contact"
+              className={navLinkClass}
+              style={{ ...navLinkBaseStyle, display: 'block', padding: '6px 0' }}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Contact
+            </Link>
+            <Link
+              href="/about"
+              className={navLinkClass}
+              style={{ ...navLinkBaseStyle, display: 'block', padding: '6px 0' }}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              About
+            </Link>
+          </div>
+          <hr style={{ border: 'none', borderTop: isLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #F1F5F9', margin: '12px 0' }} />
           {isAuthenticated && user ? (
-            <>
-              <div style={{ padding: '4px 0', color: useLightText ? '#7DDCE8' : '#0284C7', fontSize: '13px', fontWeight: 700 }}>
-                {user.name}
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Link
                 href="/dashboard"
                 className={navLinkClass}
-                style={{ display: 'block', padding: '8px 0', textDecoration: 'none', fontSize: '14px' }}
+                style={{ ...navLinkBaseStyle, padding: '6px 0' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Dashboard
+                {user.name} (Dashboard)
               </Link>
               <button
                 type="button"
@@ -274,34 +310,39 @@ export function PublicSiteHeader() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  padding: '8px 0',
+                  padding: '6px 0',
                   color: '#EF4444',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  textAlign: 'left',
                 }}
               >
                 Keluar
               </button>
-            </>
+            </div>
           ) : (
-            <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingTop: '4px' }}>
               <Link
                 href="/login"
                 className={navLinkClass}
-                style={{ textDecoration: 'none', fontSize: '14px' }}
+                style={navLinkBaseStyle}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Sign in
               </Link>
-              <span className={sepClass} aria-hidden="true" style={{ fontSize: '13px', padding: '0 2px' }}>
-                |
-              </span>
+              <span
+                style={{
+                  width: '1px',
+                  height: '14px',
+                  backgroundColor: authDividerBg,
+                  display: 'inline-block',
+                }}
+                aria-hidden="true"
+              />
               <Link
                 href="/register"
                 className={navLinkClass}
-                style={{ textDecoration: 'none', fontSize: '14px' }}
+                style={navLinkBaseStyle}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Sign up
@@ -579,7 +620,7 @@ function DashboardHeader({
             <Link
               href="/pengaturan"
               role="menuitem"
-              onClick={(e) => handleNavClick('pengaturan', e)}
+              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('pengaturan', e)}
               className="user-menu-item"
             >
               <User size={15} />
@@ -588,7 +629,7 @@ function DashboardHeader({
             <Link
               href="/dashboard"
               role="menuitem"
-              onClick={(e) => handleNavClick('dashboard', e)}
+              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('dashboard', e)}
               className="user-menu-item"
             >
               <LayoutDashboard size={15} />
@@ -597,7 +638,7 @@ function DashboardHeader({
             <Link
               href="/pengaturan"
               role="menuitem"
-              onClick={(e) => handleNavClick('pengaturan', e)}
+              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick('pengaturan', e)}
               className="user-menu-item"
             >
               <Settings size={15} />

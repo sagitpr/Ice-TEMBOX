@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Check, X } from '../../app/components/Icons';
+import { Check, X } from '../../../app/components/Icons';
 import type { ToastMessage } from '../../../hooks/useSettingsLogic';
 
 interface SettingsToastProps {

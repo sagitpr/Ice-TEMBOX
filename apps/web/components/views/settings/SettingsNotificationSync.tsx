@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell } from '../../app/components/Icons';
+import { Bell } from '../../../app/components/Icons';
 import type { NotificationSettingState } from '../../../lib/services/dashboardService';
 
 interface SettingsNotificationSyncProps {

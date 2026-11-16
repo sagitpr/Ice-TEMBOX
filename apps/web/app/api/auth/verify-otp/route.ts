@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendWelcomeEmail } from '../../../../modules/email/email.service';
+import { verifyAndConsumeOtp } from '../../../../modules/auth/otp.service';
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,18 @@ export async function POST(request: Request) {
     if (!otpCode || String(otpCode).trim().length < 6) {
       return NextResponse.json(
         { error: 'Kode OTP 6-digit tidak valid.' },
+        { status: 400 }
+      );
+    }
+
+    // Cryptographic validation against stored hash, expiry, max attempts & single-use consumption
+    const verification = await verifyAndConsumeOtp(email, String(otpCode).trim(), 'register');
+    if (!verification.valid) {
+      return NextResponse.json(
+        {
+          error: verification.error || 'Verifikasi kode OTP gagal.',
+          remainingAttempts: verification.remainingAttempts,
+        },
         { status: 400 }
       );
     }

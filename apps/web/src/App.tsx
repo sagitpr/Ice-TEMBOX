@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Header } from '../app/components/Header';
 import { PublicUserMenu } from '../components/ui/PublicUserMenu';
 import { useAuthSession } from '../modules/auth/useAuthSession';
 
@@ -86,144 +87,7 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
       {/* ==================================================
           1. HEADER (LCP & Speed Index Optimized)
           ================================================== */}
-      <header
-        className={`site-header transition-all duration-300 ${
-          scrolled ? 'scrolled bg-white/95 backdrop-blur border-b border-slate-100 shadow-sm' : 'bg-transparent'
-        }`}
-      >
-        <div className="container">
-          <div className="header-inner">
-            <Link href="/" className="brand-link">
-              <Image
-                src="/LogoTembox-Horizontal.png"
-                alt="TEMBOX"
-                className="brand-logo-img"
-                width={140}
-                height={36}
-                priority
-                style={{
-                  width: '140px',
-                  height: '36px',
-                  objectFit: 'contain',
-                  filter: 'none',
-                  transition: 'filter 0.2s ease',
-                }}
-              />
-            </Link>
-
-            {/* Desktop Navigation using native Next.js Link with automatic prefetching */}
-            <nav className="header-nav flex items-center gap-6">
-              <Link
-                href="/contact"
-                className={scrolled ? "text-[#072538] font-medium hover:text-sky-600 transition-colors" : "text-white font-medium hover:text-sky-300 transition-colors"}
-                style={{ textDecoration: 'none', fontSize: '14.5px' }}
-              >
-                Contact
-              </Link>
-              <Link
-                href="/about"
-                className={scrolled ? "text-[#072538] font-medium hover:text-sky-600 transition-colors" : "text-white font-medium hover:text-sky-300 transition-colors"}
-                style={{ textDecoration: 'none', fontSize: '14.5px' }}
-              >
-                About
-              </Link>
-              <span
-                className={scrolled ? "text-slate-300 select-none" : "text-white/40 select-none"}
-                style={{ fontSize: '13px' }}
-              >
-                |
-              </span>
-              <PublicUserMenu
-                useLightText={!scrolled}
-                navLinkClass={scrolled ? "text-[#072538] font-medium hover:text-sky-600 transition-colors" : "text-white font-medium hover:text-sky-300 transition-colors"}
-                sepClass={scrolled ? "text-slate-300 select-none" : "text-white/40 select-none"}
-              />
-            </nav>
-
-            {/* Mobile Menu Toggle */}
-            <button
-              className="mobile-toggle"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle navigation menu"
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Dropdown */}
-        {mobileMenuOpen && (
-          <div className="mobile-nav-menu">
-            <Link
-              href="/contact"
-              className="nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Contact
-            </Link>
-            <Link
-              href="/about"
-              className="nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              About
-            </Link>
-            <hr style={{ border: 'none', borderTop: '1px solid #E2EDF3', margin: '8px 0' }} />
-            {isAuthenticated && user ? (
-              <>
-                <div style={{ padding: '4px 16px', color: '#0284C7', fontSize: '13px', fontWeight: 700 }}>
-                  {user.name}
-                </div>
-                <Link
-                  href="/dashboard"
-                  className="nav-link"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="nav-link"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#EF4444',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    width: '100%',
-                    font: 'inherit',
-                  }}
-                >
-                  Keluar
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="nav-link"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/register"
-                  className="nav-link"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
-          </div>
-        )}
-      </header>
+      <Header />
 
       {/* ==================================================
           2. HERO SECTION

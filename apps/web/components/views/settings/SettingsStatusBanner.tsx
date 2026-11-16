@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info } from '../../app/components/Icons';
+import { Info } from '../../../app/components/Icons';
 
 interface SettingsStatusBannerProps {
   deviceCount: number;

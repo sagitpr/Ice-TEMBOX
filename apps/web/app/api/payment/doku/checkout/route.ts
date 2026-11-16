@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createDokuCheckoutSession } from '../../../../../modules/payment/doku.service';
+import { requireServerAuth } from '../../../../../modules/auth/serverAuth';
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization') || '';
-    const cookieHeader = request.headers.get('cookie') || '';
+    // 1. Strict Server-Side Anti-IDOR Authentication Guard
+    const authResult = await requireServerAuth(request);
+    if (authResult.response) {
+      return authResult.response;
+    }
+
+    const verifiedUser = authResult.user;
 
     const body = await request.json().catch(() => ({}));
     const {
@@ -12,20 +18,7 @@ export async function POST(request: Request) {
       quantity = 1,
       shippingAddress,
       totalAmount,
-      userId,
     } = body;
-
-    // Strict Server-Side Authentication Guard
-    const hasBearer = authHeader.toLowerCase().startsWith('bearer ') && authHeader.substring(7).trim().length > 0;
-    const hasCookieToken = cookieHeader.includes('tembox_auth_token=');
-    const hasValidSession = Boolean(userId && (hasBearer || hasCookieToken || userId.startsWith('usr_')));
-
-    if (!hasValidSession) {
-      return NextResponse.json(
-        { error: 'Autentikasi diperlukan. Silakan login terlebih dahulu untuk melanjutkan pemesanan.' },
-        { status: 401 }
-      );
-    }
 
     // Validate essential inputs
     if (!shippingAddress || !shippingAddress.fullName || !shippingAddress.phone || !shippingAddress.streetAddress) {
@@ -42,15 +35,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate strict user-isolated invoice number: INV-TEMBOX-${userId}-${timestamp}
-    const cleanUserId = (userId || 'user').replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    // Generate strict user-isolated invoice number using cryptographically verified user ID
+    const cleanUserId = verifiedUser.id.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
     const timestamp = Date.now();
     const invoiceNumber = `INV-TEMBOX-${cleanUserId}-${timestamp}`;
 
     const customerEmail =
-      shippingAddress.email && shippingAddress.email.includes('@')
+      verifiedUser.email ||
+      (shippingAddress.email && shippingAddress.email.includes('@')
         ? shippingAddress.email
-        : 'pelanggan@ice-tembox.id';
+        : 'pelanggan@ice-tembox.id');
 
     const productName = product?.name || 'TEMBOX IoT Unit';
 
@@ -59,7 +53,7 @@ export async function POST(request: Request) {
       amount: totalAmount,
       customer: {
         id: cleanUserId,
-        name: shippingAddress.fullName,
+        name: shippingAddress.fullName || verifiedUser.name,
         email: customerEmail,
         phone: shippingAddress.phone,
         address: `${shippingAddress.streetAddress}, ${shippingAddress.city || ''}`,

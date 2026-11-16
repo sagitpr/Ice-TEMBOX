@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, UserPlus } from '../../app/components/Icons';
+import { Box, UserPlus } from '../../../app/components/Icons';
 import type { TemboxDevice } from '../../../lib/services/dashboardService';
 
 interface SettingsDevicesProps {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, RefreshCw, ShieldCheck } from '../../app/components/Icons';
+import { X, RefreshCw, ShieldCheck } from '../../../app/components/Icons';
 import type { TemboxDevice } from '../../../lib/services/dashboardService';
 
 interface DeviceDetailModalProps {

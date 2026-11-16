@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendOtpEmail } from '../../../../modules/email/email.service';
+import { createAndSaveOtp } from '../../../../modules/auth/otp.service';
 
 export async function POST(request: Request) {
   try {
@@ -13,8 +14,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate 6-digit OTP
-    const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+    // Cryptographically secure hashed OTP generation with 10-minute expiration & attempt throttling
+    const { otpCode } = await createAndSaveOtp(email, 'register');
 
     await sendOtpEmail({
       to: email,
