@@ -116,9 +116,19 @@ const getStore = (): StoreState => {
   if (typeof window !== 'undefined') {
     const win = window as unknown as { __TEMBOX_DASHBOARD_STORE__?: StoreState };
     if (!win.__TEMBOX_DASHBOARD_STORE__) {
+      let initialAccount = { ...DEFAULT_STORE.account };
+      try {
+        const rawAuth = localStorage.getItem('tembox_auth_session');
+        if (rawAuth) {
+          const parsed = JSON.parse(rawAuth);
+          if (parsed.name) initialAccount.fullName = parsed.name;
+          if (parsed.email) initialAccount.email = parsed.email;
+        }
+      } catch {}
+
       win.__TEMBOX_DASHBOARD_STORE__ = {
         devices: DEFAULT_STORE.devices.map((d) => ({ ...d })),
-        account: { ...DEFAULT_STORE.account },
+        account: initialAccount,
         notifSettings: { ...DEFAULT_STORE.notifSettings },
         notifications: DEFAULT_STORE.notifications.map((n) => ({ ...n })),
       };
@@ -245,6 +255,21 @@ export async function updateAccount(accountData: UpdateAccountPayload): Promise<
     fullName: cleanName,
     email: cleanEmail,
   };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const rawAuth = localStorage.getItem('tembox_auth_session');
+      if (rawAuth) {
+        const parsed = JSON.parse(rawAuth);
+        parsed.name = cleanName;
+        parsed.email = cleanEmail;
+        localStorage.setItem('tembox_auth_session', JSON.stringify(parsed));
+        localStorage.setItem('tembox_user_profile', JSON.stringify({ fullName: cleanName, email: cleanEmail }));
+        window.dispatchEvent(new CustomEvent('tembox:auth-changed', { detail: parsed }));
+      }
+    } catch {}
+  }
+
   emitStoreEvent('tembox:account-updated', store.account);
   return { ...store.account };
 }

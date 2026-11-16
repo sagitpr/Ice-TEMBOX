@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { User, Lock, ArrowLeft } from './Icons';
+import { useAuthLogic } from '../../hooks/useAuthLogic';
+import AuthBottomWaves from '../../components/ui/AuthBottomWaves';
 
 interface LoginViewProps {
   onSuccess?: () => void;
@@ -20,40 +21,30 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onBackHome,
   hideLeftPane = false,
 }) => {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const {
+    loginEmail,
+    setLoginEmail,
+    loginPassword,
+    setLoginPassword,
+    showLoginPassword,
+    setShowLoginPassword,
+    rememberMe,
+    setRememberMe,
+    loginLoading,
+    handleLoginSubmit,
+  } = useAuthLogic();
 
-  useEffect(() => {
-    return () => {
-      if (submitTimerRef.current) clearTimeout(submitTimerRef.current);
-    };
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    if (submitTimerRef.current) clearTimeout(submitTimerRef.current);
-    submitTimerRef.current = setTimeout(() => {
-      setLoading(false);
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push('/dashboard');
-      }
-    }, 350);
+  const onSubmit = (e: React.FormEvent) => {
+    handleLoginSubmit(e, onSuccess);
   };
 
   const rightFormPane = (
-    <div className="login-right-pane" style={{ background: '#FFFFFF' }}>
-      <div className="login-form-box">
+    <div className="login-right-pane" style={{ background: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
+      <div className="login-form-box" style={{ position: 'relative', zIndex: 10 }}>
         <h2 className="login-title">Selamat Datang</h2>
         <p className="login-desc">Masuk untuk melanjutkan ke sistem TEMBOX.</p>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onSubmit}>
           <div className="form-group">
             <label className="form-label" htmlFor="loginEmail">
               Email / Username
@@ -66,8 +57,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 className="form-input"
                 placeholder="Email / Username"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
               />
             </div>
           </div>
@@ -79,28 +70,33 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <div className="input-icon-wrap">
               <Lock size={16} className="input-icon" />
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showLoginPassword ? 'text' : 'password'}
                 id="loginPassword"
                 className="form-input"
                 placeholder="Password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
               />
               <button
                 type="button"
                 className="password-toggle-btn"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
                 tabIndex={-1}
               >
-                {showPassword ? 'Sembunyikan' : 'Lihat'}
+                {showLoginPassword ? 'Sembunyikan' : 'Lihat'}
               </button>
             </div>
           </div>
 
           <div className="form-row-actions">
             <label className="remember-label">
-              <input type="checkbox" className="remember-checkbox" />
+              <input
+                type="checkbox"
+                className="remember-checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
               <span>Ingat saya</span>
             </label>
             {onNavigateForgotPassword ? (
@@ -121,8 +117,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
             )}
           </div>
 
-          <button type="submit" className="btn-login-submit" disabled={loading}>
-            {loading ? 'Memproses...' : 'Masuk'}
+          <button type="submit" className="btn-login-submit" disabled={loginLoading}>
+            {loginLoading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
 
@@ -164,6 +160,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           )}
         </div>
       </div>
+      <AuthBottomWaves />
     </div>
   );
 

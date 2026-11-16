@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Menu,
   Bell,
@@ -25,34 +26,324 @@ import {
   type HeaderNotificationItem,
   type UserAccount,
 } from '../../lib/services/dashboardService';
+import { useAuthSession, clearStoredAuthSession } from '../../modules/auth/useAuthSession';
+import { PublicUserMenu } from '../../components/ui/PublicUserMenu';
 
-interface HeaderProps {
-  currentTab: string;
+const logoHorizontal = '/LogoTembox-Horizontal.png';
+
+export interface HeaderProps {
+  currentTab?: string;
   onToggleSidebar?: () => void;
   onSelectTab?: (tab: string) => void;
 }
 
+/**
+ * Universal Header Component for Ice-TEMBOX.
+ * Automatically selects between Public Site Header and Dashboard Topbar based on context.
+ */
 export const Header: React.FC<HeaderProps> = ({
   currentTab,
   onToggleSidebar,
   onSelectTab,
 }) => {
+  // If currentTab is provided, render the Dashboard Topbar
+  if (currentTab) {
+    return (
+      <DashboardHeader
+        currentTab={currentTab}
+        onToggleSidebar={onToggleSidebar}
+        onSelectTab={onSelectTab}
+      />
+    );
+  }
+
+  // Otherwise, render the Public Site Header with exact 2-mode color system
+  return <PublicSiteHeader />;
+};
+
+/**
+ * Public Site Header Component.
+ * Implements strict 2-mode navigation styling:
+ * 1. Mode Transparan / Gelap (useLightText = true)
+ * 2. Mode Putih / Terang (useLightText = false)
+ */
+export function PublicSiteHeader() {
+  const pathname = usePathname() || '/';
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuthSession();
+
+  // Scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 24);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const isHeroToWhitePage = pathname === '/' || pathname === '' || pathname === '/about';
+  const isDarkPage = !isHeroToWhitePage; // /market, /contact, /checkout, /login, /register, etc.
+
+  // 1. Kelompokkan Halaman Berdasarkan Tema Latar:
+  // - Halaman Tema Gelap (isDarkPage: /market, /contact, /checkout, /login, /register):
+  //   * Latar <header> WAJIB selalu gelap (bg-[#07131d]/95 backdrop-blur-md border-b border-white/10) baik sebelum maupun sesudah di-scroll.
+  //   * SEMUA teks navigasi (Contact, About, Sign in, Sign up, Nama User) wajib selalu putih (useLightText = true).
+  // - Halaman Hero-ke-Putih (isHeroToWhitePage: / dan /about):
+  //   * Sebelum di-scroll (!isScrolled): Latar transparan (bg-transparent), semua teks putih (useLightText = true).
+  //   * Setelah di-scroll (isScrolled): Latar berubah putih (bg-white/95 backdrop-blur-md), semua teks navy gelap (useLightText = false).
+  const useLightText = isDarkPage ? true : !isScrolled;
+
+  // Background Header
+  const headerBgClass = isDarkPage
+    ? 'bg-[#07131d]/95 backdrop-blur-md border-b border-white/10 shadow-md'
+    : isScrolled
+      ? 'bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm'
+      : 'bg-transparent border-b border-transparent';
+
+  // Single unified navigation link class for ALL links (Contact, About, Sign in, Sign up, Nama User)
+  const navLinkClass = useLightText
+    ? 'text-white font-medium hover:text-sky-300 transition-colors'
+    : 'text-[#072538] font-medium hover:text-sky-600 transition-colors';
+
+  const sepClass = useLightText
+    ? 'text-white/40 select-none'
+    : 'text-slate-300 select-none';
+
+  // Only apply CSS class 'scrolled' on Hero-to-White pages when scrolled,
+  // preventing global .site-header.scrolled in index.css from forcing a white background on dark pages!
+  const shouldApplyScrolledClass = isHeroToWhitePage && isScrolled;
+
+  return (
+    <header
+      className={`site-header fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${headerBgClass} ${shouldApplyScrolledClass ? 'scrolled' : ''}`}
+      style={{
+        padding: '14px 20px',
+        ...(isDarkPage
+          ? {
+              backgroundColor: 'rgba(7, 19, 29, 0.95)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            }
+          : {}),
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '1140px',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        {/* Brand Logo - Selalu warna asli tanpa filter invert */}
+        <Link href="/" className="brand-link flex items-center" style={{ textDecoration: 'none' }}>
+          <Image
+            src={logoHorizontal}
+            alt="TEMBOX"
+            width={140}
+            height={36}
+            priority
+            style={{
+              width: '135px',
+              height: '35px',
+              objectFit: 'contain',
+              filter: 'none',
+              transition: 'opacity 0.2s ease',
+            }}
+          />
+        </Link>
+
+        {/* Desktop Navigation - ALL elements share identical navLinkClass */}
+        <nav className="header-nav flex items-center gap-6">
+          <Link
+            href="/contact"
+            className={navLinkClass}
+            style={{ fontSize: '14.5px', textDecoration: 'none' }}
+          >
+            Contact
+          </Link>
+          <Link
+            href="/about"
+            className={navLinkClass}
+            style={{ fontSize: '14.5px', textDecoration: 'none' }}
+          >
+            About
+          </Link>
+
+          <span className={sepClass} style={{ fontSize: '13px' }} aria-hidden="true">
+            |
+          </span>
+
+          {isAuthenticated && user ? (
+            <PublicUserMenu
+              useLightText={useLightText}
+              navLinkClass={navLinkClass}
+              sepClass={sepClass}
+            />
+          ) : (
+            <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Link
+                href="/login"
+                className={navLinkClass}
+                style={{ fontSize: '14.5px', textDecoration: 'none' }}
+              >
+                Sign in
+              </Link>
+              <span className={sepClass} aria-hidden="true" style={{ fontSize: '13px', padding: '0 2px' }}>
+                |
+              </span>
+              <Link
+                href="/register"
+                className={navLinkClass}
+                style={{ fontSize: '14.5px', textDecoration: 'none' }}
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
+        </nav>
+
+        {/* Mobile Menu Toggle */}
+        <button
+          className="mobile-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle navigation menu"
+          style={{
+            display: 'none',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+          }}
+        >
+          <span style={{ display: 'block', width: '22px', height: '2px', background: useLightText ? '#FFFFFF' : '#072538', margin: '4px 0' }} />
+          <span style={{ display: 'block', width: '22px', height: '2px', background: useLightText ? '#FFFFFF' : '#072538', margin: '4px 0' }} />
+          <span style={{ display: 'block', width: '22px', height: '2px', background: useLightText ? '#FFFFFF' : '#072538', margin: '4px 0' }} />
+        </button>
+      </div>
+
+      {/* Mobile Navigation Dropdown */}
+      {mobileMenuOpen && (
+        <div
+          className="mobile-nav-menu"
+          style={{
+            backgroundColor: useLightText ? '#07131d' : '#FFFFFF',
+            borderTop: useLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #F1F5F9',
+            padding: '16px 20px',
+            marginTop: '12px',
+          }}
+        >
+          <Link
+            href="/contact"
+            className={navLinkClass}
+            style={{ display: 'block', padding: '8px 0', textDecoration: 'none', fontSize: '15px' }}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Contact
+          </Link>
+          <Link
+            href="/about"
+            className={navLinkClass}
+            style={{ display: 'block', padding: '8px 0', textDecoration: 'none', fontSize: '15px' }}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            About
+          </Link>
+          <hr style={{ border: 'none', borderTop: useLightText ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #F1F5F9', margin: '10px 0' }} />
+          {isAuthenticated && user ? (
+            <>
+              <div style={{ padding: '4px 0', color: useLightText ? '#7DDCE8' : '#0284C7', fontSize: '13px', fontWeight: 700 }}>
+                {user.name}
+              </div>
+              <Link
+                href="/dashboard"
+                className={navLinkClass}
+                style={{ display: 'block', padding: '8px 0', textDecoration: 'none', fontSize: '14px' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '8px 0',
+                  color: '#EF4444',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                Keluar
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '6px' }}>
+              <Link
+                href="/login"
+                className={navLinkClass}
+                style={{ textDecoration: 'none', fontSize: '14px' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign in
+              </Link>
+              <span className={sepClass} aria-hidden="true" style={{ fontSize: '13px', padding: '0 2px' }}>
+                |
+              </span>
+              <Link
+                href="/register"
+                className={navLinkClass}
+                style={{ textDecoration: 'none', fontSize: '14px' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </header>
+  );
+}
+
+/**
+ * Dashboard Topbar Header Component (Active when inside /dashboard, /monitoring, /pengaturan, etc.)
+ */
+function DashboardHeader({
+  currentTab,
+  onToggleSidebar,
+  onSelectTab,
+}: HeaderProps) {
   const router = useRouter();
+  const { user } = useAuthSession();
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [accountName, setAccountName] = useState('Nelayan');
-  const [accountEmail, setAccountEmail] = useState('nelayan@example.com');
+  const [accountName, setAccountName] = useState(user?.name || 'Nelayan');
+  const [accountEmail, setAccountEmail] = useState(user?.email || 'nelayan@example.com');
   const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (user) {
+      if (user.name) setAccountName(user.name);
+      if (user.email) setAccountEmail(user.email);
+    }
+  }, [user]);
+
   const hasUnread = notifications.some((n) => n.unread);
 
-  // Sync account & notifications from centralized dashboardService + reactive store events
   useEffect(() => {
     let isMounted = true;
-
     const loadHeaderData = async () => {
       try {
         const [acc, notifList] = await Promise.all([
@@ -63,9 +354,7 @@ export const Header: React.FC<HeaderProps> = ({
         setAccountName(acc.fullName);
         setAccountEmail(acc.email);
         setNotifications(notifList);
-      } catch {
-        // Keep defaults on error
-      }
+      } catch {}
     };
 
     loadHeaderData();
@@ -95,7 +384,6 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, []);
 
-  // Close dropdowns on outside click or Escape key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
@@ -119,7 +407,6 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, []);
 
-  // Title and subtitle according to the current tab
   const getHeaderTitles = () => {
     switch (currentTab) {
       case 'monitoring':
@@ -129,92 +416,74 @@ export const Header: React.FC<HeaderProps> = ({
         };
       case 'notifikasi':
         return {
-          title: 'Notifikasi',
-          subtitle: 'Semua pemberitahuan kondisi suhu dan sistem TEMBOX.',
+          title: 'Pusat Notifikasi',
+          subtitle: 'Daftar peringatan termal palka dan riwayat pembaruan perangkat.',
         };
       case 'aktivitas':
         return {
-          title: 'Log Aktivitas',
-          subtitle: 'Riwayat pencatatan kondisi suhu dan telemetri perangkat.',
+          title: 'Log Aktivitas Armada',
+          subtitle: 'Audit trail sinkronisasi sensor palka dan catatan telemetri pelayaran.',
         };
       case 'pengaturan':
         return {
-          title: 'Pengaturan',
-          subtitle: 'Konfigurasi perangkat dan akun TEMBOX Anda.',
+          title: 'Pengaturan Sistem',
+          subtitle: 'Konfigurasi perangkat keras palka, batas peringatan, dan profil akun.',
         };
       default:
         return {
-          title: `Halo, ${accountName}`,
-          subtitle: 'Berikut ringkasan kondisi penyimpanan ikan Anda hari ini.',
+          title: 'Dashboard Cold-Chain',
+          subtitle: 'Ringkasan operasional dan kondisi penyimpanan palka kapal hari ini.',
         };
     }
   };
 
   const { title, subtitle } = getHeaderTitles();
 
-  const handleMarkAllRead = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleMarkAllRead = async () => {
     const updated = await markAllHeaderNotificationsRead();
     setNotifications(updated);
   };
 
   const handleNavClick = (tabId: string, e: React.MouseEvent) => {
+    setUserMenuOpen(false);
     if (onSelectTab) {
       e.preventDefault();
       onSelectTab(tabId);
     }
-    setNotifOpen(false);
-    setUserMenuOpen(false);
-  };
-
-  const getNotifIcon = (severity: HeaderNotificationItem['severity']) => {
-    if (severity === 'warning') {
-      return {
-        bg: '#FFFBEB',
-        color: '#D97706',
-        icon: <Thermometer size={14} color="#D97706" />,
-      };
-    }
-    if (severity === 'success') {
-      return {
-        bg: '#ECFDF5',
-        color: '#059669',
-        icon: <ShieldCheck size={14} color="#059669" />,
-      };
-    }
-    return {
-      bg: '#E0F2FE',
-      color: '#0284C7',
-      icon: <Info size={14} color="#0284C7" />,
-    };
   };
 
   return (
-    <header className="app-topbar">
+    <header className="app-topbar" id="appTopbar">
       <div className="topbar-left">
-        <button
-          type="button"
-          className="sidebar-toggle-btn"
-          id="sidebarToggleBtn"
-          onClick={onToggleSidebar}
-          aria-label="Toggle menu"
-        >
-          <Menu size={20} />
-        </button>
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className="topbar-menu-btn"
+            id="sidebarToggleBtn"
+            onClick={onToggleSidebar}
+            aria-label="Buka Menu Navigasi"
+          >
+            <Menu size={20} />
+          </button>
+        )}
         <div className="topbar-title-wrap">
-          <h1 className="topbar-greeting" id="topbarGreeting">{title}</h1>
-          <p className="topbar-subtitle" id="topbarSubtitle">{subtitle}</p>
+          <h1 className="topbar-page-title" id="pageTitle">
+            {title}
+          </h1>
+          <p className="topbar-page-desc" id="pageSubtitle">
+            {subtitle}
+          </p>
         </div>
       </div>
 
-      <div className="topbar-right">
-        {/* Notification Bell & Dropdown Pop-up */}
-        <div className="topbar-notif-wrap" ref={notifRef}>
+      <div className="topbar-actions">
+        {/* Notifications Dropdown */}
+        <div className="topbar-action-item" ref={notifRef}>
           <button
             type="button"
-            className={`topbar-icon-btn ${notifOpen ? 'open' : ''}`}
-            id="topbarBellBtn"
-            aria-label="Lihat Notifikasi"
+            className="topbar-icon-btn"
+            id="notifBtn"
+            aria-label="Notifikasi Sistem"
             aria-expanded={notifOpen}
             onClick={() => {
               setNotifOpen((prev) => !prev);
@@ -222,76 +491,51 @@ export const Header: React.FC<HeaderProps> = ({
             }}
           >
             <Bell size={18} />
-            {hasUnread && <span className="topbar-badge-dot has-unread" id="topbarBellDot" />}
+            {hasUnread && <span className="topbar-badge" id="notifBadge" />}
           </button>
 
-          {/* Notification Pop-up Dropdown Menu */}
           <div
-            className={`notif-dropdown-menu ${notifOpen ? 'open' : 'pointer-events-none'}`}
-            id="notifDropdownMenu"
+            className={`topbar-dropdown ${notifOpen ? 'open' : 'pointer-events-none'}`}
+            id="notifDropdown"
           >
-            <div className="notif-dropdown-header">
-              <div className="notif-dropdown-title-row">
-                <span className="notif-dropdown-title">Peringatan Palka Terbaru</span>
-                {hasUnread && (
-                  <button
-                    type="button"
-                    className="notif-mark-read-btn"
-                    onClick={handleMarkAllRead}
-                  >
-                    Tandai dibaca
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="notif-dropdown-list">
-              {notifications.length === 0 ? (
-                <div className="notif-dropdown-empty">
-                  <BellOff size={24} color="#94A3B8" />
-                  <span>Tidak ada notifikasi baru</span>
-                </div>
-              ) : (
-                notifications.map((item) => {
-                  const visual = getNotifIcon(item.severity);
-                  return (
-                    <div
-                      key={item.id}
-                      className={`notif-dropdown-item ${item.unread ? 'unread' : ''}`}
-                      onClick={(e) => handleNavClick('notifikasi', e)}
-                    >
-                      <div
-                        className="notif-dropdown-icon"
-                        style={{ backgroundColor: visual.bg, color: visual.color }}
-                      >
-                        {visual.icon}
-                      </div>
-                      <div className="notif-dropdown-body">
-                        <div className="notif-dropdown-item-title">{item.title}</div>
-                        <div className="notif-dropdown-item-text">{item.message}</div>
-                        <span className="notif-dropdown-item-time">{item.time}</span>
-                      </div>
-                    </div>
-                  );
-                })
+            <div className="dropdown-header">
+              <span className="dropdown-title">Notifikasi Sistem</span>
+              {hasUnread && (
+                <button
+                  type="button"
+                  className="dropdown-action-btn"
+                  id="markAllReadBtn"
+                  onClick={handleMarkAllRead}
+                >
+                  Tandai dibaca
+                </button>
               )}
             </div>
 
-            <div className="notif-dropdown-footer">
-              <Link
-                href="/notifikasi"
-                onClick={(e) => handleNavClick('notifikasi', e)}
-                className="notif-view-all-link"
-              >
-                <span>Buka Halaman Notifikasi</span>
-                <ArrowRight size={13} />
-              </Link>
+            <div className="dropdown-body" id="notifList">
+              {notifications.map((item) => (
+                <div
+                  key={item.id}
+                  className={`notif-item ${item.severity} ${item.unread ? 'unread' : ''}`}
+                >
+                  <div className="notif-icon">
+                    {item.severity === 'warning' && <Thermometer size={14} />}
+                    {item.severity === 'info' && <Info size={14} />}
+                    {item.severity === 'success' && <ShieldCheck size={14} />}
+                  </div>
+                  <div className="notif-content">
+                    <div className="notif-title">{item.title}</div>
+                    <div className="notif-message">{item.message}</div>
+                    <div className="notif-time">{item.time}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* User Profile Dropdown Pill */}
-        <div className="topbar-user-wrap" ref={userMenuRef} style={{ position: 'relative' }}>
+        {/* User Profile Menu */}
+        <div className="topbar-action-item" ref={userMenuRef}>
           <button
             type="button"
             className="topbar-user-pill"
@@ -305,11 +549,12 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="topbar-avatar">
               <User size={16} />
             </div>
-            <span className="topbar-username" id="topbarUsername">{accountName}</span>
+            <span className="topbar-username" id="topbarUsername">
+              {accountName}
+            </span>
             <ChevronDown size={14} color="#64748B" />
           </button>
 
-          {/* User Menu Dropdown */}
           <div
             role="menu"
             className={`topbar-user-menu ${userMenuOpen ? 'open' : 'pointer-events-none'}`}
@@ -358,9 +603,14 @@ export const Header: React.FC<HeaderProps> = ({
               <Settings size={15} />
               <span>Pengaturan</span>
             </Link>
-            <Link href="/" role="menuitem" className="user-menu-item" onClick={() => setUserMenuOpen(false)}>
+            <Link
+              href="/"
+              role="menuitem"
+              className="user-menu-item"
+              onClick={() => setUserMenuOpen(false)}
+            >
               <ArrowLeft size={15} />
-              <span>Kembali ke TEMBOX</span>
+              <span>Kembali ke Beranda</span>
             </Link>
             <hr style={{ border: 'none', borderTop: '1px solid #E2EDF4', margin: '4px 0' }} />
             <button
@@ -381,6 +631,7 @@ export const Header: React.FC<HeaderProps> = ({
                 cursor: 'pointer',
               }}
               onClick={() => {
+                clearStoredAuthSession();
                 setUserMenuOpen(false);
                 router.push('/login');
               }}
@@ -393,6 +644,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-};
+}
 
+export const PublicHeader = PublicSiteHeader;
 export default Header;

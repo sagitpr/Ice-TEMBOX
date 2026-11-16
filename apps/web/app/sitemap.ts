@@ -1,5 +1,4 @@
 import type { MetadataRoute } from 'next';
-import { generateProgrammaticUrls } from './lib/seo-data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-tembox.vercel.app';
@@ -12,6 +11,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: 'daily',
       priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/market`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/about`,
@@ -39,15 +44,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  // Programmatic Category & Keyword Pages (Targetting hundreds/thousands of indexed combinations)
-  const programmaticItems = generateProgrammaticUrls();
-  const categoryPages: MetadataRoute.Sitemap = programmaticItems.map((item) => ({
-    url: `${baseUrl}/kategori/${item.slug}`,
-    lastModified: now,
-    changeFrequency: 'weekly',
-    priority: item.priority,
-  }));
-
-  return [...staticPages, ...categoryPages];
+  return staticPages;
 }
-

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
+import { PublicUserMenu } from '../components/ui/PublicUserMenu';
+import { useAuthSession } from '../modules/auth/useAuthSession';
 
 // Dynamic import for Three.js atmospheric layer (SSR false to eliminate initial bundle bloat)
 const HeroAtmosphere = dynamic(() => import('../app/components/HeroAtmosphere'), {
@@ -21,6 +23,7 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadAtmosphere, setLoadAtmosphere] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+  const { user, isAuthenticated, logout } = useAuthSession();
 
   // Page Visibility Listener to prevent GPU memory leaks / lag when tab is hidden
   useEffect(() => {
@@ -83,7 +86,11 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
       {/* ==================================================
           1. HEADER (LCP & Speed Index Optimized)
           ================================================== */}
-      <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
+      <header
+        className={`site-header transition-all duration-300 ${
+          scrolled ? 'scrolled bg-white/95 backdrop-blur border-b border-slate-100 shadow-sm' : 'bg-transparent'
+        }`}
+      >
         <div className="container">
           <div className="header-inner">
             <Link href="/" className="brand-link">
@@ -98,28 +105,39 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
                   width: '140px',
                   height: '36px',
                   objectFit: 'contain',
+                  filter: 'none',
+                  transition: 'filter 0.2s ease',
                 }}
               />
             </Link>
 
             {/* Desktop Navigation using native Next.js Link with automatic prefetching */}
-            <nav className="header-nav">
-              <Link href="/contact" className="nav-link">
+            <nav className="header-nav flex items-center gap-6">
+              <Link
+                href="/contact"
+                className={scrolled ? "text-[#072538] font-medium hover:text-sky-600 transition-colors" : "text-white font-medium hover:text-sky-300 transition-colors"}
+                style={{ textDecoration: 'none', fontSize: '14.5px' }}
+              >
                 Contact
               </Link>
-              <Link href="/about" className="nav-link">
+              <Link
+                href="/about"
+                className={scrolled ? "text-[#072538] font-medium hover:text-sky-600 transition-colors" : "text-white font-medium hover:text-sky-300 transition-colors"}
+                style={{ textDecoration: 'none', fontSize: '14.5px' }}
+              >
                 About
               </Link>
-              <div className="nav-divider" />
-              <div className="auth-links">
-                <Link href="/login" className="nav-link">
-                  Sign in
-                </Link>
-                <span className="auth-sep">|</span>
-                <Link href="/register" className="nav-link">
-                  Sign up
-                </Link>
-              </div>
+              <span
+                className={scrolled ? "text-slate-300 select-none" : "text-white/40 select-none"}
+                style={{ fontSize: '13px' }}
+              >
+                |
+              </span>
+              <PublicUserMenu
+                useLightText={!scrolled}
+                navLinkClass={scrolled ? "text-[#072538] font-medium hover:text-sky-600 transition-colors" : "text-white font-medium hover:text-sky-300 transition-colors"}
+                sepClass={scrolled ? "text-slate-300 select-none" : "text-white/40 select-none"}
+              />
             </nav>
 
             {/* Mobile Menu Toggle */}
@@ -152,21 +170,57 @@ export const App: React.FC<{ onNavigate?: (view: string) => void }> = () => {
             >
               About
             </Link>
-            <hr style={{ border: 'none', borderTop: '1px solid #E2EDF3' }} />
-            <Link
-              href="/login"
-              className="nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign up
-            </Link>
+            <hr style={{ border: 'none', borderTop: '1px solid #E2EDF3', margin: '8px 0' }} />
+            {isAuthenticated && user ? (
+              <>
+                <div style={{ padding: '4px 16px', color: '#0284C7', fontSize: '13px', fontWeight: 700 }}>
+                  {user.name}
+                </div>
+                <Link
+                  href="/dashboard"
+                  className="nav-link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="nav-link"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#EF4444',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    width: '100%',
+                    font: 'inherit',
+                  }}
+                >
+                  Keluar
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="nav-link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  className="nav-link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
         )}
       </header>

@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, ArrowLeft, Check, ShieldCheck } from './Icons';
 import OtpInput from './OtpInput';
+import { useAuthLogic } from '../../hooks/useAuthLogic';
+import AuthBottomWaves from '../../components/ui/AuthBottomWaves';
 
 interface RegisterViewProps {
   onSuccess?: () => void;
@@ -20,73 +22,45 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   hideLeftPane = false,
 }) => {
   const router = useRouter();
-  // Step 1: 'form' -> Step 2: 'otp' -> Step 3: 'success'
-  const [step, setStep] = useState<'form' | 'otp' | 'success'>('form');
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [terms, setTerms] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const {
+    registerStep,
+    setRegisterStep,
+    registerFullName,
+    setRegisterFullName,
+    registerEmail,
+    setRegisterEmail,
+    registerPassword,
+    setRegisterPassword,
+    registerConfirmPassword,
+    setRegisterConfirmPassword,
+    showRegisterPassword,
+    setShowRegisterPassword,
+    registerTerms,
+    setRegisterTerms,
+    registerOtp,
+    setRegisterOtp,
+    registerOtpError,
+    setRegisterOtpError,
+    registerLoading,
+    registerErrorMsg,
+    handleRegisterSubmitForm,
+    handleVerifyOtp,
+  } = useAuthLogic();
 
-  // Step 1: Submit Registration Form -> Proceed to OTP
-  const handleSubmitForm = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    if (password !== confirmPassword) {
-      setErrorMsg('Password dan Konfirmasi Password tidak cocok!');
-      return;
-    }
-
-    if (password.length < 8) {
-      setErrorMsg('Password minimal harus 8 karakter!');
-      return;
-    }
-
-    if (!terms) {
-      setErrorMsg('Anda harus menyetujui syarat & ketentuan TEMBOX.');
-      return;
-    }
-
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setStep('otp');
-    }, 400);
-  };
-
-  // Step 2: Verify OTP
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    setOtpError('');
-
-    if (otp.length < 6) {
-      setOtpError('Masukkan 6 digit kode OTP yang lengkap.');
-      return;
-    }
-
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setStep('success');
-    }, 500);
+  const onVerifyOtpSubmit = (e: React.FormEvent) => {
+    handleVerifyOtp(e, onSuccess);
   };
 
   const rightFormPane = (
-    <div className="login-right-pane" style={{ background: '#FFFFFF' }}>
-      <div className="login-form-box">
+    <div className="login-right-pane" style={{ background: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
+      <div className="login-form-box" style={{ position: 'relative', zIndex: 10 }}>
         {/* STEP 1: Registration Input Form */}
-        {step === 'form' && (
+        {registerStep === 'form' && (
           <>
             <h2 className="login-title">Buat Akun</h2>
             <p className="login-desc">Mulai menggunakan sistem monitoring TEMBOX.</p>
 
-            {errorMsg && (
+            {registerErrorMsg && (
               <div
                 style={{
                   backgroundColor: '#FEF2F2',
@@ -98,11 +72,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                   fontSize: '13px',
                 }}
               >
-                {errorMsg}
+                {registerErrorMsg}
               </div>
             )}
 
-            <form onSubmit={handleSubmitForm}>
+            <form onSubmit={handleRegisterSubmitForm}>
               <div className="form-group">
                 <label className="form-label" htmlFor="regFullName">
                   Nama Lengkap
@@ -115,8 +89,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     className="form-input"
                     placeholder="Nama Lengkap"
                     required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    value={registerFullName}
+                    onChange={(e) => setRegisterFullName(e.target.value)}
                   />
                 </div>
               </div>
@@ -133,8 +107,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     className="form-input"
                     placeholder="alamat@email.com"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
                   />
                 </div>
               </div>
@@ -146,22 +120,22 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 <div className="input-icon-wrap">
                   <Lock size={16} className="input-icon" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showRegisterPassword ? 'text' : 'password'}
                     id="regPassword"
                     className="form-input"
                     placeholder="Minimal 8 karakter"
                     required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
                   />
                   <button
                     type="button"
                     className="input-toggle-pwd"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() => setShowRegisterPassword(!showRegisterPassword)}
                     aria-label="Toggle password visibility"
                   >
                     <span style={{ fontSize: '11px', color: '#64748B' }}>
-                      {showPassword ? 'Hide' : 'Show'}
+                      {showRegisterPassword ? 'Hide' : 'Show'}
                     </span>
                   </button>
                 </div>
@@ -174,13 +148,13 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 <div className="input-icon-wrap">
                   <Lock size={16} className="input-icon" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showRegisterPassword ? 'text' : 'password'}
                     id="regConfirmPassword"
                     className="form-input"
                     placeholder="Ulangi password"
                     required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={registerConfirmPassword}
+                    onChange={(e) => setRegisterConfirmPassword(e.target.value)}
                   />
                 </div>
               </div>
@@ -191,15 +165,15 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     type="checkbox"
                     id="regTerms"
                     required
-                    checked={terms}
-                    onChange={(e) => setTerms(e.target.checked)}
+                    checked={registerTerms}
+                    onChange={(e) => setRegisterTerms(e.target.checked)}
                   />
                   <span>Saya menyetujui syarat &amp; ketentuan TEMBOX</span>
                 </label>
               </div>
 
-              <button type="submit" className="btn-primary-block" disabled={loading}>
-                <span>{loading ? 'Memproses...' : 'Lanjutkan Verifikasi'}</span>
+              <button type="submit" className="btn-primary-block" disabled={registerLoading}>
+                <span>{registerLoading ? 'Memproses...' : 'Lanjutkan Verifikasi'}</span>
               </button>
             </form>
 
@@ -224,7 +198,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
         )}
 
         {/* STEP 2: 6-Digit OTP Verification Form */}
-        {step === 'otp' && (
+        {registerStep === 'otp' && (
           <>
             <div style={{ textAlign: 'center', marginBottom: '18px' }}>
               <div
@@ -247,35 +221,35 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               </h2>
               <p className="login-desc" style={{ marginBottom: '0' }}>
                 Kode OTP 6 digit telah dikirim ke{' '}
-                <strong style={{ color: '#0B2D42' }}>{email}</strong>.
+                <strong style={{ color: '#0B2D42' }}>{registerEmail}</strong>.
               </p>
             </div>
 
-            <form onSubmit={handleVerifyOtp}>
+            <form onSubmit={onVerifyOtpSubmit}>
               <div style={{ marginBottom: '20px' }}>
                 <OtpInput
-                  value={otp}
+                  value={registerOtp}
                   onChange={(val) => {
-                    setOtp(val);
-                    setOtpError('');
+                    setRegisterOtp(val);
+                    setRegisterOtpError('');
                   }}
-                  error={otpError}
+                  error={registerOtpError}
                   onResend={() => {
-                    setOtp('');
-                    setOtpError('');
+                    setRegisterOtp('');
+                    setRegisterOtpError('');
                   }}
                 />
               </div>
 
-              <button type="submit" className="btn-primary-block" disabled={loading}>
-                <span>{loading ? 'Memverifikasi...' : 'Verifikasi &amp; Aktifkan Akun'}</span>
+              <button type="submit" className="btn-primary-block" disabled={registerLoading}>
+                <span>{registerLoading ? 'Memverifikasi...' : 'Verifikasi &amp; Aktifkan Akun'}</span>
               </button>
             </form>
 
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
               <button
                 type="button"
-                onClick={() => setStep('form')}
+                onClick={() => setRegisterStep('form')}
                 style={{
                   fontSize: '12.5px',
                   color: '#64748B',
@@ -295,7 +269,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
         )}
 
         {/* STEP 3: Success Confirmation */}
-        {step === 'success' && (
+        {registerStep === 'success' && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <div
               style={{
@@ -353,6 +327,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
           )}
         </div>
       </div>
+      <AuthBottomWaves />
     </div>
   );
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import SystemWorkflowModal from '../../components/views/home/SystemWorkflowModal';
 
 // Existing local assets
 import box1ImgRaw from '../../src/assets/Box-1.png';
@@ -30,21 +31,18 @@ const PRODUCTS = [
   {
     id: 'mini',
     name: 'TEMBOX Mini',
-    spec: '1 Probe • Kapal Kecil & Coolbox',
     desc: 'Cocok untuk nelayan skala kecil dan penyimpanan sederhana.',
     image: box1Img,
   },
   {
     id: 'pro',
     name: 'TEMBOX Pro',
-    spec: 'Dual Probe • Logging RTC + MicroSD',
     desc: 'Untuk usaha menengah dengan fitur lengkap dan konektivitas stabil.',
     image: box2Img,
   },
   {
     id: 'enterprise',
     name: 'TEMBOX Enterprise',
-    spec: 'Multi-Palka • Sinkronisasi Armada TPI',
     desc: 'Solusi untuk industri dan rantai distribusi perikanan skala besar.',
     image: box3Img,
   },
@@ -141,6 +139,7 @@ const ECOSYSTEM_PIPELINE = [
 
 export const LandingBelowTheFold: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[1]);
+  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
   const visionVideoRef = useRef<HTMLVideoElement | null>(null);
 
   // Page Visibility Listener for Vision background video to prevent idle GPU leaks
@@ -228,13 +227,17 @@ export const LandingBelowTheFold: React.FC = () => {
                 TEMBOX menggantikan tebak-tebakan di dek dengan visibilitas termal yang terukur,
                 memastikan kualitas tangkapan terjaga sejak di tengah laut hingga pelelangan.
               </p>
-              <a href="#how" className="btn-pill-link">
+              <button
+                type="button"
+                onClick={() => setIsWorkflowOpen(true)}
+                className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-[#072538] shadow-sm transition-all duration-200 hover:border-sky-500 hover:bg-sky-50 hover:text-sky-700"
+              >
                 <span>Lihat Alur Kerja Sistem</span>
-                <span>→</span>
-              </a>
+                <span aria-hidden="true">→</span>
+              </button>
             </div>
 
-            {/* Right Side: Spec Pillars List (No Individual Cards) */}
+            {/* Right Side: Spec Pillars List (No Individual Cards & Clean No Badges) */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {TECH_PILLARS.map((pillar, idx) => (
                 <div
@@ -262,40 +265,17 @@ export const LandingBelowTheFold: React.FC = () => {
                     {pillar.num}
                   </span>
                   <div style={{ flex: 1 }}>
-                    <div
+                    <h3
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '8px',
+                        fontSize: '18px',
+                        fontWeight: 700,
+                        color: '#0B2D42',
+                        margin: 0,
                         marginBottom: '8px',
                       }}
                     >
-                      <h3
-                        style={{
-                          fontSize: '18px',
-                          fontWeight: 700,
-                          color: '#0B2D42',
-                          margin: 0,
-                        }}
-                      >
-                        {pillar.title}
-                      </h3>
-                      <span
-                        style={{
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          color: '#0369A1',
-                          backgroundColor: '#F0F9FF',
-                          padding: '3px 10px',
-                          borderRadius: '9999px',
-                          border: '1px solid #BAE6FD',
-                        }}
-                      >
-                        {pillar.tag}
-                      </span>
-                    </div>
+                      {pillar.title}
+                    </h3>
                     <p
                       style={{
                         fontSize: '14.5px',
@@ -501,7 +481,8 @@ export const LandingBelowTheFold: React.FC = () => {
           6. SECTION: ECOSYSTEM (Seamless Flowing Data Pipeline)
           ================================================== */}
       <section
-        id="ecosystem"
+        id="alur-kerja"
+        className="scroll-mt-24"
         style={{
           padding: '112px 0',
           backgroundColor: '#071A27',
@@ -676,13 +657,10 @@ export const LandingBelowTheFold: React.FC = () => {
                       />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                      <div style={{ marginBottom: '4px' }}>
                         <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0B2D42', margin: 0 }}>
                           {prod.name}
                         </h3>
-                        <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#0284C7' }}>
-                          {prod.spec}
-                        </span>
                       </div>
                       <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
                         {prod.desc}
@@ -694,6 +672,13 @@ export const LandingBelowTheFold: React.FC = () => {
                   </div>
                 );
               })}
+
+              <div>
+                <Link className="mt-8 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-[#072538] shadow-sm transition-all duration-200 hover:border-sky-500 hover:bg-sky-50 hover:text-sky-700" href="/market">
+                  <span>Lihat Katalog &amp; Pesan</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
             </div>
 
             {/* Right: Big Showcase with fixed pedestal dimensions */}
@@ -701,7 +686,14 @@ export const LandingBelowTheFold: React.FC = () => {
               <div className="showcase-halo" />
               <div
                 className="showcase-pedestal"
-                style={{ minHeight: '340px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{
+                  minHeight: '360px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '30px 20px',
+                }}
               >
                 <img
                   key={selectedProduct.id}
@@ -712,7 +704,7 @@ export const LandingBelowTheFold: React.FC = () => {
                   height={330}
                   loading="lazy"
                   decoding="async"
-                  style={{ width: '100%', maxWidth: '440px', height: 'auto', aspectRatio: '4/3', objectFit: 'contain' }}
+                  style={{ width: '100%', maxWidth: '380px', height: 'auto', aspectRatio: '4/3', objectFit: 'contain' }}
                 />
               </div>
             </div>
@@ -777,7 +769,6 @@ export const LandingBelowTheFold: React.FC = () => {
             </div>
 
             <div className="footer-nav">
-              <Link href="/kategori/monitoring-suhu-palka-ikan" className="footer-link">Kategori</Link>
               <Link href="/contact" className="footer-link">Contact</Link>
               <Link href="/about" className="footer-link">About</Link>
             </div>
@@ -811,6 +802,12 @@ export const LandingBelowTheFold: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Interactive System Workflow Modal */}
+      <SystemWorkflowModal
+        isOpen={isWorkflowOpen}
+        onClose={() => setIsWorkflowOpen(false)}
+      />
     </>
   );
 };

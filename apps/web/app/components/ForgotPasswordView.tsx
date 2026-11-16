@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, ArrowLeft, Check, KeyRound } from './Icons';
 import OtpInput from './OtpInput';
+import AuthBottomWaves from '../../components/ui/AuthBottomWaves';
 
 interface ForgotPasswordViewProps {
   onSuccess?: () => void;
@@ -76,8 +77,8 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   };
 
   const rightFormPane = (
-    <div className="login-right-pane" style={{ background: '#FFFFFF' }}>
-      <div className="login-form-box">
+    <div className="login-right-pane" style={{ background: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
+      <div className="login-form-box" style={{ position: 'relative', zIndex: 10 }}>
         {/* STEP 1: Enter Email */}
         {step === 'email' && (
           <>
@@ -346,6 +347,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
           </div>
         )}
       </div>
+      <AuthBottomWaves />
     </div>
   );
 
