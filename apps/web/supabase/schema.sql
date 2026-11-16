@@ -169,6 +169,11 @@ CREATE TABLE IF NOT EXISTS public.otp_verifications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Idempotent column migrations if table already exists in Supabase
+ALTER TABLE public.otp_verifications ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 0;
+ALTER TABLE public.otp_verifications ADD COLUMN IF NOT EXISTS max_attempts INT NOT NULL DEFAULT 5;
+ALTER TABLE public.otp_verifications ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS idx_otp_email_purpose ON public.otp_verifications(email, purpose);
 
 -- ==============================================================================
