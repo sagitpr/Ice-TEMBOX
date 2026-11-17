@@ -16,7 +16,7 @@ export function buildContactAutoReplyEmail({
   category = 'Konsultasi Perangkat',
   message,
   sentAt,
-  bannerUrl = 'https://ice-tembox.vercel.app/Selamat-datang-tembox.jpg',
+  bannerUrl = 'https://ice-tembox.vercel.app/assets/Selamat-datang-tembox.jpg',
 }: ContactAutoReplyEmailOptions): string {
   const displayName = recipientName && recipientName.trim() ? recipientName.trim() : 'Pengguna TEMBOX';
   const timestamp = sentAt || new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB';

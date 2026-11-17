@@ -1,95 +1,146 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Cloud, Wind, Download, Activity, ChevronDown, Check } from './Icons';
+import { Cloud, Wind, Download, Activity, ChevronDown, Check, RefreshCw } from './Icons';
+import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
 
 interface MarineWeatherBarProps {
   currentPalkaTemp?: number | null;
   selectedDeviceCode?: string;
   onDeviceChange?: (code: string) => void;
   onPingTested?: (latencyMs: number) => void;
-  telemetryLogs?: Array<{
+  telemetryLogs?: TelemetryLogItem[] | Array<{
     id?: number | string;
     temperature_c?: number;
-    signal_rssi?: number;
-    ping_ms?: number;
+    signal_rssi?: number | null;
+    ping_ms?: number | null;
     recorded_at?: string;
   }>;
 }
 
-interface WeatherData {
-  temperature: number;
-  windSpeed: number;
+interface WeatherState {
+  temperature: number | null;
+  windSpeed: number | null;
   condition: string;
   locationName: string;
+  isLocating: boolean;
 }
 
 export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
-  currentPalkaTemp = -0.4,
+  currentPalkaTemp = null,
   selectedDeviceCode = 'ESP32-TEMBOX-01',
   onDeviceChange,
   onPingTested,
   telemetryLogs = [],
 }) => {
-  const [weather, setWeather] = useState<WeatherData>({
-    temperature: 30.2,
-    windSpeed: 12.8,
-    condition: 'Cerah Berawan',
-    locationName: 'Pesisir Teluk Jakarta / Muara Baru',
+  const [weather, setWeather] = useState<WeatherState>({
+    temperature: null,
+    windSpeed: null,
+    condition: 'Mendeteksi Lokasi & Cuaca...',
+    locationName: 'Pesisir Pantai',
+    isLocating: true,
   });
-  const [loadingWeather, setLoadingWeather] = useState(false);
+
   const [isPinging, setIsPinging] = useState(false);
   const [lastTestedPing, setLastTestedPing] = useState<number | null>(null);
   const [deviceDropdownOpen, setDeviceDropdownOpen] = useState(false);
 
-  // Fetch Open-Meteo free API for maritime coastal port coordinates
-  useEffect(() => {
-    let isMounted = true;
-    const fetchMarineWeather = async () => {
+  // Fetch real location & Open-Meteo Weather
+  const fetchWeatherForCoords = useCallback(async (lat: number, lon: number) => {
+    try {
+      // 1. Free client reverse geocoding via BigDataCloud
+      let detectedLocation = 'Pesisir Indonesia';
       try {
-        setLoadingWeather(true);
-        // Default coastal port coordinates: Muara Baru / Tanjung Priok, Jakarta (-6.10, 106.88)
-        const lat = -6.10;
-        const lon = 106.88;
-        const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`,
+        const geoRes = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`,
           { cache: 'no-store' }
         );
-
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!isMounted || !data.current_weather) return;
-
-        const cw = data.current_weather;
-        const code = cw.weathercode;
-        let condText = 'Cerah';
-        if (code >= 1 && code <= 3) condText = 'Sebagian Berawan';
-        else if (code >= 45 && code <= 48) condText = 'Berkabut Maritim';
-        else if (code >= 51 && code <= 67) condText = 'Hujan Ringan';
-        else if (code >= 80 && code <= 82) condText = 'Hujan Lebat';
-        else if (code >= 95) condText = 'Badai Petir';
-
-        setWeather({
-          temperature: cw.temperature,
-          windSpeed: cw.windspeed,
-          condition: condText,
-          locationName: 'Pelabuhan Muara Baru',
-        });
-      } catch (err) {
-        console.warn('[Open-Meteo Weather] Offline fallback active:', err);
-      } finally {
-        if (isMounted) setLoadingWeather(false);
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          const locality = geoData.locality || geoData.city || geoData.principalSubdivision;
+          const regency = geoData.city || geoData.principalSubdivision || '';
+          if (locality && regency && locality !== regency) {
+            detectedLocation = `${locality}, ${regency}`;
+          } else if (locality) {
+            detectedLocation = locality;
+          }
+        }
+      } catch {
+        // Fallback name if reverse geocoding fails
+        detectedLocation = 'Pesisir Maritim';
       }
-    };
 
-    fetchMarineWeather();
-    // Refresh weather every 15 minutes
-    const interval = setInterval(fetchMarineWeather, 15 * 60 * 1000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+      // 2. Real-time global weather from Open-Meteo
+      const weatherRes = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m`,
+        { cache: 'no-store' }
+      );
+
+      if (!weatherRes.ok) {
+        setWeather((prev) => ({
+          ...prev,
+          locationName: detectedLocation,
+          condition: 'Data Cuaca Tidak Tersedia',
+          isLocating: false,
+        }));
+        return;
+      }
+
+      const weatherData = await weatherRes.json();
+      const current = weatherData.current;
+      if (!current) return;
+
+      const code = current.weather_code;
+      let condText = 'Cerah';
+      if (code >= 1 && code <= 3) condText = 'Sebagian Berawan';
+      else if (code >= 45 && code <= 48) condText = 'Berkabut';
+      else if (code >= 51 && code <= 67) condText = 'Hujan Ringan';
+      else if (code >= 80 && code <= 82) condText = 'Hujan Lebat';
+      else if (code >= 95) condText = 'Badai Petir';
+      else if (code >= 4) condText = 'Berawan';
+
+      setWeather({
+        temperature: typeof current.temperature_2m === 'number' ? Math.round(current.temperature_2m * 10) / 10 : null,
+        windSpeed: typeof current.wind_speed_10m === 'number' ? Math.round(current.wind_speed_10m * 10) / 10 : null,
+        condition: condText,
+        locationName: detectedLocation,
+        isLocating: false,
+      });
+    } catch {
+      setWeather((prev) => ({
+        ...prev,
+        condition: 'Koneksi Cuaca Offline',
+        isLocating: false,
+      }));
+    }
   }, []);
+
+  // Request browser geolocation with fallback to Muara Baru, Jakarta (-6.10, 106.88)
+  const resolveLocationAndWeather = useCallback(() => {
+    setWeather((prev) => ({ ...prev, isLocating: true }));
+
+    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          fetchWeatherForCoords(pos.coords.latitude, pos.coords.longitude);
+        },
+        () => {
+          // Fallback to coastal North Jakarta / Port area
+          fetchWeatherForCoords(-6.10, 106.88);
+        },
+        { timeout: 7000 }
+      );
+    } else {
+      fetchWeatherForCoords(-6.10, 106.88);
+    }
+  }, [fetchWeatherForCoords]);
+
+  useEffect(() => {
+    resolveLocationAndWeather();
+    // Auto-refresh every 5 minutes
+    const interval = setInterval(resolveLocationAndWeather, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [resolveLocationAndWeather]);
 
   // Live Test Ping handler measuring client-to-server roundtrip
   const handleTestPing = async () => {
@@ -97,17 +148,15 @@ export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
     setIsPinging(true);
     const start = performance.now();
     try {
-      const res = await fetch('/api/ping', {
+      await fetch('/api/ping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientTime: Date.now() }),
       });
-      const end = performance.now();
-      const roundtripMs = Math.round(end - start);
+      const roundtripMs = Math.round(performance.now() - start);
       setLastTestedPing(roundtripMs);
       if (onPingTested) onPingTested(roundtripMs);
     } catch {
-      // Fallback calculation
       const fallbackMs = Math.round(performance.now() - start);
       setLastTestedPing(fallbackMs);
       if (onPingTested) onPingTested(fallbackMs);
@@ -122,15 +171,14 @@ export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
     csvContent += 'Timestamp,Device,Temperature_C,Signal_RSSI_dBm,Ping_Latency_ms,Status\n';
 
     if (telemetryLogs.length === 0) {
-      // Export current live telemetry snapshot
       const now = new Date().toISOString();
-      csvContent += `${now},${selectedDeviceCode},${currentPalkaTemp ?? -0.4},-65,34,Online\n`;
+      csvContent += `${now},${selectedDeviceCode},${currentPalkaTemp ?? '--'},-65,34,Online\n`;
     } else {
       telemetryLogs.forEach((row) => {
         const time = row.recorded_at || new Date().toISOString();
-        const temp = row.temperature_c !== undefined ? row.temperature_c : -0.4;
-        const rssi = row.signal_rssi !== undefined ? row.signal_rssi : -65;
-        const ping = row.ping_ms !== undefined ? row.ping_ms : 32;
+        const temp = row.temperature_c !== undefined ? row.temperature_c : '--';
+        const rssi = row.signal_rssi !== undefined && row.signal_rssi !== null ? row.signal_rssi : '--';
+        const ping = row.ping_ms !== undefined && row.ping_ms !== null ? row.ping_ms : '--';
         csvContent += `${time},${selectedDeviceCode},${temp},${rssi},${ping},Online\n`;
       });
     }
@@ -145,8 +193,10 @@ export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
     document.body.removeChild(link);
   }, [telemetryLogs, selectedDeviceCode, currentPalkaTemp]);
 
-  const palkaTemp = currentPalkaTemp !== null && currentPalkaTemp !== undefined ? currentPalkaTemp : -0.4;
-  const tempDelta = Number((weather.temperature - palkaTemp).toFixed(1));
+  const palkaTemp = currentPalkaTemp !== null && currentPalkaTemp !== undefined ? currentPalkaTemp : null;
+  const tempDelta = weather.temperature !== null && palkaTemp !== null
+    ? (weather.temperature - palkaTemp > 0 ? '+' : '') + (weather.temperature - palkaTemp).toFixed(1) + '°C'
+    : '--';
 
   const devicesList = ['ESP32-TEMBOX-01', 'ESP32-TEMBOX-02'];
 
@@ -161,39 +211,62 @@ export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
         borderBottom: '1px solid #E2E8F0',
         marginBottom: '28px',
         flexWrap: 'wrap',
-        gap: '16px',
+        gap: '14px',
       }}
     >
-      {/* 1. Cuaca & Suhu Lingkungan Luar (Open-Meteo) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Cloud size={16} color="#0284C7" />
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-            {weather.locationName}
-          </span>
-          <span style={{ fontSize: '12px', color: '#64748B' }}>
-            &bull; {weather.condition} ({weather.temperature}°C)
-          </span>
-        </div>
+      {/* 1. Baris Teks Bersih Cuaca Nyata Berbasis Lokasi GPS */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          flexWrap: 'wrap',
+          fontSize: '12.5px',
+          color: '#475569',
+        }}
+      >
+        <Cloud size={15} color="#0284C7" />
+        <span style={{ fontWeight: 700, color: '#0F172A' }} suppressHydrationWarning>
+          {weather.locationName}
+        </span>
+        <span>•</span>
+        <span suppressHydrationWarning>
+          {weather.temperature !== null ? `${weather.condition} ${weather.temperature}°C` : weather.condition}
+        </span>
+        {weather.windSpeed !== null && (
+          <>
+            <span>•</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }} suppressHydrationWarning>
+              <Wind size={13} color="#64748B" />
+              <span>Angin {weather.windSpeed} km/j</span>
+            </span>
+          </>
+        )}
+        <span>•</span>
+        <span style={{ color: '#0369A1', fontWeight: 600 }} suppressHydrationWarning>
+          Selisih Palka {tempDelta}
+        </span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B' }}>
-          <Wind size={14} color="#64748B" />
-          <span>Angin: {weather.windSpeed} km/j</span>
-        </div>
-
-        <div
+        {/* Tombol Segarkan Lokasi */}
+        <button
+          type="button"
+          onClick={resolveLocationAndWeather}
+          title="Segarkan Lokasi & Cuaca Terkini"
+          disabled={weather.isLocating}
           style={{
-            fontSize: '11.5px',
-            padding: '2px 8px',
-            borderRadius: '4px',
-            backgroundColor: '#F0F9FF',
-            border: '1px solid #BAE6FD',
-            color: '#0369A1',
-            fontWeight: 600,
+            background: 'none',
+            border: 'none',
+            padding: '2px 4px',
+            color: weather.isLocating ? '#94A3B8' : '#0284C7',
+            cursor: weather.isLocating ? 'not-allowed' : 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            marginLeft: '4px',
           }}
+          aria-label="Segarkan Lokasi dan Cuaca"
         >
-          Δ Luar vs Palka: +{tempDelta}°C
-        </div>
+          <RefreshCw size={12} className={weather.isLocating ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       {/* 2. Toolbar Perangkat & Aksi Cepat */}

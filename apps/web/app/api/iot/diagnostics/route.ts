@@ -129,10 +129,10 @@ export async function POST(request: Request) {
 
       // If no direct keyword match, perform fuzzy token matching
       if (searchResults.length === 0) {
-        const tokens = q.split(/\s+/).filter((t) => t.length > 2);
+        const tokens: string[] = q.split(/\s+/).filter((t: string) => t.length > 2);
         searchResults = STATIC_DIAGNOSTIC_KNOWLEDGE.filter((item) => {
           return tokens.some(
-            (tok) =>
+            (tok: string) =>
               item.symptomTitle.toLowerCase().includes(tok) ||
               item.rootCause.toLowerCase().includes(tok) ||
               item.hardwareComponent.toLowerCase().includes(tok)
@@ -158,7 +158,13 @@ export async function POST(request: Request) {
 
         if (sopHits && sopHits.length > 0) {
           vectorSearched = true;
-          sopHits.forEach((hit) => {
+          sopHits.forEach((hit: {
+            error_code?: string;
+            symptom_title: string;
+            hardware_component: string;
+            root_cause: string;
+            resolution_steps?: string[];
+          }) => {
             if (!searchResults.some((r) => r.errorCode === hit.error_code)) {
               searchResults.push({
                 errorCode: hit.error_code || 'SOP_DIAG',

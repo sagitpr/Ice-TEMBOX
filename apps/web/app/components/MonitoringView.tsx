@@ -16,15 +16,16 @@ import {
   Info,
   X,
 } from './Icons';
+import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
 
 export interface MonitoringViewProps {
-  telemetryLogs?: Array<{
+  telemetryLogs?: TelemetryLogItem[] | Array<{
     id?: number | string;
     temperature_c?: number;
-    signal_rssi?: number;
-    ping_ms?: number;
+    signal_rssi?: number | null;
+    ping_ms?: number | null;
     recorded_at?: string;
-    sd_status?: string;
+    sd_status?: string | null;
   }>;
   currentTempNum?: number | null;
 }

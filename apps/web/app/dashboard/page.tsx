@@ -38,28 +38,25 @@ const PengaturanView = dynamic(() => import('../components/PengaturanView'), {
 export default function DashboardPage() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   // Real-time IoT hardware telemetry & Supabase live synchronization
   const telemetry = useTelemetryRealtime();
 
-  // Initial smooth load transition (simulating telemetry fetch with zero CLS)
+  // Instant hydration sync with hash
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, []);
+    setMounted(true);
+    const hash = window.location.hash.replace('#/', '').replace('#', '');
+    if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(hash)) {
+      setCurrentTab(hash);
+    }
 
-  // Listen to hash changes if present
-  useEffect(() => {
     const handleHash = () => {
-      const hash = window.location.hash.replace('#/', '').replace('#', '');
-      if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(hash)) {
-        setCurrentTab(hash);
+      const h = window.location.hash.replace('#/', '').replace('#', '');
+      if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(h)) {
+        setCurrentTab(h);
       }
     };
-    handleHash();
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
@@ -90,7 +87,7 @@ export default function DashboardPage() {
 
         {/* Dynamic App Content */}
         <div className="app-content">
-          {isLoading ? (
+          {!mounted ? (
             <>
               <SkeletonLoader type="metrics" />
               <div style={{ marginTop: '24px' }}>

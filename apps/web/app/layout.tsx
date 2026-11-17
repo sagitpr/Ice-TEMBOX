@@ -145,8 +145,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={plusJakartaSans.variable}>
-      <body className={plusJakartaSans.className}>
+    <html lang="id" className={plusJakartaSans.variable} suppressHydrationWarning>
+      <body className={plusJakartaSans.className} suppressHydrationWarning>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         <PersistentBackgroundVideo />
         <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>

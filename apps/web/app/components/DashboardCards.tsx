@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Thermometer, Snowflake, Server, Clock, Wifi } from './Icons';
+import { Thermometer, Snowflake, Server, Clock } from './Icons';
 
 export interface DashboardCardsProps {
   currentTemp?: string;
@@ -23,148 +23,189 @@ export interface DashboardCardsProps {
 
 export const DashboardCards: React.FC<DashboardCardsProps> = ({
   currentTemp = '-- °C',
-  tempStatus = 'Menunggu data',
-  iceCondition = 'Belum tersedia',
-  minTemp = '-0.8°C',
-  maxTemp = '+0.2°C',
-  tempDeltaPerHour = '+0.1°C/jam',
-  iceRemainingHours = 'Est. 48 jam',
-  systemStatus,
+  tempStatus = 'Menunggu Data',
+  iceCondition = 'Menunggu Data',
+  minTemp = '--',
+  maxTemp = '--',
+  tempDeltaPerHour = '--',
+  iceRemainingHours = '--',
+  systemStatus = 'Menunggu Data',
   systemConnected = false,
   pingMs = null,
   signalRssi = null,
   lastUpdate = '--',
-  lastUpdateDate = '',
-  sdStatus = 'SD Aktif • Tersinkron',
-  rtcStatus = 'RTC DS3231 Sinkron',
+  sdStatus = '--',
 }) => {
-  const isOnline = systemConnected || (pingMs !== null && pingMs < 2000);
-  const resolvedSystemStatus = systemStatus || (isOnline ? 'Terkoneksi' : 'Belum Terhubung');
+  const isOnline = systemConnected;
+  const isAman = tempStatus === 'Aman';
+  const isWaspada = tempStatus === 'Waspada' || tempStatus === 'Bahaya';
 
   return (
     <div className="metrics-row flat-metrics-row">
-      {/* 1. Suhu Sekarang (DS18B20 Telemetri) */}
+      {/* 1. Suhu Palka (Maksimal 3 Baris) */}
       <div className="metric-card metric-item-flat">
-        <div className="metric-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div className="metric-icon-clean">
-              <Thermometer size={18} color="#0284C7" />
-            </div>
-            <span className="metric-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Suhu Palka
-            </span>
+        {/* Baris 1: Label Atas */}
+        <div className="metric-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          <div className="metric-icon-clean">
+            <Thermometer size={17} color="#0284C7" />
           </div>
-          <span style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'monospace' }}>
-            DS18B20
+          <span className="metric-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Suhu Palka
           </span>
         </div>
-        <div className="metric-main-value" id="dashTempCurrent" style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', margin: '4px 0' }}>
+
+        {/* Baris 2: Nilai Utama Besar */}
+        <div className="metric-main-value" id="dashTempCurrent" style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', margin: '2px 0 6px 0' }}>
           {currentTemp}
         </div>
-        <div className="metric-footer" style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', marginTop: '6px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span className="badge-status neutral" id="dashTempBadge" style={{ padding: '2px 6px', fontSize: '11px' }}>
-              <span className={`status-dot ${isOnline ? 'online' : 'offline'}`} />
-              <span id="dashTempBadgeText">{tempStatus}</span>
-            </span>
-          </div>
-          <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
-            Probe Maritim Presisi (±0.5°C)
-          </div>
+
+        {/* Baris 3: Sub-teks Polos Status & Rentang */}
+        <div
+          className="metric-footer"
+          style={{
+            fontSize: '12px',
+            color: isAman ? '#059669' : isWaspada ? '#D97706' : '#64748B',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            lineHeight: 1.3,
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: isAman ? '#10B981' : isWaspada ? '#F59E0B' : '#94A3B8',
+              flexShrink: 0,
+            }}
+          />
+          <span>
+            {tempStatus !== 'Menunggu Data'
+              ? `${tempStatus} ${minTemp !== '--' ? `(Min ${minTemp} / Max ${maxTemp})` : ''}`
+              : 'Menunggu data sensor'}
+          </span>
         </div>
       </div>
 
-      {/* 2. Kondisi Es & Analitik Laju Suhu */}
+      {/* 2. Kondisi Es (Maksimal 3 Baris) */}
       <div className="metric-card metric-item-flat">
-        <div className="metric-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div className="metric-icon-clean">
-              <Snowflake size={18} color="#0284C7" />
-            </div>
-            <span className="metric-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Kondisi Es
-            </span>
+        {/* Baris 1: Label Atas */}
+        <div className="metric-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          <div className="metric-icon-clean">
+            <Snowflake size={17} color="#0284C7" />
           </div>
-          <span style={{ fontSize: '11px', color: '#0284C7', fontWeight: 600 }}>
-            {iceRemainingHours}
+          <span className="metric-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Kondisi Es
           </span>
         </div>
-        <div className="metric-main-value" id="dashIceCondition" style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A', margin: '4px 0', letterSpacing: '-0.02em' }}>
+
+        {/* Baris 2: Nilai Utama Besar */}
+        <div className="metric-main-value" id="dashIceCondition" style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A', margin: '2px 0 6px 0', letterSpacing: '-0.02em' }}>
           {iceCondition}
         </div>
-        <div className="metric-footer" style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '11.5px', marginTop: '6px' }}>
-          <div id="dashIceBadge" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569' }}>
-            <span>ΔT: <strong style={{ color: '#0F172A' }}>{tempDeltaPerHour}</strong></span>
-            <span>&bull;</span>
-            <span id="dashIceSubtext">Min: {minTemp} / Max: {maxTemp}</span>
-          </div>
-          <div style={{ fontSize: '11px', color: '#64748B' }}>
-            Laju pencairan dalam batas aman
-          </div>
-        </div>
-      </div>
 
-      {/* 3. Status Sistem & Latensi Real-Time */}
-      <div className="metric-card metric-item-flat">
-        <div className="metric-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div className="metric-icon-clean">
-              <Server size={18} color="#0284C7" />
-            </div>
-            <span className="metric-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Status Sistem
-            </span>
-          </div>
-          {isOnline && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#059669', fontWeight: 600 }}>
-              <Wifi size={13} />
-              <span>{signalRssi !== null ? `${signalRssi} dBm` : 'Bagus'}</span>
-            </span>
-          )}
-        </div>
-        <div className="metric-main-value" id="dashSysStatus" style={{ fontSize: '26px', fontWeight: 800, color: isOnline ? '#059669' : '#0F172A', margin: '4px 0', letterSpacing: '-0.02em' }}>
-          {resolvedSystemStatus}
-        </div>
-        <div className="metric-footer" style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '11.5px', marginTop: '6px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span className="badge-status neutral" id="dashSysBadge" style={{ padding: '2px 6px', fontSize: '11px' }}>
-              <span className={`status-dot ${isOnline ? 'online' : 'offline'}`} />
-              <span id="dashSysBadgeText">
-                {isOnline ? `Ping: ${pingMs !== null ? `${pingMs} ms` : '32 ms'}` : 'Belum terhubung • -- ms'}
-              </span>
-            </span>
-          </div>
-          <div style={{ fontSize: '11px', color: '#64748B' }}>
-            {isOnline ? 'ESP32 Wi-Fi / Seluler Aktif' : 'Menunggu koneksi ESP32'}
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Waktu Terakhir & Diagnostik Hardware (RTC + MicroSD) */}
-      <div className="metric-card metric-item-flat metric-item-last">
-        <div className="metric-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div className="metric-icon-clean">
-              <Clock size={18} color="#0284C7" />
-            </div>
-            <span className="metric-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Waktu Terakhir
-            </span>
-          </div>
-          <span style={{ fontSize: '10.5px', color: '#0284C7', backgroundColor: '#F0F9FF', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
-            {sdStatus}
+        {/* Baris 3: Sub-teks Polos Ketahanan & Laju Suhu */}
+        <div className="metric-footer" style={{ fontSize: '12px', color: '#64748B', lineHeight: 1.3 }}>
+          <span>
+            {iceRemainingHours !== '--' && tempDeltaPerHour !== '--'
+              ? `${iceRemainingHours} • ${tempDeltaPerHour}`
+              : 'Menunggu telemetri'}
           </span>
         </div>
-        <div className="metric-main-value" id="dashLastUpdate" style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A', margin: '4px 0', letterSpacing: '-0.02em' }}>
+      </div>
+
+      {/* 3. Status Sistem (Maksimal 3 Baris) */}
+      <div className="metric-card metric-item-flat">
+        {/* Baris 1: Label Atas */}
+        <div className="metric-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          <div className="metric-icon-clean">
+            <Server size={17} color="#0284C7" />
+          </div>
+          <span className="metric-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Status Sistem
+          </span>
+        </div>
+
+        {/* Baris 2: Nilai Utama Besar */}
+        <div
+          className="metric-main-value"
+          id="dashSysStatus"
+          style={{
+            fontSize: '26px',
+            fontWeight: 800,
+            color: isOnline ? '#059669' : '#64748B',
+            margin: '2px 0 6px 0',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          {systemStatus}
+        </div>
+
+        {/* Baris 3: Sub-teks Polos Latensi Ping & Sinyal */}
+        <div
+          className="metric-footer"
+          style={{
+            fontSize: '12px',
+            color: '#64748B',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            lineHeight: 1.3,
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: isOnline ? '#10B981' : '#94A3B8',
+              flexShrink: 0,
+            }}
+          />
+          <span>
+            {isOnline
+              ? `${pingMs !== null ? `${pingMs} ms` : '-- ms'} • ${signalRssi !== null ? `${signalRssi} dBm` : '-- dBm'}`
+              : '• -- ms • -- dBm'}
+          </span>
+        </div>
+      </div>
+
+      {/* 4. Waktu Terakhir (Maksimal 3 Baris) */}
+      <div className="metric-card metric-item-flat metric-item-last">
+        {/* Baris 1: Label Atas */}
+        <div className="metric-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          <div className="metric-icon-clean">
+            <Clock size={17} color="#0284C7" />
+          </div>
+          <span className="metric-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Waktu Terakhir
+          </span>
+        </div>
+
+        {/* Baris 2: Nilai Utama Besar */}
+        <div
+          className="metric-main-value"
+          id="dashLastUpdate"
+          suppressHydrationWarning
+          style={{
+            fontSize: '26px',
+            fontWeight: 800,
+            color: '#0F172A',
+            margin: '2px 0 6px 0',
+            letterSpacing: '-0.02em',
+          }}
+        >
           {lastUpdate}
         </div>
-        <div className="metric-footer" style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '11.5px', marginTop: '6px' }}>
-          <div style={{ color: '#475569' }} id="dashLastUpdateDate">
-            {lastUpdateDate || 'Sinkronisasi telemetri'}
-          </div>
-          <div style={{ fontSize: '11px', color: '#64748B' }}>
-            {rtcStatus}
-          </div>
+
+        {/* Baris 3: Sub-teks Polos Status Hardware */}
+        <div className="metric-footer" style={{ fontSize: '12px', color: '#64748B', lineHeight: 1.3 }}>
+          <span suppressHydrationWarning>
+            {sdStatus !== '--' ? 'MicroSD & RTC Aktif' : 'Menunggu sinkronisasi'}
+          </span>
         </div>
       </div>
     </div>

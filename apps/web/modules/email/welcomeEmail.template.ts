@@ -12,7 +12,7 @@ export interface WelcomeEmailOptions {
 export function buildWelcomeEmail({
   recipientName,
   dashboardUrl = 'https://ice-tembox.vercel.app/dashboard',
-  bannerUrl = 'https://ice-tembox.vercel.app/Selamat-datang-tembox.jpg',
+  bannerUrl = 'https://ice-tembox.vercel.app/assets/Selamat-datang-tembox.jpg',
 }: WelcomeEmailOptions): string {
   const displayName = recipientName && recipientName.trim() ? recipientName.trim() : 'Pengguna TEMBOX';
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ice-tembox.vercel.app';

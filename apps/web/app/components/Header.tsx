@@ -853,6 +853,7 @@ function DashboardHeader({
             <span
               className="topbar-username"
               id="topbarUsername"
+              suppressHydrationWarning
               style={{
                 fontSize: '13px',
                 fontWeight: 600,

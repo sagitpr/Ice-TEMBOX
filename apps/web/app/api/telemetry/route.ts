@@ -217,25 +217,12 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fallback sample records for initial offline exploration
-    const now = Date.now();
-    const fallbackLogs = Array.from({ length: 12 }).map((_, i) => ({
-      id: 100 - i,
-      temperature_c: Number((-0.8 + Math.sin(i / 2) * 0.4).toFixed(2)),
-      humidity_pct: 85,
-      battery_pct: 98,
-      signal_rssi: -62 - (i % 5),
-      ping_ms: 38 + (i % 12),
-      sd_status: 'OK',
-      offline_queue_count: 0,
-      recorded_at: new Date(now - i * 60 * 1000).toISOString(),
-    }));
-
+    // Return clean empty logs when no telemetry has arrived yet (Zero dummy data)
     return NextResponse.json({
       success: true,
-      source: 'fallback',
-      count: fallbackLogs.length,
-      logs: fallbackLogs,
+      source: 'empty',
+      count: 0,
+      logs: [],
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Gagal mengambil log telemetri.';

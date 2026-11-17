@@ -2,17 +2,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Clock, ChevronDown, Check, TrendingUp, Bell, ArrowRight, Thermometer, ShieldCheck } from './Icons';
+import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
 
 export interface TelemetryChartPoint {
   temperature_c?: number;
   recorded_at?: string;
-  signal_rssi?: number;
-  ping_ms?: number;
+  signal_rssi?: number | null;
+  ping_ms?: number | null;
 }
 
 interface SensorChartProps {
   onViewAllNotif?: () => void;
-  telemetryLogs?: TelemetryChartPoint[];
+  telemetryLogs?: TelemetryLogItem[] | TelemetryChartPoint[];
 }
 
 export const SensorChart: React.FC<SensorChartProps> = ({ onViewAllNotif, telemetryLogs = [] }) => {

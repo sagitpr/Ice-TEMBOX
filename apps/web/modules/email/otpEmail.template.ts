@@ -12,7 +12,7 @@ export interface OtpEmailOptions {
 export function buildOtpVerificationEmail({
   otpCode,
   recipientName,
-  bannerUrl = 'https://ice-tembox.vercel.app/Verifikasi-OTP-TEMBOX.png',
+  bannerUrl = 'https://ice-tembox.vercel.app/assets/Verifikasi-OTP-TEMBOX.png',
 }: OtpEmailOptions): string {
   const displayName = recipientName && recipientName.trim() ? recipientName.trim() : 'Pengguna TEMBOX';
   const registerUrl = 'https://ice-tembox.vercel.app/register';

@@ -1,5 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '../..');
 
 // Asset synchronization for public directory across standalone and monorepo workspaces
 try {
@@ -29,6 +34,9 @@ try {
           'hero-boat.jpg',
           'Sagit-Faturrakhman.jpg',
           'google835db05cba2f9052.html',
+          'Verifikasi-OTP-TEMBOX.png',
+          'Selamat-datang-tembox.jpg',
+          'Selamat-datang-tembox.jfif',
         ];
 
         for (const file of filesToSync) {
@@ -36,6 +44,16 @@ try {
           const d = path.join(pub, file);
           if (fs.existsSync(s) && !fs.existsSync(d)) {
             fs.copyFileSync(s, d);
+          }
+
+          // Also sync to pub/assets/ subfolder
+          const assetsSubDir = path.join(pub, 'assets');
+          if (!fs.existsSync(assetsSubDir)) {
+            fs.mkdirSync(assetsSubDir, { recursive: true });
+          }
+          const dSub = path.join(assetsSubDir, file);
+          if (fs.existsSync(s) && !fs.existsSync(dSub)) {
+            fs.copyFileSync(s, dSub);
           }
         }
 
@@ -68,6 +86,7 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: projectRoot,
   compress: true,
   poweredByHeader: false,
 
