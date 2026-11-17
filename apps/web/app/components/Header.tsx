@@ -579,28 +579,21 @@ function DashboardHeader({
       }}
     >
       <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {onToggleSidebar && (
-          <button
-            type="button"
-            className="topbar-menu-btn sidebar-toggle-btn"
-            id="sidebarToggleBtn"
-            onClick={onToggleSidebar}
-            aria-label="Buka Menu Navigasi"
-            style={{
-              background: 'none',
-              border: '1px solid #E2E8F0',
-              borderRadius: '8px',
-              padding: '7px',
-              color: '#475569',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Menu size={18} />
-          </button>
-        )}
+        <Link
+          href="/dashboard"
+          className="topbar-mobile-logo"
+          style={{
+            fontWeight: 800,
+            fontSize: '20px',
+            letterSpacing: '-0.5px',
+            color: '#0B2D42',
+            textDecoration: 'none',
+            display: 'none', // Controlled by media query
+            alignItems: 'center',
+          }}
+        >
+          TEMBOX<span style={{ color: '#0284C7' }}>.</span>
+        </Link>
       </div>
 
       <div
@@ -608,7 +601,7 @@ function DashboardHeader({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
+          gap: '10px',
           position: 'relative',
         }}
       >
@@ -978,6 +971,34 @@ function DashboardHeader({
             </div>
           )}
         </div>
+
+        {/* Mobile Hamburger Button (Placed neatly at the right edge) */}
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className="topbar-menu-btn sidebar-toggle-btn"
+            id="sidebarToggleBtn"
+            onClick={onToggleSidebar}
+            aria-label="Buka Menu Navigasi"
+            style={{
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '8px',
+              width: '38px',
+              height: '38px',
+              minWidth: '38px',
+              color: '#334155',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            <Menu size={18} />
+          </button>
+        )}
       </div>
     </header>
   );

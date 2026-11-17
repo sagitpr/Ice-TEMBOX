@@ -25,19 +25,120 @@ a {
   background-color: #FFFFFF !important;
 }
 
-.app-sidebar {
-  width: 240px !important;
-  min-width: 240px !important;
-  max-width: 240px !important;
-  background-color: #FFFFFF !important;
-  border-right: 1px solid #E2E8F0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  position: sticky !important;
-  top: 0 !important;
-  height: 100vh !important;
-  z-index: 50 !important;
-  box-sizing: border-box !important;
+/* Desktop Sidebar: 240px Sticky */
+@media (min-width: 1024px) {
+  .app-sidebar {
+    width: 240px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #E2E8F0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: sticky !important;
+    top: 0 !important;
+    height: 100vh !important;
+    z-index: 30 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+  }
+
+  .sidebar-backdrop {
+    display: none !important;
+  }
+
+  .sidebar-close-btn {
+    display: none !important;
+  }
+
+  .topbar-mobile-logo {
+    display: none !important;
+  }
+
+  .sidebar-toggle-btn {
+    display: none !important;
+  }
+}
+
+/* Tablet & Mobile: < 1024px Drawer Layout */
+@media (max-width: 1023px) {
+  .app-view-container {
+    flex-direction: column !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Aside is zIndex: 50, strictly ABOVE the backdrop (zIndex: 40) so it's NOT blurred */
+  .app-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 85vw !important;
+    height: 100% !important;
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #E2E8F0 !important;
+    z-index: 50 !important;
+    box-sizing: border-box !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: none !important;
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0) !important;
+    box-shadow: 0 0 40px rgba(15, 23, 42, 0.3) !important;
+  }
+
+  .sidebar-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background-color: rgba(15, 23, 42, 0.4) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+    z-index: 40 !important;
+  }
+
+  .sidebar-close-btn {
+    display: flex !important;
+  }
+
+  /* Mobile Topbar & Shell Resets */
+  .app-main {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  .app-topbar {
+    height: 60px !important;
+    min-height: 60px !important;
+    padding: 0 16px !important;
+  }
+
+  .topbar-mobile-logo {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .sidebar-toggle-btn {
+    display: flex !important;
+  }
+
+  .app-content {
+    padding: 16px 14px 40px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
 }
 
 .sidebar-brand-link {
@@ -46,13 +147,7 @@ a {
 }
 
 .sidebar-close-btn {
-  display: none !important;
-}
-
-@media (max-width: 768px) {
-  .sidebar-close-btn {
-    display: flex !important;
-  }
+  display: none;
 }
 
 .sidebar-nav-item {
@@ -145,15 +240,14 @@ a {
 }
 
 /* ==================================================
-   DASHBOARD TOPBAR SIDEBAR TOGGLE (< 768px vs >= 768px)
-   Sembunyikan tombol hamburger palka di desktop secara absolut
+   DASHBOARD TOPBAR SIDEBAR TOGGLE (< 1024px vs >= 1024px)
    ================================================== */
 .topbar-menu-btn,
 .sidebar-toggle-btn {
   display: none !important;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .topbar-menu-btn,
   .sidebar-toggle-btn {
     display: flex !important;
@@ -162,7 +256,7 @@ a {
   }
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1024px) {
   .topbar-menu-btn,
   .sidebar-toggle-btn {
     display: none !important;
@@ -329,28 +423,6 @@ a {
    RESPONSIVE BREAKPOINTS (DESKTOP -> TABLET -> MOBILE)
    ================================================== */
 @media (max-width: 1024px) {
-  .flat-metrics-row {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .flat-metrics-row .metric-item-flat:nth-child(2) {
-    border-right: none !important;
-  }
-  .flat-metrics-row .metric-item-flat:nth-child(1),
-  .flat-metrics-row .metric-item-flat:nth-child(2) {
-    border-bottom: 1px solid #E2E8F0 !important;
-  }
-
-  .flat-boxes-row {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .flat-boxes-row .flat-box-item:nth-child(2) {
-    border-right: none !important;
-  }
-  .flat-boxes-row .flat-box-item:nth-child(1),
-  .flat-boxes-row .flat-box-item:nth-child(2) {
-    border-bottom: 1px solid #E2E8F0 !important;
-  }
-
   .flat-chart-split {
     grid-template-columns: 1fr !important;
   }
@@ -366,32 +438,133 @@ a {
   }
 }
 
-@media (max-width: 640px) {
+/* Tablet & Mobile Screens (<= 768px): 2-Kolom Grid dengan Hairline Dividers */
+@media (max-width: 768px) {
   .app-content {
-    padding: 16px 16px 40px !important;
+    padding: 16px 14px 40px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
 
-  .flat-metrics-row {
-    grid-template-columns: 1fr !important;
-  }
-  .flat-metrics-row .metric-item-flat {
-    border-right: none !important;
-    border-bottom: 1px solid #E2E8F0 !important;
-    padding: 14px 0 !important;
-  }
-  .flat-metrics-row .metric-item-flat:last-child {
-    border-bottom: none !important;
-  }
-
+  /* 4-Kolom Metrik Dashboard & Monitoring diubah menjadi 2x2 Grid Rapi */
+  .flat-metrics-row,
+  .monitoring-summary-grid,
+  .activity-summary-grid,
+  .flat-box-row,
   .flat-boxes-row {
-    grid-template-columns: 1fr !important;
-  }
-  .flat-boxes-row .flat-box-item {
-    border-right: none !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0 !important;
     border-bottom: 1px solid #E2E8F0 !important;
-    padding: 14px 0 !important;
+    margin-bottom: 24px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
-  .flat-boxes-row .flat-box-item:last-child {
+
+  .flat-metrics-row > div,
+  .monitoring-summary-grid > div,
+  .activity-summary-grid > div,
+  .flat-box-row > div,
+  .flat-boxes-row > div {
+    border-right: 1px solid #E2E8F0 !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+    padding: 12px 14px !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Hilangkan border-right pada kolom genap (2, 4...) agar tidak keluar layar HP */
+  .flat-metrics-row > div:nth-child(2n),
+  .monitoring-summary-grid > div:nth-child(2n),
+  .activity-summary-grid > div:nth-child(2n),
+  .flat-box-row > div:nth-child(2n),
+  .flat-boxes-row > div:nth-child(2n) {
+    border-right: none !important;
+  }
+
+  /* Hilangkan border-bottom pada 2 kolom terakhir */
+  .flat-metrics-row > div:nth-last-child(-n+2),
+  .monitoring-summary-grid > div:nth-last-child(-n+2),
+  .activity-summary-grid > div:nth-last-child(-n+2),
+  .flat-box-row > div:nth-last-child(-n+2),
+  .flat-boxes-row > div:nth-last-child(-n+2) {
     border-bottom: none !important;
+  }
+
+  /* Grid Slot Palka / Box Dinamis */
+  .monitoring-boxes-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+    gap: 0 !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+    margin-bottom: 24px !important;
+  }
+
+  .monitoring-boxes-grid > div {
+    padding: 12px 14px !important;
+    border-right: 1px solid #E2E8F0 !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Weather Strip & Filter Toolbars Responsif */
+  .flat-weather-toolbar,
+  .monitoring-toolbar {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  /* Tabel Horizontal Touch Scrolling */
+  .flat-table-container,
+  .data-table-container,
+  .table-responsive-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border: none !important;
+  }
+
+  .flat-tembox-table,
+  .tembox-table {
+    min-width: 580px !important;
+    border-collapse: collapse !important;
+  }
+}
+
+/* Smartphone Layar Kecil (360px - 430px) */
+@media (max-width: 480px) {
+  .app-topbar {
+    padding: 0 12px !important;
+  }
+
+  .topbar-mobile-logo {
+    font-size: 18px !important;
+  }
+
+  .topbar-username {
+    display: none !important;
+  }
+
+  .topbar-user-pill {
+    padding: 2px !important;
+    border: none !important;
+    background: transparent !important;
+    gap: 0 !important;
+  }
+
+  .topbar-user-pill svg {
+    display: none !important;
+  }
+
+  .topbar-actions {
+    gap: 6px !important;
+  }
+
+  .metric-main-value {
+    font-size: 22px !important;
   }
 }

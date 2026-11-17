@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile Backdrop Overlay */}
+      {/* Mobile Backdrop Overlay (zIndex: 40, below sidebar zIndex: 50) */}
       {isOpen && (
         <div
           className="sidebar-backdrop"
@@ -52,9 +52,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(11, 45, 66, 0.45)',
+            background: 'rgba(15, 23, 42, 0.4)',
             backdropFilter: 'blur(4px)',
-            zIndex: 998,
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 40,
           }}
           aria-hidden="true"
         />
@@ -64,18 +65,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className={`app-sidebar ${isOpen ? 'open' : ''}`}
         id="appSidebar"
         style={{
-          width: '240px',
-          minWidth: '240px',
-          maxWidth: '240px',
           backgroundColor: '#FFFFFF',
           borderRight: '1px solid #E2E8F0',
           display: 'flex',
           flexDirection: 'column',
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
           zIndex: 50,
-          flexShrink: 0,
           boxSizing: 'border-box',
           fontFamily: 'var(--font-sans, "Plus Jakarta Sans", sans-serif)',
         }}

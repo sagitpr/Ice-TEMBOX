@@ -910,6 +910,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           2. BARIS RINGKASAN ANALITIK COLD-CHAIN & DAYA (4 KOLOM)
           ================================================== */}
       <div
+        className="monitoring-summary-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
@@ -1033,6 +1034,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
         </div>
       ) : (
         <div
+          className="monitoring-boxes-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -1395,8 +1397,8 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
         </div>
 
         {/* Flat Minimalist Table */}
-        <div style={{ width: '100%', overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+        <div className="flat-table-container data-table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table className="flat-tembox-table tembox-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <thead>
               <tr style={{ backgroundColor: '#F8FAFC', textAlign: 'left', borderBottom: '1px solid #E2E8F0' }}>
                 <th style={{ padding: '8px 12px', color: '#475569', fontWeight: 700 }}>Waktu (RTC)</th>

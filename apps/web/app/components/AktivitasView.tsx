@@ -393,7 +393,7 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
           1. STRIP REKAPAN 4 KOLOM AGREGAT (HAIRLINE DIVIDER)
           ================================================== */}
       <div
-        className="flat-box-row"
+        className="flat-box-row activity-summary-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
