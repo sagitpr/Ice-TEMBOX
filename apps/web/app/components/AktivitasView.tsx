@@ -19,6 +19,7 @@ import {
   Activity,
   CheckCircle,
 } from './Icons';
+import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
 
 export interface ActivityItem {
   id: string;
@@ -47,15 +48,19 @@ export interface ActivityItem {
   };
 }
 
-export const AktivitasView: React.FC = () => {
+interface AktivitasViewProps {
+  telemetryLogs?: TelemetryLogItem[];
+}
+
+export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = [] }) => {
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'custom'>('today');
-  const [selectedDate, setSelectedDate] = useState('24 Sep 2026');
+  const [selectedDate, setSelectedDate] = useState('Hari ini');
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(8); // September
-  const [currentYear, setCurrentYear] = useState(2026);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -113,201 +118,65 @@ export const AktivitasView: React.FC = () => {
     setCalendarOpen(false);
   };
 
-  // Mock Comprehensive Activity Log dataset
-  const activityData: ActivityItem[] = useMemo(() => [
-    {
-      id: 'ACT-001',
-      uuid: 'e48a1290-781c-4b92-91f6-a3d8b3940121',
-      timestamp: '24 Sep 2026, 14:32:10 WIB',
-      rtcTimestamp: '2026-09-24T14:32:09.840Z',
-      category: 'Koneksi',
-      title: 'Telemetri Live ESP32 Diterima',
-      description: 'Paket telemetri normal diterima via Wi-Fi/Cellular dengan latensi 34 ms.',
-      source: 'ESP32',
-      deviceCode: 'ESP32-TEMBOX-01',
-      snapshotTemp: '-0.4°C',
-      snapshotIce: 'Es Padat Terjaga',
-      status: 'Berhasil',
-      metadata: {
-        temperature_c: -0.4,
-        humidity_pct: 86,
-        battery_pct: 95,
-        signal_rssi: -64,
-        ping_ms: 34,
-        sd_status: 'OK',
-        offline_queue_count: 0,
-      },
-    },
-    {
-      id: 'ACT-002',
-      uuid: '92fb4512-32aa-4c12-8871-bc0981248177',
-      timestamp: '24 Sep 2026, 14:15:00 WIB',
-      rtcTimestamp: '2026-09-24T14:14:58.200Z',
-      category: 'Peringatan',
-      title: 'Peringatan Fluktuasi Suhu Box 04',
-      description: 'Suhu palka cadangan terdeteksi naik melewati ambang batas waspada (2.6°C > 2.0°C).',
-      source: 'ESP32',
-      deviceCode: 'ESP32-TEMBOX-01',
-      snapshotTemp: '+2.6°C',
-      snapshotIce: 'Mulai Mencair',
-      status: 'Peringatan',
-      metadata: {
-        temperature_c: 2.6,
-        humidity_pct: 91,
-        battery_pct: 94,
-        signal_rssi: -67,
-        ping_ms: 41,
-        sd_status: 'OK',
-        offline_queue_count: 0,
-      },
-    },
-    {
-      id: 'ACT-003',
-      uuid: '18ab9901-4432-47ef-b903-882194883100',
-      timestamp: '24 Sep 2026, 13:40:00 WIB',
-      rtcTimestamp: '2026-09-24T13:39:59.100Z',
-      category: 'MicroSD Sync',
-      title: 'Sinkronisasi Batch MicroSD Berhasil',
-      description: 'Sebanyak 36 paket telemetri log offline palka berhasil diunggah ke server cloud.',
-      source: 'ESP32',
-      deviceCode: 'ESP32-TEMBOX-01',
-      snapshotTemp: '-0.7°C',
-      snapshotIce: 'Padat Terjaga',
-      status: 'Berhasil',
-      metadata: {
-        offline_queue_count: 36,
-        sd_status: 'OK_SYNCED',
-        action_type: 'BATCH_OFFLINE_UPLOAD',
-      },
-    },
-    {
-      id: 'ACT-004',
-      uuid: '5561a098-1123-41bb-a764-998124876123',
-      timestamp: '24 Sep 2026, 12:20:45 WIB',
-      rtcTimestamp: '2026-09-24T12:20:45.000Z',
-      category: 'Pengaturan',
-      title: 'Perubahan Parameter Batas Suhu Palka',
-      description: 'Pengguna memperbarui ambang batas bahaya dari 4.5°C menjadi 4.0°C untuk ikan tuna.',
-      source: 'Pengguna',
-      deviceCode: 'PORTAL-WEB',
-      snapshotTemp: '-',
-      snapshotIce: '-',
-      status: 'Info',
-      metadata: {
-        triggered_by: 'Sagit Faturrakhman (Admin)',
-        action_type: 'UPDATE_THRESHOLD_ALERT',
-        ip_address: '180.252.12.84',
-      },
-    },
-    {
-      id: 'ACT-005',
-      uuid: 'bb124890-aacc-4b88-9121-cc9901247654',
-      timestamp: '24 Sep 2026, 11:05:12 WIB',
-      rtcTimestamp: '2026-09-24T11:05:11.750Z',
-      category: 'Koneksi',
-      title: 'Uji Latensi Ping Manual',
-      description: 'Test ping operator menghasilkan roundtrip respons 31 ms (koneksi sangat baik).',
-      source: 'Sistem',
-      deviceCode: 'ESP32-TEMBOX-01',
-      snapshotTemp: '-0.5°C',
-      snapshotIce: 'Padat Terjaga',
-      status: 'Berhasil',
-      metadata: {
-        ping_ms: 31,
-        action_type: 'MANUAL_PING_TEST',
-      },
-    },
-    {
-      id: 'ACT-006',
-      uuid: '44319082-dd12-4cf1-8890-001294871234',
-      timestamp: '24 Sep 2026, 09:30:00 WIB',
-      rtcTimestamp: '2026-09-24T09:29:58.600Z',
-      category: 'MicroSD Sync',
-      title: 'Verifikasi Modul RTC DS3231 & MicroSD',
-      description: 'Sistem hardware memvalidasi integritas partisi FAT32 kartu SD dan presisi jam RTC.',
-      source: 'ESP32',
-      deviceCode: 'ESP32-TEMBOX-01',
-      snapshotTemp: '-0.8°C',
-      snapshotIce: 'Padat Terjaga',
-      status: 'Berhasil',
-      metadata: {
-        sd_status: 'HEALTHY',
-        action_type: 'HARDWARE_SELF_TEST',
-      },
-    },
-    {
-      id: 'ACT-007',
-      uuid: '7781a902-12aa-4c77-9912-881240981277',
-      timestamp: '24 Sep 2026, 08:15:30 WIB',
-      rtcTimestamp: '2026-09-24T08:15:30.000Z',
-      category: 'Pengaturan',
-      title: 'Pendaftaran Unit ESP32 Baru',
-      description: 'Unit ESP32-TEMBOX-01 berhasil diverifikasi dan terhubung ke cold-chain fleet.',
-      source: 'Pengguna',
-      deviceCode: 'ESP32-TEMBOX-01',
-      snapshotTemp: '-',
-      snapshotIce: '-',
-      status: 'Berhasil',
-      metadata: {
-        triggered_by: 'Sagit Faturrakhman',
-        action_type: 'PROVISION_DEVICE',
-      },
-    },
-    {
-      id: 'ACT-008',
-      uuid: '33219088-ff44-48ee-a123-bb8812490123',
-      timestamp: '24 Sep 2026, 06:45:00 WIB',
-      rtcTimestamp: '2026-09-24T06:44:59.200Z',
-      category: 'Sistem',
-      title: 'Inisialisasi Sesi Pelayaran Palka Baru',
-      description: 'Kapal bertolak dari Pelabuhan Muara Baru. Palka es diisi 3 ton es balok segar.',
-      source: 'Sistem',
-      deviceCode: 'TRIP-20260924-01',
-      snapshotTemp: '-1.0°C',
-      snapshotIce: 'Padat Segar',
-      status: 'Info',
-      metadata: {
-        action_type: 'START_FISHING_TRIP',
-        triggered_by: 'Nakhoda & Tim TEMBOX',
-      },
-    },
-    {
-      id: 'ACT-009',
-      uuid: '66124098-bb33-47ee-9901-aa1290876543',
-      timestamp: '23 Sep 2026, 22:10:00 WIB',
-      rtcTimestamp: '2026-09-23T22:09:59.000Z',
-      category: 'Koneksi',
-      title: 'Perpindahan Jaringan ke Offline Logger',
-      description: 'Kapal keluar dari jangkauan sinyal seluler; ESP32 otomatis beralih ke MicroSD logger.',
-      source: 'ESP32',
-      deviceCode: 'ESP32-TEMBOX-01',
-      snapshotTemp: '-0.9°C',
-      snapshotIce: 'Padat Terjaga',
-      status: 'Info',
-      metadata: {
-        sd_status: 'LOGGING_OFFLINE',
-        action_type: 'NETWORK_DROPPED_AUTO_FALLBACK',
-      },
-    },
-    {
-      id: 'ACT-010',
-      uuid: '88912409-ee22-4abb-8812-771249081266',
-      timestamp: '23 Sep 2026, 18:30:15 WIB',
-      rtcTimestamp: '2026-09-23T18:30:15.000Z',
-      category: 'Pengaturan',
-      title: 'Pembaruan Profil Akun Operator',
-      description: 'Kontak notifikasi SMS & WhatsApp darurat diperbarui oleh nelayan.',
-      source: 'Pengguna',
-      deviceCode: 'PORTAL-WEB',
-      snapshotTemp: '-',
-      snapshotIce: '-',
-      status: 'Berhasil',
-      metadata: {
-        triggered_by: 'Sagit Faturrakhman',
-        action_type: 'UPDATE_ACCOUNT_CONTACTS',
-      },
-    },
-  ], []);
+  // Dynamic Activity Log dataset computed strictly from telemetry logs (Zero Mock Fallback)
+  const activityData: ActivityItem[] = useMemo(() => {
+    if (!telemetryLogs || telemetryLogs.length === 0) {
+      return [];
+    }
+    return telemetryLogs.map((log, index) => {
+      const recDate = new Date(log.recorded_at);
+      const isDateValid = !isNaN(recDate.getTime());
+      const timeStr = isDateValid
+        ? recDate.toLocaleString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          }) + ' WIB'
+        : log.recorded_at || '--';
+
+      const temp = Number(log.temperature_c);
+      const isWarn = temp > 2.0;
+      const isCrit = temp > 4.0;
+      const isSync = log.sd_status === 'OK_SYNCED' || log.sd_status === 'OFFLINE_SYNC';
+
+      const category: ActivityItem['category'] = isCrit || isWarn ? 'Peringatan' : isSync ? 'MicroSD Sync' : 'Koneksi';
+      const status: ActivityItem['status'] = isCrit || isWarn ? 'Peringatan' : 'Berhasil';
+      const iceDesc = temp > 4.0 ? 'Mencair Cepat' : temp > 2.0 ? 'Mulai Mencair' : 'Padat Terjaga';
+
+      return {
+        id: `ACT-${String(log.id || index + 1).padStart(3, '0')}`,
+        uuid: typeof log.id === 'string' ? log.id : `log-${index}-${Date.now()}`,
+        timestamp: timeStr,
+        rtcTimestamp: log.recorded_at,
+        category,
+        title: isCrit
+          ? 'Peringatan Suhu Bahaya (> 4°C)'
+          : isWarn
+            ? 'Peringatan Fluktuasi Suhu Palka'
+            : isSync
+              ? 'Sinkronisasi Paket MicroSD'
+              : 'Telemetri Live ESP32 Diterima',
+        description: `Paket data telemetri tercatat pada suhu ${temp.toFixed(1)}°C (${iceDesc}) dengan latensi ${log.ping_ms ?? '--'} ms.`,
+        source: 'ESP32',
+        deviceCode: 'Perangkat TEMBOX',
+        snapshotTemp: `${temp > 0 ? '+' : ''}${temp.toFixed(1)}°C`,
+        snapshotIce: iceDesc,
+        status,
+        metadata: {
+          temperature_c: temp,
+          humidity_pct: log.humidity_pct ?? undefined,
+          battery_pct: log.battery_pct ?? undefined,
+          signal_rssi: log.signal_rssi ?? undefined,
+          ping_ms: log.ping_ms ?? undefined,
+          sd_status: log.sd_status ?? 'OK',
+          offline_queue_count: log.offline_queue_count ?? 0,
+        },
+      };
+    });
+  }, [telemetryLogs]);
 
   // Filtered Activities
   const filteredActivities = useMemo(() => {
@@ -337,6 +206,16 @@ export const AktivitasView: React.FC = () => {
     const start = (currentPage - 1) * rowsPerPage;
     return filteredActivities.slice(start, start + rowsPerPage);
   }, [filteredActivities, currentPage]);
+
+  // Aggregate metrics computed dynamically
+  const totalCount = activityData.length;
+  const totalCountStr = totalCount > 0 ? `${totalCount} Log` : '--';
+  const warnCount = activityData.filter((a) => a.category === 'Peringatan').length;
+  const warnCountStr = totalCount > 0 ? `${warnCount} Kejadian` : '--';
+  const syncCount = activityData.filter((a) => a.category === 'MicroSD Sync').length;
+  const syncCountStr = totalCount > 0 ? `${syncCount} Batch` : '--';
+  const actionCount = activityData.filter((a) => a.source !== 'ESP32').length;
+  const actionCountStr = totalCount > 0 ? `${actionCount} Sesi` : '--';
 
   // Copy UUID handler
   const handleCopyId = (id: string) => {
@@ -418,10 +297,10 @@ export const AktivitasView: React.FC = () => {
             Total Aktivitas
           </span>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A', lineHeight: 1.15, marginBottom: '4px' }}>
-            148 Log
+            {totalCountStr}
           </div>
           <span style={{ fontSize: '11px', color: '#94A3B8' }}>
-            Tercatat pada rentang aktif
+            {totalCount > 0 ? 'Tercatat pada rentang aktif' : 'Belum ada data tercatat'}
           </span>
         </div>
 
@@ -436,11 +315,11 @@ export const AktivitasView: React.FC = () => {
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '6px' }}>
             Peringatan & Anomali
           </span>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#DC2626', lineHeight: 1.15, marginBottom: '4px' }}>
-            3 Kejadian
+          <div style={{ fontSize: '26px', fontWeight: 800, color: warnCount > 0 ? '#DC2626' : '#0F172A', lineHeight: 1.15, marginBottom: '4px' }}>
+            {warnCountStr}
           </div>
           <span style={{ fontSize: '11px', color: '#94A3B8' }}>
-            Fluktuasi suhu & sinyal
+            {warnCount > 0 ? 'Fluktuasi suhu & sinyal' : 'Sistem stabil normal'}
           </span>
         </div>
 
@@ -455,11 +334,11 @@ export const AktivitasView: React.FC = () => {
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '6px' }}>
             Sinkronisasi MicroSD
           </span>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#0284C7', lineHeight: 1.15, marginBottom: '4px' }}>
-            42 Batch
+          <div style={{ fontSize: '26px', fontWeight: 800, color: syncCount > 0 ? '#0284C7' : '#0F172A', lineHeight: 1.15, marginBottom: '4px' }}>
+            {syncCountStr}
           </div>
           <span style={{ fontSize: '11px', color: '#94A3B8' }}>
-            100% Integritas RTC DS3231
+            {syncCount > 0 ? 'Integritas RTC DS3231' : 'Belum ada batch offline'}
           </span>
         </div>
 
@@ -474,10 +353,10 @@ export const AktivitasView: React.FC = () => {
             Aksi Pengguna & Sistem
           </span>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A', lineHeight: 1.15, marginBottom: '4px' }}>
-            18 Sesi
+            {actionCountStr}
           </div>
           <span style={{ fontSize: '11px', color: '#94A3B8' }}>
-            Pengaturan & trip pelayaran
+            {actionCount > 0 ? 'Pengaturan & trip pelayaran' : 'Siap mencatat event'}
           </span>
         </div>
       </div>
@@ -827,29 +706,33 @@ export const AktivitasView: React.FC = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                       <FileText size={32} color="#94A3B8" />
                       <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
-                        Tidak ada log aktivitas yang cocok
+                        {activityData.length === 0 ? 'Belum ada log aktivitas' : 'Tidak ada log aktivitas yang cocok'}
                       </span>
                       <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 12px 0' }}>
-                        Coba sesuaikan kata kunci pencarian atau ubah filter kategori.
+                        {activityData.length === 0
+                          ? 'Log aktivitas palka akan tercatat otomatis saat perangkat TEMBOX terhubung dan mengirimkan data telemetri.'
+                          : 'Coba sesuaikan kata kunci pencarian atau ubah filter kategori.'}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery('');
-                          setSelectedCategory('Semua');
-                        }}
-                        style={{
-                          padding: '6px 14px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          backgroundColor: '#F1F5F9',
-                          border: '1px solid #CBD5E1',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Reset Filter
-                      </button>
+                      {activityData.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setSelectedCategory('Semua');
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            backgroundColor: '#F1F5F9',
+                            border: '1px solid #CBD5E1',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Reset Filter
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import DashboardCards from '../components/DashboardCards';
 import MarineWeatherBar from '../components/MarineWeatherBar';
 import { useTelemetryRealtime } from '../../hooks/useTelemetryRealtime';
+import { fetchHeaderNotifications, type HeaderNotificationItem } from '../../lib/services/dashboardService';
 
 // Lightweight hairline fallbacks to eliminate CLS and prevent stacked icon shimmering
 const SensorChart = dynamic(() => import('../components/SensorChart'), {
@@ -40,6 +41,26 @@ export default function DashboardPage() {
 
   // Real-time IoT hardware telemetry & Supabase live synchronization
   const telemetry = useTelemetryRealtime();
+  const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
+
+  // Synchronize notifications with service and global event emitter
+  useEffect(() => {
+    let isMounted = true;
+    fetchHeaderNotifications().then((items) => {
+      if (isMounted) setNotifications(items);
+    });
+
+    const handleNotifs = (e: Event) => {
+      const detail = (e as CustomEvent<HeaderNotificationItem[]>).detail;
+      if (Array.isArray(detail)) setNotifications(detail);
+    };
+
+    window.addEventListener('tembox:notifications-updated', handleNotifs);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('tembox:notifications-updated', handleNotifs);
+    };
+  }, []);
 
   // Instant sync with URL hash
   useEffect(() => {
@@ -136,6 +157,7 @@ export default function DashboardPage() {
               <MarineWeatherBar
                 currentPalkaTemp={telemetry.currentTempNum}
                 selectedDeviceCode={telemetry.selectedDeviceCode}
+                devicesList={telemetry.devicesList}
                 onDeviceChange={telemetry.setSelectedDeviceCode}
                 onPingTested={() => telemetry.testPing()}
                 telemetryLogs={telemetry.telemetryLogs}
@@ -143,6 +165,7 @@ export default function DashboardPage() {
               <SensorChart
                 onViewAllNotif={() => handleSelectTab('notifikasi')}
                 telemetryLogs={telemetry.telemetryLogs}
+                notifications={notifications}
               />
             </section>
           )}
@@ -161,7 +184,7 @@ export default function DashboardPage() {
 
           {currentTab === 'notifikasi' && <NotifikasiView />}
 
-          {currentTab === 'aktivitas' && <AktivitasView />}
+          {currentTab === 'aktivitas' && <AktivitasView telemetryLogs={telemetry.telemetryLogs} />}
 
           {currentTab === 'pengaturan' && <PengaturanView />}
         </div>

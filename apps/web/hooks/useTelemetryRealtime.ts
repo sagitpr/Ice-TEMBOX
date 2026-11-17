@@ -32,15 +32,17 @@ export interface TelemetryRealtimeState {
   lastUpdateDate: string;
   sdStatus: string;
   rtcStatus: string;
-  selectedDeviceCode: string;
-  setSelectedDeviceCode: (code: string) => void;
+  devicesList: Array<{ code: string; name: string }>;
+  selectedDeviceCode: string | null;
+  setSelectedDeviceCode: (code: string | null) => void;
   telemetryLogs: TelemetryLogItem[];
   testPing: () => Promise<number>;
   refreshTelemetry: () => Promise<void>;
 }
 
-export function useTelemetryRealtime(initialDeviceCode = 'ESP32-TEMBOX-01'): TelemetryRealtimeState {
-  const [selectedDeviceCode, setSelectedDeviceCode] = useState(initialDeviceCode);
+export function useTelemetryRealtime(initialDeviceCode: string | null = null): TelemetryRealtimeState {
+  const [devicesList, setDevicesList] = useState<Array<{ code: string; name: string }>>([]);
+  const [selectedDeviceCode, setSelectedDeviceCode] = useState<string | null>(initialDeviceCode);
   const [telemetryLogs, setTelemetryLogs] = useState<TelemetryLogItem[]>([]);
   const [currentTempNum, setCurrentTempNum] = useState<number | null>(null);
   const [pingMs, setPingMs] = useState<number | null>(null);
@@ -53,6 +55,41 @@ export function useTelemetryRealtime(initialDeviceCode = 'ESP32-TEMBOX-01'): Tel
   const [rtcStatus, setRtcStatus] = useState<string>('--');
 
   const lastSeenRef = useRef<number | null>(null);
+
+  // Fetch real registered devices on mount
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRegisteredDevices = async () => {
+      try {
+        const res = await fetch('/api/iot/devices');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.devices)) {
+          const list: Array<{ code: string; name: string }> = data.devices.map((d: { device_code?: string; serial_number?: string; device_name?: string }) => ({
+            code: d.device_code || d.serial_number || '',
+            name: d.device_name || d.device_code || d.serial_number || 'Perangkat TEMBOX',
+          })).filter((d: { code: string }) => Boolean(d.code));
+
+          if (isMounted) {
+            setDevicesList(list);
+            if (list.length > 0) {
+              setSelectedDeviceCode((prev) => prev || list[0].code);
+            } else {
+              setSelectedDeviceCode(null);
+              setConnectionStatusText('Belum Ada Perangkat');
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[Telemetry Hook] Error fetching devices:', err);
+      }
+    };
+
+    fetchRegisteredDevices();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Process incoming telemetry data point
   const processTelemetryPoint = useCallback((point: {
@@ -124,6 +161,12 @@ export function useTelemetryRealtime(initialDeviceCode = 'ESP32-TEMBOX-01'): Tel
   // 1-second watchdog checking for connection loss after 30 seconds
   useEffect(() => {
     const checkWatchdog = () => {
+      if (!selectedDeviceCode) {
+        setSystemConnected(false);
+        setConnectionStatusText('Belum Ada Perangkat');
+        return;
+      }
+
       if (!lastSeenRef.current) {
         setSystemConnected(false);
         setConnectionStatusText('Menunggu Data');
@@ -148,10 +191,18 @@ export function useTelemetryRealtime(initialDeviceCode = 'ESP32-TEMBOX-01'): Tel
     checkWatchdog();
     const interval = setInterval(checkWatchdog, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDeviceCode]);
 
   // Fetch initial telemetry from /api/telemetry
   const refreshTelemetry = useCallback(async () => {
+    if (!selectedDeviceCode) {
+      setTelemetryLogs([]);
+      setCurrentTempNum(null);
+      setSystemConnected(false);
+      setConnectionStatusText('Belum Ada Perangkat');
+      return;
+    }
+
     try {
       const res = await fetch(`/api/telemetry?device_code=${encodeURIComponent(selectedDeviceCode)}&limit=30`, {
         cache: 'no-store',
@@ -174,6 +225,8 @@ export function useTelemetryRealtime(initialDeviceCode = 'ESP32-TEMBOX-01'): Tel
 
   // Supabase Realtime WebSocket subscription (INSERT & UPDATE)
   useEffect(() => {
+    if (!selectedDeviceCode) return;
+
     let supabaseChannel: ReturnType<ReturnType<typeof getSupabaseClient>['channel']> | null = null;
 
     try {
@@ -330,6 +383,7 @@ export function useTelemetryRealtime(initialDeviceCode = 'ESP32-TEMBOX-01'): Tel
     lastUpdateDate,
     sdStatus,
     rtcStatus,
+    devicesList,
     selectedDeviceCode,
     setSelectedDeviceCode,
     telemetryLogs,

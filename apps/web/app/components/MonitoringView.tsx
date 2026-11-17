@@ -29,7 +29,7 @@ export interface MonitoringViewProps {
   pingMs?: number | null;
   signalRssi?: number | null;
   systemConnected?: boolean;
-  selectedDeviceCode?: string;
+  selectedDeviceCode?: string | null;
   onRefreshTelemetry?: () => Promise<void>;
 }
 
@@ -63,7 +63,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   pingMs = null,
   signalRssi = null,
   systemConnected = false,
-  selectedDeviceCode = 'ESP32-TEMBOX-01',
+  selectedDeviceCode = null,
   onRefreshTelemetry,
 }) => {
   // ----------------------------------------------------

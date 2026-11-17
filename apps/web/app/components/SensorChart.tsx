@@ -1,8 +1,20 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Clock, ChevronDown, Check, TrendingUp, Bell, ArrowRight, Thermometer, ShieldCheck } from './Icons';
+import {
+  Clock,
+  ChevronDown,
+  Check,
+  TrendingUp,
+  Bell,
+  BellOff,
+  ArrowRight,
+  Thermometer,
+  ShieldCheck,
+  AlertTriangle,
+} from './Icons';
 import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
+import type { HeaderNotificationItem } from '../../lib/services/dashboardService';
 
 export interface TelemetryChartPoint {
   temperature_c?: number;
@@ -14,9 +26,14 @@ export interface TelemetryChartPoint {
 interface SensorChartProps {
   onViewAllNotif?: () => void;
   telemetryLogs?: TelemetryLogItem[] | TelemetryChartPoint[];
+  notifications?: HeaderNotificationItem[];
 }
 
-export const SensorChart: React.FC<SensorChartProps> = ({ onViewAllNotif, telemetryLogs = [] }) => {
+export const SensorChart: React.FC<SensorChartProps> = ({
+  onViewAllNotif,
+  telemetryLogs = [],
+  notifications = [],
+}) => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState<'today' | '24h' | '7d' | '30d'>('today');
   const [selectedLabel, setSelectedLabel] = useState('Hari ini');
@@ -209,80 +226,59 @@ export const SensorChart: React.FC<SensorChartProps> = ({ onViewAllNotif, teleme
         </div>
 
         <div id="dashNotifContainer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {/* Real-time status notifications */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '10px',
-              padding: '10px 0',
-              borderBottom: '1px solid #F1F5F9',
-            }}
-          >
-            <div
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '6px',
-                background: '#ECFDF5',
-                color: '#059669',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <ShieldCheck size={14} />
-            </div>
-            <div>
-              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>
-                Telemetri Palka Utama Aktif
-              </div>
-              <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px', lineHeight: 1.4 }}>
-                Sensor DS18B20 &amp; ESP32 sinkron dengan server real-time TEMBOX.
-              </div>
-              <div style={{ fontSize: '10.5px', color: '#94A3B8', marginTop: '4px' }}>
-                Baru saja
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '10px',
-              padding: '10px 0',
-              borderBottom: '1px solid #F1F5F9',
-            }}
-          >
-            <div
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '6px',
-                background: '#E0F2FE',
-                color: '#0284C7',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Thermometer size={14} />
-            </div>
-            <div>
-              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>
-                Kondisi Es Dipertahankan
-              </div>
-              <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px', lineHeight: 1.4 }}>
-                Suhu palka stabil di bawah 0°C untuk menjaga mutu kesegaran ikan.
-              </div>
-              <div style={{ fontSize: '10.5px', color: '#94A3B8', marginTop: '4px' }}>
-                15 menit lalu
+          {notifications && notifications.length > 0 ? (
+            notifications.slice(0, 3).map((item) => {
+              const isWarn = item.severity === 'warning';
+              const isInfo = item.severity === 'info';
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    padding: '10px 0',
+                    borderBottom: '1px solid #F1F5F9',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      background: isWarn ? '#FEF2F2' : isInfo ? '#E0F2FE' : '#ECFDF5',
+                      color: isWarn ? '#EF4444' : isInfo ? '#0284C7' : '#059669',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {isWarn ? <AlertTriangle size={14} /> : isInfo ? <Thermometer size={14} /> : <ShieldCheck size={14} />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>
+                      {item.title}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px', lineHeight: 1.4 }}>
+                      {item.message}
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: '#94A3B8', marginTop: '4px' }}>
+                      {item.time}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: '#94A3B8' }}>
+              <BellOff size={24} style={{ margin: '0 auto 8px', strokeWidth: 1.5, opacity: 0.6 }} />
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748B' }}>Belum ada notifikasi</div>
+              <div style={{ fontSize: '11.5px', color: '#94A3B8', marginTop: '2px' }}>
+                Peringatan suhu dan status insulasi palka akan muncul otomatis di sini saat perangkat aktif.
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

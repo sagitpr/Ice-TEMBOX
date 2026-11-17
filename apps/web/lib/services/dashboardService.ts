@@ -83,30 +83,7 @@ interface StoreState {
 }
 
 const DEFAULT_STORE: StoreState = {
-  devices: [
-    {
-      id: 'TEMBOX-001',
-      name: 'TEMBOX-001',
-      serialNumber: 'TEMBOX-ESP32-9F8A21',
-      ipOrSerial: 'TEMBOX-ESP32-9F8A21',
-      placement: 'Palka Utama',
-      status: 'online',
-      firmwareEsp32: 'v2.4.1-iot-marine',
-      firmwareDs18b20: 'Probe Rev.3.2 (±0.5°C)',
-      microSdIntervalSec: 15,
-      telemetryIntervalSec: 30,
-      tempOffset: 0.0,
-      warnThreshold: 2.0,
-      critThreshold: 4.0,
-      buzzerEnabled: true,
-      mqttToken: 'tbk_live_9f8a21e48bc0981a',
-      mqttTopicTelemetry: 'tembox/TEMBOX-ESP32-9F8A21/telemetry',
-      mqttTopicCmd: 'tembox/TEMBOX-ESP32-9F8A21/cmd',
-      lastTemperatureC: -0.4,
-      lastPingMs: 34,
-      lastSyncAt: 'Hari ini, 14:32 WIB',
-    },
-  ],
+  devices: [],
   account: {
     fullName: 'Pengguna TEMBOX',
     email: 'user@tembox.id',
@@ -116,32 +93,7 @@ const DEFAULT_STORE: StoreState = {
     thermalAlertEnabled: true,
     autoCloudSyncEnabled: true,
   },
-  notifications: [
-    {
-      id: 'notif-1',
-      title: 'Suhu Palka Utama Stabil (-0.4°C)',
-      message: 'TEMBOX-001 mencatat kondisi es optimal untuk tangkapan pelayaran.',
-      time: '12 menit lalu',
-      severity: 'success',
-      unread: true,
-    },
-    {
-      id: 'notif-2',
-      title: 'Peringatan Pencairan Es Bertahap',
-      message: 'Suhu palka terdeteksi naik +0.8°C dalam 2 jam terakhir. Siapkan es cadangan.',
-      time: '1 jam lalu',
-      severity: 'warning',
-      unread: true,
-    },
-    {
-      id: 'notif-3',
-      title: 'Log Offline MicroSD Tersinkronisasi',
-      message: '148 titik data telemetri berhasil diunggah saat kapal mendekati pelabuhan.',
-      time: '3 jam lalu',
-      severity: 'info',
-      unread: false,
-    },
-  ],
+  notifications: [],
 };
 
 const getStore = (): StoreState => {

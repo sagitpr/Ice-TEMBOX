@@ -42,28 +42,10 @@ export async function GET(request: Request) {
     );
 
     if (!hasSupabase) {
-      // Return safe mock device list without tokens
+      // Return empty list when Supabase is not configured (honest state, no fake devices)
       return NextResponse.json({
         success: true,
-        devices: [
-          {
-            id: 'TEMBOX-001',
-            name: 'TEMBOX-001',
-            serialNumber: 'TEMBOX-ESP32-9F8A21',
-            placement: 'Palka Utama',
-            status: 'online',
-            telemetryIntervalSec: 30,
-            sdIntervalSec: 15,
-            tempOffset: 0.0,
-            warnThreshold: 2.0,
-            critThreshold: 4.0,
-            buzzerEnabled: true,
-            mqttTopicTelemetry: 'tembox/TEMBOX-ESP32-9F8A21/telemetry',
-            mqttTopicCmd: 'tembox/TEMBOX-ESP32-9F8A21/cmd',
-            lastTemperatureC: -0.4,
-            lastPingMs: 34,
-          },
-        ],
+        devices: [],
       });
     }
 
