@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import { Cloud, Wind, Download, Activity, ChevronDown, Check, RefreshCw, AlertTriangle } from './Icons';
 import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
 
@@ -440,24 +439,6 @@ export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
             <span style={{ fontSize: '12px', color: '#64748B' }}>
               Belum ada perangkat terhubung
             </span>
-            <Link
-              href="/dashboard#/pengaturan"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '4px 10px',
-                fontSize: '11.5px',
-                fontWeight: 600,
-                color: '#0284C7',
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #BAE6FD',
-                borderRadius: '6px',
-                textDecoration: 'none',
-              }}
-            >
-              + Daftarkan Perangkat
-            </Link>
           </div>
         )}
 

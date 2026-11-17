@@ -326,15 +326,15 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
     return filteredActivities.slice(start, start + rowsPerPage);
   }, [filteredActivities, currentPage]);
 
-  // Aggregate metrics computed dynamically (Displays 0 if no records exist)
+  // Aggregate metrics computed dynamically (Displays pure numbers without unit suffix)
   const totalCount = activityData.length;
-  const totalCountStr = `${totalCount} Log`;
+  const totalCountStr = String(totalCount);
   const warnCount = activityData.filter((a) => a.category === 'Peringatan').length;
-  const warnCountStr = `${warnCount} Kejadian`;
+  const warnCountStr = String(warnCount);
   const syncCount = activityData.filter((a) => a.category === 'MicroSD Sync').length;
-  const syncCountStr = `${syncCount} Batch`;
+  const syncCountStr = String(syncCount);
   const actionCount = activityData.filter((a) => a.source !== 'ESP32').length;
-  const actionCountStr = `${actionCount} Sesi`;
+  const actionCountStr = String(actionCount);
 
   // Copy UUID handler
   const handleCopyId = (id: string) => {
