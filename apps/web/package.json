@@ -4,6 +4,9 @@
   "private": true,
   "description": "Web Dashboard Pengepul & Pengelola TPI - Ice-TEMBOX",
   "scripts": {
+    "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
+    "predev": "npm run clean",
+    "prebuild": "npm run clean",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
