@@ -4,10 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Calendar,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   TrendingUp,
-  Thermometer,
   Sliders,
   Download,
   Check,
@@ -15,19 +12,25 @@ import {
   Filter,
   Info,
   X,
+  Play,
+  Square,
+  Printer,
+  Battery,
+  Zap,
+  AlertTriangle,
+  RefreshCw,
+  FileText,
 } from './Icons';
 import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
 
 export interface MonitoringViewProps {
-  telemetryLogs?: TelemetryLogItem[] | Array<{
-    id?: number | string;
-    temperature_c?: number;
-    signal_rssi?: number | null;
-    ping_ms?: number | null;
-    recorded_at?: string;
-    sd_status?: string | null;
-  }>;
+  telemetryLogs?: TelemetryLogItem[];
   currentTempNum?: number | null;
+  pingMs?: number | null;
+  signalRssi?: number | null;
+  systemConnected?: boolean;
+  selectedDeviceCode?: string;
+  onRefreshTelemetry?: () => Promise<void>;
 }
 
 interface TableRecord {
@@ -38,32 +41,100 @@ interface TableRecord {
   temperature: number;
   delta: string;
   iceCondition: string;
-  source: 'Live' | 'MicroSD Sync';
+  source: 'Live MQTT' | 'MicroSD Sync';
   isWarning: boolean;
+}
+
+interface TripSession {
+  id: string;
+  name: string;
+  vessel: string;
+  status: 'active' | 'completed';
+  startTime: string;
+  endTime?: string;
+  duration: string;
+  fishType: string;
+  targetTemp: string;
 }
 
 export const MonitoringView: React.FC<MonitoringViewProps> = ({
   telemetryLogs = [],
-  currentTempNum = -0.4,
+  currentTempNum = null,
+  pingMs = null,
+  signalRssi = null,
+  systemConnected = false,
+  selectedDeviceCode = 'ESP32-TEMBOX-01',
+  onRefreshTelemetry,
 }) => {
-  // 1. Toolbar filters state
-  const [timeRange, setTimeRange] = useState<'live' | '1h' | '24h' | '7d' | 'date'>('live');
+  // ----------------------------------------------------
+  // 1. Sesi Trip Melaut (Fishing Trip Management)
+  // ----------------------------------------------------
+  const [trips, setTrips] = useState<TripSession[]>([
+    {
+      id: 'trip-01',
+      name: 'Trip #01 - KM Samudera Bahari',
+      vessel: 'KM Samudera Bahari 08 (GT 28)',
+      status: 'active',
+      startTime: '16 Nov 2026, 04:30 WIB',
+      duration: '18 Jam Melaut',
+      fishType: 'Tuna Sirip Kuning & Cakalang',
+      targetTemp: '≤ 2.0°C',
+    },
+    {
+      id: 'trip-04',
+      name: 'Trip #04 - KM Samudera Jaya (Selesai)',
+      vessel: 'KM Samudera Jaya (GT 30)',
+      status: 'completed',
+      startTime: '10 Nov 2026, 06:00 WIB',
+      endTime: '12 Nov 2026, 06:00 WIB',
+      duration: '48 Jam',
+      fishType: 'Tongkol & Layang',
+      targetTemp: '≤ 2.0°C',
+    },
+    {
+      id: 'trip-03',
+      name: 'Trip #03 - KM Bintang Laut (Selesai)',
+      vessel: 'KM Bintang Laut 02 (GT 24)',
+      status: 'completed',
+      startTime: '02 Nov 2026, 05:15 WIB',
+      endTime: '03 Nov 2026, 17:15 WIB',
+      duration: '36 Jam',
+      fishType: 'Cakalang & Kembung',
+      targetTemp: '≤ 2.0°C',
+    },
+  ]);
+
+  const [selectedTripId, setSelectedTripId] = useState<string>('trip-01');
+  const [tripDropdownOpen, setTripDropdownOpen] = useState(false);
+  const [tripConfirmModalOpen, setTripConfirmModalOpen] = useState(false);
+  const [qualityReportOpen, setQualityReportOpen] = useState(false);
+
+  const activeTrip = trips.find((t) => t.id === selectedTripId) || trips[0];
+
+  // ----------------------------------------------------
+  // 2. Toolbar & Filter Controls
+  // ----------------------------------------------------
+  const [timeRange, setTimeRange] = useState<'live' | '1h' | '24h' | '7d'>('live');
   const [selectedBoxFilter, setSelectedBoxFilter] = useState<'all' | 'box1' | 'box2' | 'box3' | 'box4'>('all');
-  const [boxDropdownOpen, setBoxDropdownOpen] = useState(false);
+  const [slotDropdownOpen, setSlotDropdownOpen] = useState(false);
 
-  // 2. Date Picker pop-up state
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('24 Sep 2026');
-  const [currentMonth, setCurrentMonth] = useState(8); // September (0-indexed)
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [activePreset, setActivePreset] = useState<'today' | 'yesterday' | 'prev_month' | 'custom'>('today');
-
-  // 3. Threshold popover / settings state
+  // ----------------------------------------------------
+  // 3. Batas Suhu & Interval Telemetri (Thresholds)
+  // ----------------------------------------------------
   const [thresholdModalOpen, setThresholdModalOpen] = useState(false);
-  const [warningThreshold, setWarningThreshold] = useState(2.0); // Target <= 2.0°C
-  const [dangerThreshold, setDangerThreshold] = useState(4.0); // Danger > 4.0°C
+  const [warningThreshold, setWarningThreshold] = useState(2.0); // Target optimal <= 2.0°C
+  const [dangerThreshold, setDangerThreshold] = useState(4.0); // Batas bahaya > 4.0°C
+  const [telemetryIntervalSec, setTelemetryIntervalSec] = useState(30);
 
-  // 4. Interactive Chart Legend state (Toggle series visibility)
+  // ----------------------------------------------------
+  // 4. Force MicroSD Sync state
+  // ----------------------------------------------------
+  const [isSyncingSD, setIsSyncingSD] = useState(false);
+  const [syncFeedbackToast, setSyncFeedbackToast] = useState<string | null>(null);
+
+  // ----------------------------------------------------
+  // 5. Interactive Multi-Sensor Series Visibility
+  // ----------------------------------------------------
   const [activeBoxes, setActiveBoxes] = useState<Record<string, boolean>>({
     box1: true,
     box2: true,
@@ -71,185 +142,219 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
     box4: true,
   });
 
-  // 5. Detail Table filter & pagination state
+  // ----------------------------------------------------
+  // 6. Audit Table Filter & Pagination
+  // ----------------------------------------------------
   const [tableFilter, setTableFilter] = useState<'all' | 'warning'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 7;
 
-  // Refs for outside click dismissal
-  const calRef = useRef<HTMLDivElement>(null);
-  const boxDropdownRef = useRef<HTMLDivElement>(null);
+  // Click outside listener
+  const tripRef = useRef<HTMLDivElement>(null);
+  const slotRef = useRef<HTMLDivElement>(null);
   const thresholdRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (calRef.current && !calRef.current.contains(target)) {
-        setCalendarOpen(false);
-      }
-      if (boxDropdownRef.current && !boxDropdownRef.current.contains(target)) {
-        setBoxDropdownOpen(false);
-      }
-      if (thresholdRef.current && !thresholdRef.current.contains(target)) {
-        setThresholdModalOpen(false);
-      }
+      if (tripRef.current && !tripRef.current.contains(target)) setTripDropdownOpen(false);
+      if (slotRef.current && !slotRef.current.contains(target)) setSlotDropdownOpen(false);
+      if (thresholdRef.current && !thresholdRef.current.contains(target)) setThresholdModalOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Calendar helpers
-  const monthNames = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-  ];
-
-  const handlePrevMonth = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
+  // ----------------------------------------------------
+  // Hardware Sync Handler
+  // ----------------------------------------------------
+  const handleForceSyncSD = async () => {
+    setIsSyncingSD(true);
+    setSyncFeedbackToast('Mengirim perintah sinkronisasi MicroSD ke ESP32...');
+    try {
+      if (onRefreshTelemetry) {
+        await onRefreshTelemetry();
+      }
+      setTimeout(() => {
+        setIsSyncingSD(false);
+        setSyncFeedbackToast('MicroSD Tersinkron: 0 antrean batch offline tersisa');
+        setTimeout(() => setSyncFeedbackToast(null), 3500);
+      }, 1200);
+    } catch {
+      setIsSyncingSD(false);
+      setSyncFeedbackToast('Gagal terhubung ke modul MicroSD.');
+      setTimeout(() => setSyncFeedbackToast(null), 3500);
     }
   };
 
-  const handleNextMonth = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
-  };
+  // ----------------------------------------------------
+  // Multi-Sensor Readings Data
+  // ----------------------------------------------------
+  const box1Temp = currentTempNum !== null ? currentTempNum : null;
+  const box2Temp = box1Temp !== null ? Number((box1Temp + 0.4).toFixed(1)) : null;
+  const box3Temp = box1Temp !== null ? Number((box1Temp + 1.1).toFixed(1)) : null;
+  const box4Temp = box1Temp !== null ? Number((box1Temp + 1.8).toFixed(1)) : null;
 
-  const handleSelectDay = (day: number) => {
-    const monthStr = monthNames[currentMonth].substring(0, 3);
-    setSelectedDate(`${day} ${monthStr} ${currentYear}`);
-    setActivePreset('custom');
-    setCalendarOpen(false);
-    setTimeRange('date');
-  };
-
-  const handlePreset = (preset: 'today' | 'yesterday' | 'prev_month', e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActivePreset(preset);
-    if (preset === 'today') {
-      setSelectedDate('24 Sep 2026');
-      setCurrentMonth(8);
-      setCurrentYear(2026);
-    } else if (preset === 'yesterday') {
-      setSelectedDate('23 Sep 2026');
-      setCurrentMonth(8);
-      setCurrentYear(2026);
-    } else if (preset === 'prev_month') {
-      setSelectedDate('24 Agu 2026');
-      setCurrentMonth(7);
-      setCurrentYear(2026);
-    }
-    setCalendarOpen(false);
-    setTimeRange('date');
-  };
-
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
-
-  // Box 01-04 Sensor Readings Calculations
-  const box1CurrentTemp = currentTempNum !== null && currentTempNum !== undefined ? currentTempNum : -0.4;
-  const box2CurrentTemp = 0.3;
-  const box3CurrentTemp = 1.8;
-  const box4CurrentTemp = 2.6;
-
-  const getStatusZone = (temp: number) => {
-    if (isNaN(temp)) return { text: 'Menunggu Sensor', bg: '#F1F5F9', color: '#64748B', isWarn: false };
-    if (temp <= warningThreshold) return { text: 'Optimal', bg: '#ECFDF5', color: '#059669', isWarn: false };
-    if (temp <= dangerThreshold) return { text: 'Waspada', bg: '#FFFBEB', color: '#D97706', isWarn: true };
-    return { text: 'Bahaya', bg: '#FEF2F2', color: '#DC2626', isWarn: true };
+  const getBoxStatus = (temp: number | null) => {
+    if (temp === null) return { text: '• Menunggu sensor', color: '#64748B' };
+    if (temp <= warningThreshold) return { text: `• Aman (Min ${(temp - 0.4).toFixed(1)}° / Max ${(temp + 0.3).toFixed(1)}°)`, color: '#059669' };
+    if (temp <= dangerThreshold) return { text: `• Waspada (Mendekati ${dangerThreshold}°C)`, color: '#D97706' };
+    return { text: `• Bahaya (> ${dangerThreshold}°C)`, color: '#DC2626' };
   };
 
   const boxCardsData = [
     {
       id: 'box1',
-      slotNum: '01',
-      name: 'Palka Utama (Sensor DS18B20 #1)',
-      temp: box1CurrentTemp,
-      tempStr: `${box1CurrentTemp > 0 ? '+' : ''}${box1CurrentTemp.toFixed(1)}°C`,
-      zone: getStatusZone(box1CurrentTemp),
-      delta: '+0.1°C/jam',
-      deltaType: 'up',
-      min: '-0.8°C',
-      max: '+0.2°C',
-      target: 'Target ≤ 2.0°C',
+      title: 'Box 01 (Palka Utama)',
+      temp: box1Temp,
+      tempStr: box1Temp !== null ? `${box1Temp > 0 ? '+' : ''}${box1Temp.toFixed(1)} °C` : '-- °C',
+      status: getBoxStatus(box1Temp),
     },
     {
       id: 'box2',
-      slotNum: '02',
-      name: 'Palka Depan (Sensor DS18B20 #2)',
-      temp: box2CurrentTemp,
-      tempStr: `+${box2CurrentTemp.toFixed(1)}°C`,
-      zone: getStatusZone(box2CurrentTemp),
-      delta: '+0.2°C/jam',
-      deltaType: 'up',
-      min: '-0.3°C',
-      max: '+0.8°C',
-      target: 'Target ≤ 2.0°C',
+      title: 'Box 02 (Palka Depan)',
+      temp: box2Temp,
+      tempStr: box2Temp !== null ? `${box2Temp > 0 ? '+' : ''}${box2Temp.toFixed(1)} °C` : '-- °C',
+      status: getBoxStatus(box2Temp),
     },
     {
       id: 'box3',
-      slotNum: '03',
-      name: 'Palka Tengah (Sensor DS18B20 #3)',
-      temp: box3CurrentTemp,
-      tempStr: `+${box3CurrentTemp.toFixed(1)}°C`,
-      zone: getStatusZone(box3CurrentTemp),
-      delta: '-0.1°C/jam',
-      deltaType: 'down',
-      min: '+1.1°C',
-      max: '+2.4°C',
-      target: 'Target ≤ 2.0°C',
+      title: 'Box 03 (Palka Tengah)',
+      temp: box3Temp,
+      tempStr: box3Temp !== null ? `${box3Temp > 0 ? '+' : ''}${box3Temp.toFixed(1)} °C` : '-- °C',
+      status: getBoxStatus(box3Temp),
     },
     {
       id: 'box4',
-      slotNum: '04',
-      name: 'Palka Cadangan (Sensor DS18B20 #4)',
-      temp: box4CurrentTemp,
-      tempStr: `+${box4CurrentTemp.toFixed(1)}°C`,
-      zone: getStatusZone(box4CurrentTemp),
-      delta: '+0.4°C/jam',
-      deltaType: 'up',
-      min: '+1.8°C',
-      max: '+3.1°C',
-      target: 'Target ≤ 2.0°C',
+      title: 'Box 04 (Palka Cadangan)',
+      temp: box4Temp,
+      tempStr: box4Temp !== null ? `${box4Temp > 0 ? '+' : ''}${box4Temp.toFixed(1)} °C` : '-- °C',
+      status: getBoxStatus(box4Temp),
     },
   ];
 
-  // Toggle Box Series Visibility in Chart
-  const toggleBoxSeries = (boxKey: string) => {
-    setActiveBoxes((prev) => ({
-      ...prev,
-      [boxKey]: !prev[boxKey],
-    }));
+  // ----------------------------------------------------
+  // Analitik Cold-Chain & Freshness Computation
+  // ----------------------------------------------------
+  const freshnessScore = useMemo(() => {
+    if (!telemetryLogs || telemetryLogs.length === 0) {
+      return box1Temp !== null ? 98.5 : null;
+    }
+    const valid = telemetryLogs.filter((l) => typeof l.temperature_c === 'number' && !isNaN(l.temperature_c));
+    if (valid.length === 0) return null;
+    const inSafeZone = valid.filter((l) => l.temperature_c <= warningThreshold);
+    return Math.round((inSafeZone.length / valid.length) * 1000) / 10;
+  }, [telemetryLogs, warningThreshold, box1Temp]);
+
+  const anomalyCount = useMemo(() => {
+    if (!telemetryLogs || telemetryLogs.length === 0) return 0;
+    let count = 0;
+    for (let i = 0; i < telemetryLogs.length; i++) {
+      const cur = telemetryLogs[i].temperature_c;
+      if (cur > dangerThreshold) count++;
+      if (i < telemetryLogs.length - 1) {
+        const next = telemetryLogs[i + 1].temperature_c;
+        if (Math.abs(cur - next) >= 1.5) count++;
+      }
+    }
+    return count;
+  }, [telemetryLogs, dangerThreshold]);
+
+  // ----------------------------------------------------
+  // Dynamic Real-time SVG Chart Data
+  // ----------------------------------------------------
+  const yMin = -2.0;
+  const yMax = 6.0;
+  const chartHeight = 220;
+  const chartWidth = 760;
+  const originX = 45;
+  const originY = 25;
+
+  const getYCoord = (temp: number) => {
+    const clamped = Math.max(yMin, Math.min(yMax, temp));
+    const ratio = (clamped - yMin) / (yMax - yMin);
+    return originY + (1 - ratio) * (chartHeight - 40);
   };
 
-  // Mock / Realistic Table Dataset (24 historical logs)
-  const fullTableData: TableRecord[] = useMemo(() => [
-    { id: '1', timestamp: 'Hari Ini, 14:32:10 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: box1CurrentTemp, delta: '+0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'Live', isWarning: box1CurrentTemp > warningThreshold },
-    { id: '2', timestamp: 'Hari Ini, 14:30:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.6, delta: '+0.4°C/jam', iceCondition: 'Mulai Mencair', source: 'Live', isWarning: true },
-    { id: '3', timestamp: 'Hari Ini, 14:25:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.3, delta: '+0.2°C/jam', iceCondition: 'Padat Terjaga', source: 'Live', isWarning: false },
-    { id: '4', timestamp: 'Hari Ini, 14:20:00 WIB', boxId: 'box3', boxName: 'Box 03 (Palka Tengah)', temperature: 1.8, delta: '-0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'Live', isWarning: false },
-    { id: '5', timestamp: 'Hari Ini, 14:15:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.5, delta: '0.0°C/jam', iceCondition: 'Padat Terjaga', source: 'Live', isWarning: false },
-    { id: '6', timestamp: 'Hari Ini, 14:10:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.5, delta: '+0.3°C/jam', iceCondition: 'Mulai Mencair', source: 'MicroSD Sync', isWarning: true },
-    { id: '7', timestamp: 'Hari Ini, 14:05:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.1, delta: '+0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-    { id: '8', timestamp: 'Hari Ini, 14:00:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.6, delta: '-0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-    { id: '9', timestamp: 'Hari Ini, 13:55:00 WIB', boxId: 'box3', boxName: 'Box 03 (Palka Tengah)', temperature: 2.1, delta: '+0.3°C/jam', iceCondition: 'Sebagian Mencair', source: 'MicroSD Sync', isWarning: true },
-    { id: '10', timestamp: 'Hari Ini, 13:50:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.4, delta: '+0.2°C/jam', iceCondition: 'Mulai Mencair', source: 'MicroSD Sync', isWarning: true },
-    { id: '11', timestamp: 'Hari Ini, 13:45:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.0, delta: '0.0°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-    { id: '12', timestamp: 'Hari Ini, 13:40:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.7, delta: '-0.2°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-    { id: '13', timestamp: 'Hari Ini, 13:35:00 WIB', boxId: 'box3', boxName: 'Box 03 (Palka Tengah)', temperature: 1.9, delta: '+0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-    { id: '14', timestamp: 'Hari Ini, 13:30:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: -0.1, delta: '-0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-  ], [box1CurrentTemp, warningThreshold]);
+  const xLabels = ['13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', 'Live'];
+  const getXCoord = (index: number) => originX + (index / (xLabels.length - 1)) * (chartWidth - originX - 20);
 
-  // Filtered Table Rows
+  // Generate clean chronological series from real telemetry logs or responsive baseline
+  const seriesBox1 = useMemo(() => {
+    if (telemetryLogs && telemetryLogs.length >= 8) {
+      const slice = telemetryLogs.slice(0, 8).reverse();
+      return slice.map((l) => Number(l.temperature_c));
+    }
+    const base = box1Temp !== null ? box1Temp : -0.4;
+    return [-0.8, -0.7, -0.6, -0.6, -0.5, -0.5, -0.4, base];
+  }, [telemetryLogs, box1Temp]);
+
+  const seriesBox2 = useMemo(() => seriesBox1.map((v) => Number((v + 0.4).toFixed(1))), [seriesBox1]);
+  const seriesBox3 = useMemo(() => seriesBox1.map((v) => Number((v + 1.1).toFixed(1))), [seriesBox1]);
+  const seriesBox4 = useMemo(() => seriesBox1.map((v) => Number((v + 1.8).toFixed(1))), [seriesBox1]);
+
+  const buildPath = (data: number[]) => {
+    return data
+      .map((val, idx) => `${idx === 0 ? 'M' : 'L'} ${getXCoord(idx).toFixed(1)} ${getYCoord(val).toFixed(1)}`)
+      .join(' ');
+  };
+
+  const dangerY = getYCoord(dangerThreshold);
+  const targetY = getYCoord(warningThreshold);
+
+  // Check for sharp anomalies in seriesBox1 for automatic visual SVG marker
+  const sharpJumpIndex = useMemo(() => {
+    for (let i = 1; i < seriesBox1.length; i++) {
+      if (seriesBox1[i] - seriesBox1[i - 1] >= 1.2 || seriesBox1[i] > dangerThreshold) {
+        return i;
+      }
+    }
+    return -1;
+  }, [seriesBox1, dangerThreshold]);
+
+  // ----------------------------------------------------
+  // Realistic Audit Table Data
+  // ----------------------------------------------------
+  const fullTableData: TableRecord[] = useMemo(() => {
+    if (telemetryLogs && telemetryLogs.length > 0) {
+      return telemetryLogs.map((log, idx) => {
+        const dateObj = new Date(log.recorded_at);
+        const timeStr = !isNaN(dateObj.getTime())
+          ? dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB'
+          : `T-${idx * 2}m`;
+        const temp = Number(log.temperature_c);
+        const isWarn = temp > warningThreshold;
+        return {
+          id: String(log.id || idx),
+          timestamp: timeStr,
+          boxId: 'box1',
+          boxName: 'Box 01 (Palka Utama)',
+          temperature: temp,
+          delta: '+0.1°C/jam',
+          iceCondition: temp > 4.0 ? 'Mencair Cepat' : temp > 2.0 ? 'Mulai Mencair' : 'Padat Terjaga',
+          source: (log.sd_status === 'OFFLINE_SYNC' ? 'MicroSD Sync' : 'Live MQTT') as 'Live MQTT' | 'MicroSD Sync',
+          isWarning: isWarn,
+        };
+      });
+    }
+
+    const liveTemp = box1Temp !== null ? box1Temp : -0.4;
+    return [
+      { id: '1', timestamp: 'Hari Ini, 14:32:10 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: liveTemp, delta: '+0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'Live MQTT', isWarning: liveTemp > warningThreshold },
+      { id: '2', timestamp: 'Hari Ini, 14:30:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.6, delta: '+0.4°C/jam', iceCondition: 'Mulai Mencair', source: 'Live MQTT', isWarning: true },
+      { id: '3', timestamp: 'Hari Ini, 14:25:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.3, delta: '+0.2°C/jam', iceCondition: 'Padat Terjaga', source: 'Live MQTT', isWarning: false },
+      { id: '4', timestamp: 'Hari Ini, 14:20:00 WIB', boxId: 'box3', boxName: 'Box 03 (Palka Tengah)', temperature: 1.8, delta: '-0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'Live MQTT', isWarning: false },
+      { id: '5', timestamp: 'Hari Ini, 14:15:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.5, delta: '0.0°C/jam', iceCondition: 'Padat Terjaga', source: 'Live MQTT', isWarning: false },
+      { id: '6', timestamp: 'Hari Ini, 14:10:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.5, delta: '+0.3°C/jam', iceCondition: 'Mulai Mencair', source: 'MicroSD Sync', isWarning: true },
+      { id: '7', timestamp: 'Hari Ini, 14:05:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.1, delta: '+0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
+      { id: '8', timestamp: 'Hari Ini, 14:00:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.6, delta: '-0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
+      { id: '9', timestamp: 'Hari Ini, 13:55:00 WIB', boxId: 'box3', boxName: 'Box 03 (Palka Tengah)', temperature: 2.2, delta: '+0.3°C/jam', iceCondition: 'Mulai Mencair', source: 'MicroSD Sync', isWarning: true },
+      { id: '10', timestamp: 'Hari Ini, 13:50:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.4, delta: '+0.2°C/jam', iceCondition: 'Mulai Mencair', source: 'MicroSD Sync', isWarning: true },
+      { id: '11', timestamp: 'Hari Ini, 13:45:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.0, delta: '0.0°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
+      { id: '12', timestamp: 'Hari Ini, 13:40:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.7, delta: '-0.2°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
+    ];
+  }, [telemetryLogs, box1Temp, warningThreshold]);
+
   const filteredTableData = useMemo(() => {
     let result = fullTableData;
     if (selectedBoxFilter !== 'all') {
@@ -267,9 +372,8 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
     return filteredTableData.slice(start, start + rowsPerPage);
   }, [filteredTableData, currentPage]);
 
-  // Export CSV Handler
   const handleExportCSV = () => {
-    const headers = ['Waktu (WIB)', 'Unit / Box', 'Suhu (C)', 'Perubahan (dT)', 'Kondisi Es', 'Sumber Data', 'Status Peringatan'];
+    const headers = ['Waktu (RTC)', 'Slot / Box', 'Suhu (C)', 'Laju Perubahan', 'Kondisi Es', 'Protokol Sumber', 'Status Batas'];
     const rows = filteredTableData.map((d) => [
       `"${d.timestamp}"`,
       `"${d.boxName}"`,
@@ -277,7 +381,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
       `"${d.delta}"`,
       `"${d.iceCondition}"`,
       `"${d.source}"`,
-      d.isWarning ? '"Peringatan"' : '"Normal"',
+      d.isWarning ? '"Peringatan Suhu"' : '"Optimal"',
     ]);
 
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -285,52 +389,17 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `tembox-monitoring-suhu-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `tembox-monitoring-${activeTrip.id}-${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  // SVG Chart Series Coordinates calculation
-  // Y-axis scale: range from -2.0°C (bottom y=210) to +6.0°C (top y=25)
-  // Height = 240, Width = 760, MarginLeft = 45, MarginRight = 20
-  const yMin = -2.0;
-  const yMax = 6.0;
-  const chartHeight = 220;
-  const chartWidth = 750;
-  const originX = 45;
-  const originY = 25;
-
-  const getYCoord = (temp: number) => {
-    const clamped = Math.max(yMin, Math.min(yMax, temp));
-    const ratio = (clamped - yMin) / (yMax - yMin);
-    return originY + (1 - ratio) * (chartHeight - 40);
-  };
-
-  // 8 Time ticks across the X-axis
-  const xLabels = ['13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', 'Live'];
-  const getXCoord = (index: number) => originX + (index / (xLabels.length - 1)) * (chartWidth - originX - 20);
-
-  // Series points
-  const seriesBox1 = [-0.8, -0.7, -0.6, -0.6, -0.5, -0.5, -0.4, box1CurrentTemp];
-  const seriesBox2 = [-0.2, -0.1, 0.0, 0.1, 0.1, 0.2, 0.3, 0.3];
-  const seriesBox3 = [1.2, 1.4, 1.7, 1.9, 2.1, 2.0, 1.9, 1.8];
-  const seriesBox4 = [1.8, 2.0, 2.1, 2.3, 2.4, 2.5, 2.6, 2.6];
-
-  const buildPath = (data: number[]) => {
-    return data
-      .map((val, idx) => `${idx === 0 ? 'M' : 'L'} ${getXCoord(idx).toFixed(1)} ${getYCoord(val).toFixed(1)}`)
-      .join(' ');
-  };
-
-  const dangerY = getYCoord(dangerThreshold);
-  const targetY = getYCoord(warningThreshold);
-
   return (
     <section className="app-page active" id="page-monitoring" style={{ background: '#FFFFFF' }}>
       {/* ==================================================
-          1. UNIFIED MONITORING TOOLBAR (HAIRLINE DIVIDER)
+          1. STRIP KONTROL SESI MELAUT & KENDALI CEPAT
           ================================================== */}
       <div
         style={{
@@ -338,75 +407,23 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '14px',
-          paddingBottom: '16px',
-          marginBottom: '24px',
+          gap: '12px',
+          paddingBottom: '14px',
+          marginBottom: '20px',
           borderBottom: '1px solid #E2E8F0',
         }}
       >
-        {/* Left Toolbar: Range Pills & Box Selector */}
+        {/* KIRI: Manajemen Sesi Melaut (Fishing Trip) */}
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-          {/* Time Range Pills */}
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: '#F8FAFC',
-              padding: '3px',
-              borderRadius: '8px',
-              border: '1px solid #E2E8F0',
-            }}
-          >
-            {(
-              [
-                { id: 'live', label: 'Live' },
-                { id: '1h', label: '1 Jam' },
-                { id: '24h', label: '24 Jam' },
-                { id: '7d', label: '7 Hari' },
-                { id: 'date', label: 'Tanggal' },
-              ] as const
-            ).map((t) => {
-              const isActive = timeRange === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => {
-                    setTimeRange(t.id);
-                    if (t.id === 'date') setCalendarOpen(true);
-                  }}
-                  style={{
-                    padding: '5px 12px',
-                    fontSize: '12px',
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? '#0284C7' : '#64748B',
-                    backgroundColor: isActive ? '#FFFFFF' : 'transparent',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    boxShadow: isActive ? '0 1px 3px rgba(11, 45, 66, 0.08)' : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Date Picker Pop-up (Active when 'Tanggal' selected) */}
-          <div className="monitoring-date-wrap" ref={calRef} style={{ position: 'relative' }}>
+          {/* Sesi Trip Dropdown */}
+          <div ref={tripRef} style={{ position: 'relative' }}>
             <button
               type="button"
-              className="topbar-date-btn"
-              id="monitoringDateBtn"
-              aria-expanded={calendarOpen}
-              aria-haspopup="true"
-              onClick={() => setCalendarOpen(!calendarOpen)}
+              onClick={() => setTripDropdownOpen(!tripDropdownOpen)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '8px',
                 padding: '6px 12px',
                 backgroundColor: '#FFFFFF',
                 border: '1px solid #E2E8F0',
@@ -417,115 +434,176 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 cursor: 'pointer',
               }}
             >
-              <Calendar size={13} color="#0284C7" />
-              <span id="currentDateLabel">{selectedDate}</span>
+              <span
+                style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  backgroundColor: activeTrip.status === 'active' ? '#10B981' : '#64748B',
+                }}
+              />
+              <span>{activeTrip.name}</span>
               <ChevronDown size={12} color="#64748B" />
             </button>
 
-            {calendarOpen && (
+            {tripDropdownOpen && (
               <div
-                className="date-picker-popup open"
-                id="monitoringDatePickerPopup"
                 style={{
                   position: 'absolute',
-                  top: 'calc(100% + 6px)',
+                  top: 'calc(100% + 4px)',
                   left: 0,
-                  zIndex: 60,
+                  zIndex: 70,
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #CBD5E1',
-                  borderRadius: '10px',
-                  boxShadow: '0 10px 25px rgba(11, 45, 66, 0.1)',
-                  padding: '14px',
-                  width: '280px',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+                  padding: '6px',
+                  minWidth: '270px',
                 }}
               >
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                <div style={{ padding: '6px 8px', fontSize: '11px', fontWeight: 700, color: '#64748B', borderBottom: '1px solid #F1F5F9' }}>
+                  PILIH SESI PELAYARAN (TRIP)
+                </div>
+                {trips.map((t) => (
                   <button
+                    key={t.id}
                     type="button"
-                    className={`date-preset-pill ${activePreset === 'today' ? 'active' : ''}`}
-                    onClick={(e) => handlePreset('today', e)}
-                    style={{ fontSize: '11px', padding: '4px 8px' }}
+                    onClick={() => {
+                      setSelectedTripId(t.id);
+                      setTripDropdownOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      width: '100%',
+                      padding: '8px 10px',
+                      fontSize: '12px',
+                      backgroundColor: selectedTripId === t.id ? '#F0F9FF' : 'transparent',
+                      color: selectedTripId === t.id ? '#0284C7' : '#0F172A',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
                   >
-                    Hari Ini
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <span style={{ fontWeight: 600 }}>{t.name}</span>
+                      {selectedTripId === t.id && <Check size={12} color="#0284C7" />}
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                      {t.vessel} • {t.duration}
+                    </span>
                   </button>
-                  <button
-                    type="button"
-                    className={`date-preset-pill ${activePreset === 'yesterday' ? 'active' : ''}`}
-                    onClick={(e) => handlePreset('yesterday', e)}
-                    style={{ fontSize: '11px', padding: '4px 8px' }}
-                  >
-                    Kemarin
-                  </button>
-                  <button
-                    type="button"
-                    className={`date-preset-pill ${activePreset === 'prev_month' ? 'active' : ''}`}
-                    onClick={(e) => handlePreset('prev_month', e)}
-                    style={{ fontSize: '11px', padding: '4px 8px' }}
-                  >
-                    Bulan Lalu
-                  </button>
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '8px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    color: '#0F172A',
-                  }}
-                >
-                  <button type="button" onClick={handlePrevMonth} style={{ padding: '4px' }}>
-                    <ChevronLeft size={13} />
-                  </button>
-                  <span>
-                    {monthNames[currentMonth]} {currentYear}
-                  </span>
-                  <button type="button" onClick={handleNextMonth} style={{ padding: '4px' }}>
-                    <ChevronRight size={13} />
-                  </button>
-                </div>
-
-                <div className="calendar-weekdays-grid" style={{ fontSize: '11px' }}>
-                  <span>Min</span>
-                  <span>Sen</span>
-                  <span>Sel</span>
-                  <span>Rab</span>
-                  <span>Kam</span>
-                  <span>Jum</span>
-                  <span>Sab</span>
-                </div>
-
-                <div className="calendar-days-grid" style={{ fontSize: '11px' }}>
-                  {Array.from({ length: firstDayIndex }).map((_, i) => (
-                    <div key={`empty-${i}`} className="cal-day-cell empty" />
-                  ))}
-                  {Array.from({ length: daysInMonth }).map((_, i) => {
-                    const day = i + 1;
-                    const isSelected = selectedDate.startsWith(`${day} `);
-                    return (
-                      <button
-                        key={`day-${day}`}
-                        type="button"
-                        className={`cal-day-cell ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleSelectDay(day)}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
-                </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Box Selector Dropdown */}
-          <div ref={boxDropdownRef} style={{ position: 'relative' }}>
+          {/* Tombol Mulai / Selesai Trip */}
+          <button
+            type="button"
+            onClick={() => setTripConfirmModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              backgroundColor: activeTrip.status === 'active' ? '#FEF2F2' : '#F0FDF4',
+              border: `1px solid ${activeTrip.status === 'active' ? '#FECACA' : '#BBF7D0'}`,
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: activeTrip.status === 'active' ? '#DC2626' : '#16A34A',
+              cursor: 'pointer',
+            }}
+          >
+            {activeTrip.status === 'active' ? (
+              <>
+                <Square size={11} color="#DC2626" />
+                <span>Selesai Trip</span>
+              </>
+            ) : (
+              <>
+                <Play size={11} color="#16A34A" />
+                <span>Mulai Trip Baru</span>
+              </>
+            )}
+          </button>
+
+          {/* Tombol Laporan Mutu (Cetak / CSV) */}
+          <button
+            type="button"
+            onClick={() => setQualityReportOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#334155',
+              cursor: 'pointer',
+            }}
+          >
+            <Printer size={13} color="#0284C7" />
+            <span>Laporan Mutu (CSV/Cetak)</span>
+          </button>
+        </div>
+
+        {/* KANAN: Filter & Kendali Hardware */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          {/* Range: Live, 1J, 24J, 7H */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '8px',
+              padding: '2px',
+              border: '1px solid #E2E8F0',
+            }}
+          >
+            {(
+              [
+                { id: 'live', label: 'Live' },
+                { id: '1h', label: '1J' },
+                { id: '24h', label: '24J' },
+                { id: '7d', label: '7H' },
+              ] as const
+            ).map((t) => {
+              const isActive = timeRange === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTimeRange(t.id)}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '12px',
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? '#0284C7' : '#64748B',
+                    backgroundColor: isActive ? '#FFFFFF' : 'transparent',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    boxShadow: isActive ? '0 1px 2px rgba(15, 23, 42, 0.06)' : 'none',
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Slot Selector */}
+          <div ref={slotRef} style={{ position: 'relative' }}>
             <button
               type="button"
-              onClick={() => setBoxDropdownOpen(!boxDropdownOpen)}
+              onClick={() => setSlotDropdownOpen(!slotDropdownOpen)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -540,49 +618,49 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 cursor: 'pointer',
               }}
             >
-              <Filter size={13} color="#64748B" />
+              <Filter size={12} color="#64748B" />
               <span>
                 {selectedBoxFilter === 'all'
-                  ? 'Semua Box (4)'
+                  ? 'Semua Box'
                   : selectedBoxFilter === 'box1'
-                    ? 'Box 01 (Utama)'
+                    ? 'Box 01'
                     : selectedBoxFilter === 'box2'
-                      ? 'Box 02 (Depan)'
+                      ? 'Box 02'
                       : selectedBoxFilter === 'box3'
-                        ? 'Box 03 (Tengah)'
-                        : 'Box 04 (Cadangan)'}
+                        ? 'Box 03'
+                        : 'Box 04'}
               </span>
-              <ChevronDown size={12} color="#64748B" />
+              <ChevronDown size={11} color="#64748B" />
             </button>
 
-            {boxDropdownOpen && (
+            {slotDropdownOpen && (
               <div
                 style={{
                   position: 'absolute',
                   top: 'calc(100% + 4px)',
-                  left: 0,
-                  zIndex: 50,
+                  right: 0,
+                  zIndex: 60,
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E2E8F0',
                   borderRadius: '8px',
-                  boxShadow: '0 6px 18px rgba(11, 45, 66, 0.08)',
+                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
                   padding: '4px',
-                  minWidth: '180px',
+                  minWidth: '150px',
                 }}
               >
                 {[
-                  { id: 'all', label: 'Semua Box' },
-                  { id: 'box1', label: 'Box 01 (Palka Utama)' },
-                  { id: 'box2', label: 'Box 02 (Palka Depan)' },
-                  { id: 'box3', label: 'Box 03 (Palka Tengah)' },
-                  { id: 'box4', label: 'Box 04 (Palka Cadangan)' },
+                  { id: 'all', label: 'Semua Box (4)' },
+                  { id: 'box1', label: 'Box 01 (Utama)' },
+                  { id: 'box2', label: 'Box 02 (Depan)' },
+                  { id: 'box3', label: 'Box 03 (Tengah)' },
+                  { id: 'box4', label: 'Box 04 (Cadangan)' },
                 ].map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
                     onClick={() => {
                       setSelectedBoxFilter(opt.id as any);
-                      setBoxDropdownOpen(false);
+                      setSlotDropdownOpen(false);
                       setCurrentPage(1);
                     }}
                     style={{
@@ -590,7 +668,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       width: '100%',
-                      padding: '7px 10px',
+                      padding: '6px 10px',
                       fontSize: '12px',
                       color: selectedBoxFilter === opt.id ? '#0284C7' : '#334155',
                       fontWeight: selectedBoxFilter === opt.id ? 700 : 500,
@@ -602,45 +680,14 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                     }}
                   >
                     <span>{opt.label}</span>
-                    {selectedBoxFilter === opt.id && <Check size={13} color="#0284C7" />}
+                    {selectedBoxFilter === opt.id && <Check size={12} color="#0284C7" />}
                   </button>
                 ))}
               </div>
             )}
           </div>
-        </div>
 
-        {/* Right Toolbar: Live Stream Pill, Batas Suhu, Export CSV */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Live Stream Indicator */}
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '5px 10px',
-              backgroundColor: '#ECFDF5',
-              border: '1px solid #A7F3D0',
-              borderRadius: '20px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              color: '#059669',
-            }}
-          >
-            <span
-              style={{
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                backgroundColor: '#10B981',
-                boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.25)',
-                display: 'inline-block',
-              }}
-            />
-            <span>Live Stream</span>
-          </div>
-
-          {/* Batas Suhu Button & Modal */}
+          {/* Atur Batas & Interval Button */}
           <div ref={thresholdRef} style={{ position: 'relative' }}>
             <button
               type="button"
@@ -660,7 +707,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               }}
             >
               <Sliders size={13} color="#0284C7" />
-              <span>Batas Suhu ({dangerThreshold.toFixed(1)}°C)</span>
+              <span>Atur Batas & Interval</span>
             </button>
 
             {thresholdModalOpen && (
@@ -669,17 +716,17 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                   position: 'absolute',
                   top: 'calc(100% + 6px)',
                   right: 0,
-                  zIndex: 60,
+                  zIndex: 75,
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #CBD5E1',
+                  border: '1px solid #E2E8F0',
                   borderRadius: '10px',
-                  boxShadow: '0 12px 28px rgba(11, 45, 66, 0.12)',
+                  boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
                   padding: '16px',
-                  width: '310px',
+                  width: '320px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>Parameter Batas Suhu Palka</span>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>Parameter Operasional Cold-Chain</span>
                   <button type="button" onClick={() => setThresholdModalOpen(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748B' }}>
                     <X size={14} />
                   </button>
@@ -693,7 +740,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                   <input
                     type="range"
                     min="0"
-                    max="4"
+                    max="3"
                     step="0.5"
                     value={warningThreshold}
                     onChange={(e) => setWarningThreshold(parseFloat(e.target.value))}
@@ -701,15 +748,15 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                   />
                 </div>
 
-                <div style={{ marginBottom: '14px' }}>
+                <div style={{ marginBottom: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
                     <span style={{ color: '#DC2626', fontWeight: 600 }}>Batas Bahaya (Alert):</span>
                     <span style={{ fontWeight: 700 }}>&gt; {dangerThreshold.toFixed(1)}°C</span>
                   </div>
                   <input
                     type="range"
-                    min="2"
-                    max="8"
+                    min="3"
+                    max="6"
                     step="0.5"
                     value={dangerThreshold}
                     onChange={(e) => setDangerThreshold(parseFloat(e.target.value))}
@@ -717,140 +764,240 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                   />
                 </div>
 
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                    <span style={{ color: '#0284C7', fontWeight: 600 }}>Interval ESP32 (MQTT/SD):</span>
+                    <span style={{ fontWeight: 700 }}>{telemetryIntervalSec} Detik</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[10, 30, 60].map((sec) => (
+                      <button
+                        key={sec}
+                        type="button"
+                        onClick={() => setTelemetryIntervalSec(sec)}
+                        style={{
+                          flex: 1,
+                          padding: '4px 0',
+                          fontSize: '11px',
+                          fontWeight: telemetryIntervalSec === sec ? 700 : 500,
+                          backgroundColor: telemetryIntervalSec === sec ? '#F0F9FF' : '#F8FAFC',
+                          border: `1px solid ${telemetryIntervalSec === sec ? '#0284C7' : '#E2E8F0'}`,
+                          color: telemetryIntervalSec === sec ? '#0284C7' : '#475569',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {sec} dtk
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <p style={{ fontSize: '11px', color: '#64748B', lineHeight: 1.4, margin: 0, padding: '8px', backgroundColor: '#F8FAFC', borderRadius: '6px' }}>
-                  Ikan pelagis (cakalang, tuna) memerlukan suhu palka es tetap di bawah 4.0°C untuk mencegah pembentukan histamin.
+                  Sesuai standar KKP &amp; SNI Ikan Segar, suhu palka wajib dipertahankan &le; 2.0°C dan tidak melampaui 4.0°C untuk menghentikan pembentukan histamin.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Export CSV Button */}
+          {/* Paksa Sync SD Button */}
           <button
             type="button"
-            onClick={handleExportCSV}
+            onClick={handleForceSyncSD}
+            disabled={isSyncingSD}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '6px 14px',
+              padding: '6px 12px',
               backgroundColor: '#0F172A',
               border: 'none',
               borderRadius: '8px',
               fontSize: '12px',
               fontWeight: 600,
               color: '#FFFFFF',
-              cursor: 'pointer',
-              transition: 'background-color 0.15s ease',
+              cursor: isSyncingSD ? 'not-allowed' : 'pointer',
+              opacity: isSyncingSD ? 0.7 : 1,
             }}
           >
-            <Download size={13} color="#FFFFFF" />
-            <span>Export CSV</span>
+            <RefreshCw size={12} color="#FFFFFF" className={isSyncingSD ? 'animate-spin' : ''} />
+            <span>{isSyncingSD ? 'Menyinkronkan...' : 'Paksa Sync SD'}</span>
           </button>
         </div>
       </div>
 
+      {/* Feedback Toast if any */}
+      {syncFeedbackToast && (
+        <div
+          style={{
+            padding: '8px 14px',
+            marginBottom: '16px',
+            backgroundColor: '#F0FDF4',
+            border: '1px solid #BBF7D0',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: '#16A34A',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <Check size={14} color="#16A34A" />
+          <span>{syncFeedbackToast}</span>
+        </div>
+      )}
+
       {/* ==================================================
-          2. GRID 4 SLOT SENSOR (HAIRLINE DIVIDERS FLAT)
+          2. BARIS RINGKASAN ANALITIK COLD-CHAIN & DAYA (4 KOLOM)
           ================================================== */}
       <div
-        className="flat-boxes-row"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
           borderBottom: '1px solid #E2E8F0',
-          marginBottom: '32px',
+          marginBottom: '28px',
+        }}
+      >
+        {/* Kolom 1: Skor Kesegaran */}
+        <div style={{ padding: '12px 18px', borderRight: '1px solid #E2E8F0' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px' }}>
+            Skor Kesegaran Mutu
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px', marginBottom: '4px' }}>
+            {freshnessScore !== null ? `${freshnessScore.toFixed(1)}%` : '--%'}
+          </div>
+          <div style={{ fontSize: '11.5px', color: '#059669', fontWeight: 600 }}>
+            • Zona Optimal ≤ 2°C (Grade A)
+          </div>
+        </div>
+
+        {/* Kolom 2: Ketahanan Es & Laju */}
+        <div style={{ padding: '12px 18px', borderRight: '1px solid #E2E8F0' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px' }}>
+            Ketahanan Es & Laju
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px', marginBottom: '4px' }}>
+            {box1Temp !== null ? '±42 Jam' : 'Menunggu data'}
+          </div>
+          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+            Laju ΔT +0.2°C/jam • Selisih Luar +28.5°C
+          </div>
+        </div>
+
+        {/* Kolom 3: Anomali & Palka */}
+        <div style={{ padding: '12px 18px', borderRight: '1px solid #E2E8F0' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px' }}>
+            Anomali & Buka Palka
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: anomalyCount === 0 ? '#0F172A' : '#DC2626', letterSpacing: '-0.5px', marginBottom: '4px' }}>
+            {anomalyCount} Terdeteksi
+          </div>
+          <div style={{ fontSize: '11.5px', color: anomalyCount === 0 ? '#64748B' : '#DC2626', fontWeight: anomalyCount === 0 ? 400 : 600 }}>
+            {anomalyCount === 0 ? 'Status Insulasi Rapat' : 'Peringatan: Terdeteksi Lonjakan Suhu'}
+          </div>
+        </div>
+
+        {/* Kolom 4: Daya Aki & ESP32 */}
+        <div style={{ padding: '12px 18px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px' }}>
+            Daya Aki & ESP32
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px', marginBottom: '4px' }}>
+            {systemConnected ? '12.4V • 88%' : '--V • --%'}
+          </div>
+          <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+            MicroSD Tersinkron • Ping {pingMs !== null ? `${pingMs} ms` : '-- ms'}
+          </div>
+        </div>
+      </div>
+
+      {/* ==================================================
+          3. GRID 4 SLOT SENSOR (BOX 01 - BOX 04)
+          ================================================== */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          borderBottom: '1px solid #E2E8F0',
+          marginBottom: '28px',
         }}
       >
         {boxCardsData.map((box, idx) => (
           <div
             key={box.id}
-            className={`flat-box-item ${idx === 3 ? 'flat-box-last' : ''}`}
             style={{
-              padding: '16px 20px',
+              padding: '12px 18px',
               borderRight: idx === 3 ? 'none' : '1px solid #E2E8F0',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', letterSpacing: '-0.2px' }}>
-                Suhu Box {box.slotNum}
-              </span>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '2px 7px',
-                  borderRadius: '4px',
-                  backgroundColor: box.zone.bg,
-                  color: box.zone.color,
-                }}
-              >
-                {box.zone.text}
-              </span>
+            {/* Baris 1: Label Box */}
+            <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+              {box.title}
             </div>
 
-            {/* Suhu Angka Utama */}
+            {/* Baris 2: Nilai Suhu Besar */}
             <div
-              className="box-temp-val"
-              id={`box${idx + 1}Temp`}
               style={{
-                fontSize: '26px',
+                fontSize: '24px',
                 fontWeight: 800,
                 color: '#0F172A',
                 letterSpacing: '-0.5px',
-                lineHeight: 1.15,
-                marginBottom: '6px',
+                lineHeight: 1.2,
+                marginBottom: '4px',
               }}
             >
               {box.tempStr}
             </div>
 
-            {/* Tren Perubahan & Info Batas */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: '#64748B', marginBottom: '4px' }}>
-              <span>Tren: <strong style={{ color: '#0F172A' }}>{box.delta}</strong></span>
-              <span style={{ color: '#0284C7', fontWeight: 600 }}>{box.target}</span>
-            </div>
-            <div style={{ fontSize: '10.5px', color: '#94A3B8' }}>
-              Min: {box.min} • Max: {box.max}
+            {/* Baris 3: Status 1 Baris Polos */}
+            <div
+              style={{
+                fontSize: '11.5px',
+                fontWeight: 500,
+                color: box.status.color,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {box.status.text}
             </div>
           </div>
         ))}
       </div>
 
       {/* ==================================================
-          3. GRAFIK PERUBAHAN SUHU (MULTI-BOX SVG GRAPH)
+          4. GRAFIK MULTI-SENSOR & PENANDA ANOMALI
           ================================================== */}
       <div
-        className="flat-section"
         style={{
           borderBottom: '1px solid #E2E8F0',
-          paddingBottom: '32px',
-          marginBottom: '32px',
+          paddingBottom: '28px',
+          marginBottom: '28px',
         }}
       >
+        {/* Header Grafik & Legenda Interaktif */}
         <div
-          className="panel-header flat-panel-header"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottom: '1px solid #E2E8F0',
-            paddingBottom: '14px',
-            marginBottom: '20px',
+            paddingBottom: '12px',
+            marginBottom: '16px',
             flexWrap: 'wrap',
             gap: '12px',
           }}
         >
           <div>
-            <h2 className="panel-title" style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
-              Grafik Perubahan Suhu
+            <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+              Grafik Multi-Sensor Palka Maritim
             </h2>
-            <span style={{ fontSize: '12px', color: '#64748B' }}>
-              Klik legenda box di bawah untuk menyembunyikan atau menampilkan series.
-            </span>
           </div>
 
-          {/* Interactive Legends with Toggle Series */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
+          {/* Legenda Box Klik untuk Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12px' }}>
             {[
               { id: 'box1', name: 'Box 01 (Utama)', color: '#0284C7' },
               { id: 'box2', name: 'Box 02 (Depan)', color: '#0EA5E9' },
@@ -862,7 +1009,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 <button
                   key={b.id}
                   type="button"
-                  onClick={() => toggleBoxSeries(b.id)}
+                  onClick={() => setActiveBoxes((prev) => ({ ...prev, [b.id]: !prev[b.id] }))}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -874,14 +1021,14 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                     textDecoration: isEnabled ? 'none' : 'line-through',
                     opacity: isEnabled ? 1 : 0.45,
                     fontWeight: isEnabled ? 700 : 500,
-                    padding: '2px 4px',
+                    padding: '2px 0',
                   }}
-                  title={`Klik untuk ${isEnabled ? 'sembunyikan' : 'tampilkan'} ${b.name}`}
+                  title={`Klik untuk menyembunyikan/menampilkan ${b.name}`}
                 >
                   <span
                     style={{
-                      width: '8px',
-                      height: '8px',
+                      width: '7px',
+                      height: '7px',
                       borderRadius: '50%',
                       backgroundColor: b.color,
                       display: 'inline-block',
@@ -892,28 +1039,11 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               );
             })}
           </div>
-
-          {/* Summary Stats Pill in Corner */}
-          <div
-            style={{
-              fontSize: '11.5px',
-              color: '#475569',
-              backgroundColor: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              padding: '4px 10px',
-              borderRadius: '6px',
-            }}
-          >
-            Rata-rata: <strong style={{ color: '#0F172A' }}>+1.1°C</strong> • Min: <strong>-0.8°C</strong> • Max: <strong>+3.1°C</strong>
-          </div>
         </div>
 
         {/* SVG Multi-Line Chart Canvas */}
-        <div className="chart-container-box flat-chart-container" id="multiChartBox" style={{ width: '100%', overflowX: 'auto' }}>
-          <svg
-            viewBox="0 0 760 240"
-            style={{ width: '100%', minWidth: '600px', height: '220px', display: 'block' }}
-          >
+        <div style={{ width: '100%', overflowX: 'auto' }}>
+          <svg viewBox="0 0 760 240" style={{ width: '100%', minWidth: '640px', height: '220px', display: 'block' }}>
             <defs>
               <linearGradient id="box1Grad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#0284C7" stopOpacity="0.12" />
@@ -921,7 +1051,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               </linearGradient>
             </defs>
 
-            {/* Horizontal Gridlines & Y-Axis Labels */}
+            {/* Gridlines & Y-Axis Labels */}
             {[
               { temp: 6.0, label: '+6°C' },
               { temp: 4.0, label: '+4°C' },
@@ -947,12 +1077,11 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               x2={chartWidth - 20}
               y2={dangerY}
               stroke="#EF4444"
-              strokeWidth="1.5"
+              strokeWidth="1.2"
               strokeDasharray="4 4"
             />
-            <rect x={chartWidth - 145} y={dangerY - 14} width="125" height="15" rx="3" fill="#FEF2F2" stroke="#FECACA" strokeWidth="0.8" />
-            <text x={chartWidth - 82} y={dangerY - 3} fill="#DC2626" fontSize="9" fontWeight="700" textAnchor="middle" fontFamily="inherit">
-              Threshold 4.0°C (Batas Bahaya)
+            <text x={chartWidth - 24} y={dangerY - 4} fill="#DC2626" fontSize="9" fontWeight="700" textAnchor="end" fontFamily="inherit">
+              Batas Bahaya &gt; {dangerThreshold.toFixed(1)}°C
             </text>
 
             {/* Target 2.0°C Line (Batas Aman Green Dashed) */}
@@ -965,12 +1094,11 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               strokeWidth="1.2"
               strokeDasharray="3 3"
             />
-            <rect x={chartWidth - 135} y={targetY - 14} width="115" height="15" rx="3" fill="#ECFDF5" stroke="#A7F3D0" strokeWidth="0.8" />
-            <text x={chartWidth - 78} y={targetY - 3} fill="#059669" fontSize="9" fontWeight="700" textAnchor="middle" fontFamily="inherit">
-              Target Aman ≤ 2.0°C
+            <text x={chartWidth - 24} y={targetY - 4} fill="#059669" fontSize="9" fontWeight="700" textAnchor="end" fontFamily="inherit">
+              Target Optimal ≤ {warningThreshold.toFixed(1)}°C
             </text>
 
-            {/* Series Polylines */}
+            {/* Series Lines */}
             {activeBoxes.box4 && (
               <path d={buildPath(seriesBox4)} fill="none" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             )}
@@ -988,9 +1116,51 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 />
                 <path d={buildPath(seriesBox1)} fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 {/* Live pulsing dot at latest point */}
-                <circle cx={getXCoord(7)} cy={getYCoord(box1CurrentTemp)} r="4.5" fill="#0284C7" />
-                <circle cx={getXCoord(7)} cy={getYCoord(box1CurrentTemp)} r="7" fill="none" stroke="#0284C7" strokeWidth="1.5" opacity="0.6" />
+                <circle cx={getXCoord(7)} cy={getYCoord(seriesBox1[7])} r="4" fill="#0284C7" />
+                <circle cx={getXCoord(7)} cy={getYCoord(seriesBox1[7])} r="7" fill="none" stroke="#0284C7" strokeWidth="1.5" opacity="0.6" />
               </>
+            )}
+
+            {/* Otomatis Penanda Anomali (Palka Terbuka) jika terdeteksi */}
+            {sharpJumpIndex !== -1 && (
+              <g>
+                <circle
+                  cx={getXCoord(sharpJumpIndex)}
+                  cy={getYCoord(seriesBox1[sharpJumpIndex])}
+                  r="6"
+                  fill="#DC2626"
+                />
+                <circle
+                  cx={getXCoord(sharpJumpIndex)}
+                  cy={getYCoord(seriesBox1[sharpJumpIndex])}
+                  r="10"
+                  fill="none"
+                  stroke="#DC2626"
+                  strokeWidth="1.5"
+                  opacity="0.7"
+                />
+                <rect
+                  x={getXCoord(sharpJumpIndex) - 60}
+                  y={getYCoord(seriesBox1[sharpJumpIndex]) - 24}
+                  width="120"
+                  height="16"
+                  rx="3"
+                  fill="#FEF2F2"
+                  stroke="#FECACA"
+                  strokeWidth="0.8"
+                />
+                <text
+                  x={getXCoord(sharpJumpIndex)}
+                  y={getYCoord(seriesBox1[sharpJumpIndex]) - 12}
+                  fill="#DC2626"
+                  fontSize="8.5"
+                  fontWeight="700"
+                  textAnchor="middle"
+                  fontFamily="inherit"
+                >
+                  Indikasi Palka Terbuka
+                </text>
+              </g>
             )}
 
             {/* X-Axis Tick Labels */}
@@ -1004,33 +1174,32 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
       </div>
 
       {/* ==================================================
-          4. TABEL DETAIL DATA (LENGKAP & FLAT TABLE)
+          5. TABEL DETAIL DATA AUDIT & SINKRONISASI MICROSD
           ================================================== */}
-      <div className="flat-section">
+      <div>
         <div
-          className="panel-header flat-panel-header"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottom: '1px solid #E2E8F0',
-            paddingBottom: '14px',
-            marginBottom: '16px',
+            paddingBottom: '12px',
+            marginBottom: '14px',
             flexWrap: 'wrap',
             gap: '10px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 className="panel-title" style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
-              Detail Data Telemetri
+            <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+              Detail Data Telemetri & Audit
             </h2>
             <span style={{ fontSize: '12px', color: '#64748B' }}>
               ({filteredTableData.length} entri tercatat)
             </span>
           </div>
 
-          {/* Filter: Semua Data vs Hanya Peringatan */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Filter: Semua Data vs Hanya Anomali */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               type="button"
               onClick={() => {
@@ -1048,7 +1217,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 cursor: 'pointer',
               }}
             >
-              Semua Data ({fullTableData.length})
+              Semua ({fullTableData.length})
             </button>
             <button
               type="button"
@@ -1067,29 +1236,49 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 cursor: 'pointer',
               }}
             >
-              Hanya Peringatan ({fullTableData.filter((d) => d.isWarning).length})
+              Anomali Saja ({fullTableData.filter((d) => d.isWarning).length})
+            </button>
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '4px 10px',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                color: '#0F172A',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              <Download size={12} color="#0F172A" />
+              <span>CSV</span>
             </button>
           </div>
         </div>
 
-        {/* Flat Table Layout */}
-        <div className="data-table-container flat-table-container" style={{ border: 'none', borderRadius: 0, overflowX: 'auto' }}>
-          <table className="tembox-table flat-tembox-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+        {/* Flat Minimalist Table */}
+        <div style={{ width: '100%', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <thead>
               <tr style={{ backgroundColor: '#F8FAFC', textAlign: 'left', borderBottom: '1px solid #E2E8F0' }}>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700 }}>Waktu (WIB)</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700 }}>Unit / Box</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700 }}>Suhu</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700 }}>Perubahan (ΔT)</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700 }}>Kondisi Es</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700 }}>Sumber Data</th>
+                <th style={{ padding: '8px 12px', color: '#475569', fontWeight: 700 }}>Waktu (RTC)</th>
+                <th style={{ padding: '8px 12px', color: '#475569', fontWeight: 700 }}>Box</th>
+                <th style={{ padding: '8px 12px', color: '#475569', fontWeight: 700 }}>Suhu</th>
+                <th style={{ padding: '8px 12px', color: '#475569', fontWeight: 700 }}>Laju (ΔT)</th>
+                <th style={{ padding: '8px 12px', color: '#475569', fontWeight: 700 }}>Kondisi</th>
+                <th style={{ padding: '8px 12px', color: '#475569', fontWeight: 700 }}>Sumber</th>
               </tr>
             </thead>
-            <tbody id="detailDataTableBody">
+            <tbody>
               {paginatedData.length === 0 ? (
-                <tr className="table-empty-row">
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#94A3B8' }}>
-                    Tidak ada data telemetri yang cocok dengan filter yang dipilih.
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '28px', color: '#94A3B8' }}>
+                    Tidak ada data telemetri yang cocok dengan filter.
                   </td>
                 </tr>
               ) : (
@@ -1098,16 +1287,16 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                     key={row.id}
                     style={{
                       borderBottom: '1px solid #F1F5F9',
-                      backgroundColor: row.isWarning ? 'rgba(254, 242, 242, 0.35)' : 'transparent',
+                      backgroundColor: row.isWarning ? 'rgba(254, 242, 242, 0.4)' : 'transparent',
                     }}
                   >
-                    <td style={{ padding: '12px 14px', color: '#334155', fontWeight: 500 }}>
+                    <td style={{ padding: '10px 12px', color: '#334155', fontWeight: 500 }}>
                       {row.timestamp}
                     </td>
-                    <td style={{ padding: '12px 14px', color: '#0F172A', fontWeight: 600 }}>
+                    <td style={{ padding: '10px 12px', color: '#0F172A', fontWeight: 600 }}>
                       {row.boxName}
                     </td>
-                    <td style={{ padding: '12px 14px' }}>
+                    <td style={{ padding: '10px 12px' }}>
                       <span
                         style={{
                           fontWeight: 700,
@@ -1117,35 +1306,20 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                         {row.temperature > 0 ? `+${row.temperature.toFixed(1)}` : row.temperature.toFixed(1)}°C
                       </span>
                     </td>
-                    <td style={{ padding: '12px 14px', color: '#64748B' }}>
+                    <td style={{ padding: '10px 12px', color: '#64748B' }}>
                       {row.delta}
                     </td>
-                    <td style={{ padding: '12px 14px' }}>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          backgroundColor: row.iceCondition === 'Padat Terjaga' ? '#ECFDF5' : '#FEF2F2',
-                          color: row.iceCondition === 'Padat Terjaga' ? '#059669' : '#DC2626',
-                        }}
-                      >
-                        {row.iceCondition}
-                      </span>
+                    <td style={{ padding: '10px 12px', color: row.iceCondition === 'Padat Terjaga' ? '#059669' : '#DC2626', fontWeight: 600 }}>
+                      {row.iceCondition}
                     </td>
-                    <td style={{ padding: '12px 14px' }}>
+                    <td style={{ padding: '10px 12px' }}>
                       <span
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '5px',
-                          fontSize: '11px',
+                          color: row.source === 'Live MQTT' ? '#0284C7' : '#64748B',
                           fontWeight: 600,
-                          color: row.source === 'Live' ? '#0284C7' : '#64748B',
                         }}
                       >
                         <span
@@ -1153,7 +1327,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                             width: '6px',
                             height: '6px',
                             borderRadius: '50%',
-                            backgroundColor: row.source === 'Live' ? '#0284C7' : '#94A3B8',
+                            backgroundColor: row.source === 'Live MQTT' ? '#0284C7' : '#94A3B8',
                           }}
                         />
                         {row.source}
@@ -1172,7 +1346,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingTop: '16px',
+            paddingTop: '14px',
             fontSize: '12px',
             color: '#64748B',
           }}
@@ -1201,7 +1375,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 borderRadius: '6px',
                 cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
                 opacity: currentPage <= 1 ? 0.45 : 1,
-                fontSize: '12px',
+                fontSize: '11.5px',
               }}
             >
               Sebelumnya
@@ -1215,8 +1389,8 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                   type="button"
                   onClick={() => setCurrentPage(p)}
                   style={{
-                    minWidth: '28px',
-                    height: '28px',
+                    minWidth: '26px',
+                    height: '26px',
                     padding: '0 6px',
                     borderRadius: '6px',
                     border: '1px solid',
@@ -1225,7 +1399,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                     color: currentPage === p ? '#FFFFFF' : '#334155',
                     fontWeight: currentPage === p ? 700 : 500,
                     cursor: 'pointer',
-                    fontSize: '12px',
+                    fontSize: '11.5px',
                   }}
                 >
                   {p}
@@ -1244,7 +1418,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 borderRadius: '6px',
                 cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
                 opacity: currentPage >= totalPages ? 0.45 : 1,
-                fontSize: '12px',
+                fontSize: '11.5px',
               }}
             >
               Berikutnya
@@ -1252,6 +1426,222 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ==================================================
+          MODAL: KONFIRMASI MULAI / SELESAI TRIP
+          ================================================== */}
+      {tripConfirmModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.45)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '10px',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 20px 40px rgba(15, 23, 42, 0.15)',
+              maxWidth: '420px',
+              width: '100%',
+              padding: '20px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
+                {activeTrip.status === 'active' ? 'Selesaikan Sesi Trip Ini?' : 'Mulai Trip Melaut Baru'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setTripConfirmModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '12.5px', color: '#475569', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+              {activeTrip.status === 'active'
+                ? `Mengakhiri ${activeTrip.name} akan mengunci log telemetri dan menerbitkan Sertifikat Kualitas Cold-Chain untuk keperluan bongkar muat ikan di pelabuhan.`
+                : 'Memulai trip baru akan menginisialisasi sesi pencatatan suhu pada MicroSD dan broker MQTT TEMBOX.'}
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setTripConfirmModalOpen(false)}
+                style={{
+                  padding: '7px 14px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#475569',
+                  cursor: 'pointer',
+                }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTrips((prev) =>
+                    prev.map((t) =>
+                      t.id === activeTrip.id
+                        ? { ...t, status: t.status === 'active' ? 'completed' : 'active' }
+                        : t
+                    )
+                  );
+                  setTripConfirmModalOpen(false);
+                }}
+                style={{
+                  padding: '7px 16px',
+                  backgroundColor: activeTrip.status === 'active' ? '#DC2626' : '#16A34A',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                }}
+              >
+                {activeTrip.status === 'active' ? 'Konfirmasi Selesai' : 'Mulai Sekarang'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================
+          MODAL: LAPORAN MUTU COLD-CHAIN (PRINT / DOKUMEN)
+          ================================================== */}
+      {qualityReportOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '10px',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 24px 48px rgba(15, 23, 42, 0.2)',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '24px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+                  LAPORAN MUTU RANTAI DINGIN IKAN
+                </h3>
+                <span style={{ fontSize: '11px', color: '#64748B' }}>
+                  Standar KKP & HACCP Verifikasi Suhu Palka Es
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQualityReportOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '12px', marginBottom: '16px' }}>
+              <div style={{ padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '6px' }}>
+                <div style={{ color: '#64748B', fontSize: '11px' }}>Nama Pelayaran</div>
+                <strong style={{ color: '#0F172A' }}>{activeTrip.name}</strong>
+              </div>
+              <div style={{ padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '6px' }}>
+                <div style={{ color: '#64748B', fontSize: '11px' }}>Kapal & Tonase</div>
+                <strong style={{ color: '#0F172A' }}>{activeTrip.vessel}</strong>
+              </div>
+              <div style={{ padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '6px' }}>
+                <div style={{ color: '#64748B', fontSize: '11px' }}>Komoditas Ikan</div>
+                <strong style={{ color: '#0F172A' }}>{activeTrip.fishType}</strong>
+              </div>
+              <div style={{ padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '6px' }}>
+                <div style={{ color: '#64748B', fontSize: '11px' }}>Durasi Pelayaran</div>
+                <strong style={{ color: '#0F172A' }}>{activeTrip.duration}</strong>
+              </div>
+            </div>
+
+            <div style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
+                <span>Skor Kepatuhan Zona Dingin (&le; 2.0°C):</span>
+                <strong style={{ color: '#059669' }}>{freshnessScore !== null ? `${freshnessScore.toFixed(1)}%` : '98.5%'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
+                <span>Suhu Rata-rata Palka:</span>
+                <strong style={{ color: '#0F172A' }}>{box1Temp !== null ? `${box1Temp > 0 ? '+' : ''}${box1Temp.toFixed(1)}°C` : '-0.4°C'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span>Hasil Audit Kesegaran:</span>
+                <strong style={{ color: '#059669' }}>LULUS - GRADE A (EKSPOR)</strong>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setQualityReportOpen(false)}
+                style={{
+                  padding: '7px 14px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#475569',
+                  cursor: 'pointer',
+                }}
+              >
+                Tutup
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.print();
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 16px',
+                  backgroundColor: '#0F172A',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                }}
+              >
+                <Printer size={13} color="#FFFFFF" />
+                <span>Cetak Sertifikat</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

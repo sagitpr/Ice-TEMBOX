@@ -316,3 +316,37 @@ export const CheckCircle: React.FC<IconProps> = ({ size = 16, className = '', co
     <polyline points="22 4 12 14.01 9 11.01" />
   </svg>
 );
+
+export const Play: React.FC<IconProps> = ({ size = 14, className = '', color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-play ${className}`} {...props}>
+    <polygon points="6 3 20 12 6 21 6 3" />
+  </svg>
+);
+
+export const Square: React.FC<IconProps> = ({ size = 14, className = '', color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-square ${className}`} {...props}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+  </svg>
+);
+
+export const Printer: React.FC<IconProps> = ({ size = 14, className = '', color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-printer ${className}`} {...props}>
+    <polyline points="6 9 6 2 18 2 18 9" />
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+    <rect width="12" height="8" x="6" y="14" />
+  </svg>
+);
+
+export const Battery: React.FC<IconProps> = ({ size = 14, className = '', color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-battery ${className}`} {...props}>
+    <rect width="16" height="10" x="2" y="7" rx="2" ry="2" />
+    <line x1="22" x2="22" y1="11" y2="13" />
+  </svg>
+);
+
+export const Zap: React.FC<IconProps> = ({ size = 14, className = '', color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-zap ${className}`} {...props}>
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+

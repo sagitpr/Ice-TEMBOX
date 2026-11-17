@@ -133,6 +133,11 @@ export default function DashboardPage() {
                 <MonitoringView
                   telemetryLogs={telemetry.telemetryLogs}
                   currentTempNum={telemetry.currentTempNum}
+                  pingMs={telemetry.pingMs}
+                  signalRssi={telemetry.signalRssi}
+                  systemConnected={telemetry.systemConnected}
+                  selectedDeviceCode={telemetry.selectedDeviceCode}
+                  onRefreshTelemetry={telemetry.refreshTelemetry}
                 />
               )}
 
