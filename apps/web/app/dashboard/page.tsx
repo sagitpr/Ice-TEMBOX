@@ -136,7 +136,16 @@ export default function DashboardPage() {
           }}
         >
           {currentTab === 'dashboard' && (
-            <section className="app-page active" id="page-dashboard">
+            <section
+              className="app-page active"
+              id="page-dashboard"
+              style={{
+                width: '100%',
+                maxWidth: '100%',
+                overflowX: 'hidden',
+                boxSizing: 'border-box',
+              }}
+            >
               <DashboardCards
                 currentTemp={telemetry.currentTemp}
                 tempStatus={telemetry.tempStatus}

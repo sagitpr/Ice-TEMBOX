@@ -64,86 +64,120 @@ export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
     return host === 'localhost' || host === '127.0.0.1';
   };
 
-  // Fetch real location & Open-Meteo Weather using strict coordinates ONLY
+  // Instant hydration from localStorage cache (0 ms load)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('tembox_last_weather');
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (cached && typeof cached.lat === 'number' && typeof cached.lon === 'number') {
+          setWeather({
+            temperature: typeof cached.temperature === 'number' ? cached.temperature : null,
+            windSpeed: typeof cached.windSpeed === 'number' ? cached.windSpeed : null,
+            condition: cached.condition || 'Cerah',
+            locationName: cached.locationName || `Koordinat ${cached.lat.toFixed(2)}°, ${cached.lon.toFixed(2)}°`,
+            lat: cached.lat,
+            lon: cached.lon,
+          });
+          setGeoStatus('granted');
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Fetch real location & Open-Meteo Weather in parallel with 5-second abort controller
   const fetchWeatherForCoords = useCallback(async (lat: number, lon: number) => {
     setIsLocating(true);
     try {
-      // 1. Client reverse geocoding via BigDataCloud API
-      let detectedLocation = `Koordinat ${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
-      try {
-        const geoRes = await fetch(
-          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`,
-          { cache: 'no-store' }
-        );
-        if (geoRes.ok) {
-          const geoData = await geoRes.json();
-          const locality = geoData.locality || geoData.city || geoData.principalSubdivision;
-          const regency = geoData.city || geoData.principalSubdivision || '';
-          if (locality && regency && locality !== regency) {
-            detectedLocation = `${locality}, ${regency}`;
-          } else if (locality) {
-            detectedLocation = locality;
-          }
-        }
-      } catch {
-        detectedLocation = `Lokasi ${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
-      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      // 2. Real-time global weather from Open-Meteo API
-      const weatherRes = await fetch(
+      // Run BigDataCloud reverse geocode and Open-Meteo weather concurrently
+      const geoPromise = fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`,
+        { signal: controller.signal, cache: 'no-store' }
+      )
+        .then((res) => (res.ok ? res.json() : null))
+        .catch(() => null);
+
+      const weatherPromise = fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m`,
-        { cache: 'no-store' }
-      );
+        { signal: controller.signal, cache: 'no-store' }
+      )
+        .then((res) => (res.ok ? res.json() : null))
+        .catch(() => null);
 
-      if (!weatherRes.ok) {
-        setWeather({
-          temperature: null,
-          windSpeed: null,
-          condition: 'Data Cuaca Tidak Tersedia',
-          locationName: detectedLocation,
-          lat,
-          lon,
-        });
-        setIsLocating(false);
-        return;
+      const [geoData, weatherData] = await Promise.all([geoPromise, weatherPromise]);
+      clearTimeout(timeoutId);
+
+      // 1. Parse location name
+      let detectedLocation = `Koordinat ${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
+      if (geoData) {
+        const locality = geoData.locality || geoData.city || geoData.principalSubdivision;
+        const regency = geoData.city || geoData.principalSubdivision || '';
+        if (locality && regency && locality !== regency) {
+          detectedLocation = `${locality}, ${regency}`;
+        } else if (locality) {
+          detectedLocation = locality;
+        }
       }
 
-      const weatherData = await weatherRes.json();
-      const current = weatherData.current;
-      if (!current) {
-        setIsLocating(false);
-        return;
-      }
-
-      const code = current.weather_code;
+      // 2. Parse weather condition
+      const current = weatherData?.current;
       let condText = 'Cerah';
-      if (code >= 1 && code <= 3) condText = 'Sebagian Berawan';
-      else if (code >= 45 && code <= 48) condText = 'Berkabut';
-      else if (code >= 51 && code <= 67) condText = 'Hujan Ringan';
-      else if (code >= 80 && code <= 82) condText = 'Hujan Lebat';
-      else if (code >= 95) condText = 'Badai Petir';
-      else if (code >= 4) condText = 'Berawan';
+      if (current && typeof current.weather_code === 'number') {
+        const code = current.weather_code;
+        if (code >= 1 && code <= 3) condText = 'Sebagian Berawan';
+        else if (code >= 45 && code <= 48) condText = 'Berkabut';
+        else if (code >= 51 && code <= 67) condText = 'Hujan Ringan';
+        else if (code >= 80 && code <= 82) condText = 'Hujan Lebat';
+        else if (code >= 95) condText = 'Badai Petir';
+        else if (code >= 4) condText = 'Berawan';
+      }
 
-      setWeather({
-        temperature: typeof current.temperature_2m === 'number' ? Math.round(current.temperature_2m * 10) / 10 : null,
-        windSpeed: typeof current.wind_speed_10m === 'number' ? Math.round(current.wind_speed_10m * 10) / 10 : null,
+      const tempVal =
+        current && typeof current.temperature_2m === 'number'
+          ? Math.round(current.temperature_2m * 10) / 10
+          : null;
+      const windVal =
+        current && typeof current.wind_speed_10m === 'number'
+          ? Math.round(current.wind_speed_10m * 10) / 10
+          : null;
+
+      const newWeatherState: WeatherState = {
+        temperature: tempVal,
+        windSpeed: windVal,
         condition: condText,
         locationName: detectedLocation,
         lat,
         lon,
-      });
+      };
+
+      setWeather(newWeatherState);
       setGeoStatus('granted');
+
+      // Persist in localStorage for instant 0 ms hydration on next visit
+      try {
+        localStorage.setItem(
+          'tembox_last_weather',
+          JSON.stringify({
+            ...newWeatherState,
+            updatedAt: Date.now(),
+          })
+        );
+      } catch {}
     } catch {
       setWeather((prev) => ({
         ...prev,
-        condition: 'Koneksi Cuaca Offline',
+        condition: prev.condition || 'Koneksi Cuaca Offline',
       }));
     } finally {
       setIsLocating(false);
     }
   }, []);
 
-  // Explicit browser geolocation trigger with NO default fallback coordinates
+  // Accelerated browser geolocation trigger (< 500 ms using network triangulation)
   const requestLocation = useCallback(() => {
     if (typeof window === 'undefined') return;
 
@@ -169,20 +203,23 @@ export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
       },
       (err) => {
         setIsLocating(false);
+        setGeoStatus('prompt');
         if (err.code === 1) {
           // PERMISSION_DENIED
-          setGeoStatus('denied');
-          setGeoErrorMessage('Izin lokasi ditolak browser.');
+          setGeoErrorMessage('Izin lokasi belum diberikan.');
         } else if (err.code === 2) {
           // POSITION_UNAVAILABLE
-          setGeoStatus('denied');
-          setGeoErrorMessage('Sinyal posisi GPS perangkat tidak tersedia.');
+          setGeoErrorMessage('Sinyal lokasi GPS perangkat tidak tersedia.');
         } else {
-          setGeoStatus('denied');
-          setGeoErrorMessage('Gagal memperoleh posisi dalam batas waktu.');
+          // TIMEOUT
+          setGeoErrorMessage('Batas waktu izin lokasi tercapai.');
         }
       },
-      { timeout: 12000, enableHighAccuracy: true, maximumAge: 60000 }
+      {
+        enableHighAccuracy: false, // Fast network triangulation, avoids satellite lock delays
+        timeout: 5000,             // Max 5s wait time
+        maximumAge: 300000,        // Accept cached position within 5 minutes
+      }
     );
   }, [fetchWeatherForCoords]);
 
@@ -326,36 +363,37 @@ export const MarineWeatherBar: React.FC<MarineWeatherBarProps> = ({
               <RefreshCw size={12} className={isLocating ? 'animate-spin' : ''} />
             </button>
           </>
-        ) : geoStatus === 'requesting' ? (
-          <span style={{ color: '#0284C7', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <RefreshCw size={12} className="animate-spin" />
-            <span>Menunggu persetujuan izin lokasi GPS browser...</span>
-          </span>
         ) : geoStatus === 'insecure' ? (
           <span style={{ color: '#D97706', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             <AlertTriangle size={13} color="#D97706" />
             <span>Izinkan akses lokasi untuk menampilkan cuaca daerah Anda (Gunakan HTTPS atau localhost:3000)</span>
           </span>
         ) : (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ color: '#64748B' }}>
-              Izinkan akses lokasi untuk menampilkan cuaca daerah Anda
+              {geoErrorMessage || 'Izinkan akses lokasi untuk menampilkan cuaca daerah Anda'}
             </span>
             <button
               type="button"
               onClick={requestLocation}
+              disabled={isLocating}
               style={{
-                padding: '3px 8px',
+                padding: '4px 10px',
                 fontSize: '11.5px',
                 fontWeight: 600,
                 color: '#0284C7',
                 backgroundColor: '#EFF6FF',
                 border: '1px solid #BAE6FD',
-                borderRadius: '5px',
-                cursor: 'pointer',
+                borderRadius: '6px',
+                cursor: isLocating ? 'not-allowed' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                whiteSpace: 'nowrap',
               }}
             >
-              Aktifkan Lokasi
+              {isLocating && <RefreshCw size={11} className="animate-spin" />}
+              <span>{isLocating ? 'Memeriksa Lokasi...' : 'Klik untuk Izinkan Lokasi'}</span>
             </button>
           </div>
         )}

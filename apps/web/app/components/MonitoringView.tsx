@@ -453,7 +453,17 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   };
 
   return (
-    <section className="app-page active" id="page-monitoring" style={{ background: '#FFFFFF' }}>
+    <section
+      className="app-page active"
+      id="page-monitoring"
+      style={{
+        background: '#FFFFFF',
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
+      }}
+    >
       {/* ==================================================
           1. STRIP KONTROL SESI MELAUT & KENDALI CEPAT
           ================================================== */}

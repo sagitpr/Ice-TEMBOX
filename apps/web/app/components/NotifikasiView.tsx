@@ -216,12 +216,12 @@ export default function NotifikasiView({ onNavigateTab }: NotifikasiViewProps) {
   };
 
   return (
-    <div style={{ padding: '0', background: '#FFFFFF', minHeight: 'calc(100vh - 68px)' }}>
+    <div style={{ padding: '0', background: '#FFFFFF', minHeight: 'calc(100vh - 68px)', width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
       {/* Action Notification Status Banner */}
       {actionStatus && (
         <div
           style={{
-            padding: '10px 24px',
+            padding: '10px 16px',
             background: actionStatus.type === 'success' ? '#F0FDF4' : '#FEF2F2',
             borderBottom: `1px solid ${actionStatus.type === 'success' ? '#BBF7D0' : '#FECACA'}`,
             color: actionStatus.type === 'success' ? '#166534' : '#991B1B',
@@ -229,7 +229,10 @@ export default function NotifikasiView({ onNavigateTab }: NotifikasiViewProps) {
             fontWeight: 500,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
           }}
         >
           <span>{actionStatus.message}</span>
@@ -246,62 +249,66 @@ export default function NotifikasiView({ onNavigateTab }: NotifikasiViewProps) {
       <div
         style={{
           display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 24px',
+          flexDirection: 'column',
+          padding: '12px 16px',
           borderBottom: '1px solid #E2E8F0',
-          gap: '12px'
+          gap: '12px',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}
       >
-        {/* Left Tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {[
-            { id: 'all', label: 'Semua', count: counts.all },
-            { id: 'unread', label: 'Belum Dibaca', count: counts.unread },
-            { id: 'warning', label: 'Peringatan', count: counts.warning },
-            { id: 'system', label: 'Sistem & Perangkat', count: counts.system }
-          ].map(tab => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                style={{
-                  background: isActive ? '#0F172A' : 'transparent',
-                  color: isActive ? '#FFFFFF' : '#475569',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '6px 12px',
-                  fontSize: '12px',
-                  fontWeight: isActive ? 600 : 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <span>{tab.label}</span>
-                <span
+        {/* Left Tabs with smooth horizontal touch scroll */}
+        <div style={{ width: '100%', maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '2px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', minWidth: 'max-content' }}>
+            {[
+              { id: 'all', label: 'Semua', count: counts.all },
+              { id: 'unread', label: 'Belum Dibaca', count: counts.unread },
+              { id: 'warning', label: 'Peringatan', count: counts.warning },
+              { id: 'system', label: 'Sistem & Perangkat', count: counts.system }
+            ].map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
                   style={{
-                    background: isActive ? '#1E293B' : '#F1F5F9',
-                    color: isActive ? '#94A3B8' : '#64748B',
-                    padding: '1px 6px',
-                    borderRadius: '10px',
-                    fontSize: '10px',
-                    fontWeight: 600
+                    background: isActive ? '#0F172A' : 'transparent',
+                    color: isActive ? '#FFFFFF' : '#475569',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    fontWeight: isActive ? 600 : 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
+                  <span>{tab.label}</span>
+                  <span
+                    style={{
+                      background: isActive ? '#1E293B' : '#F1F5F9',
+                      color: isActive ? '#94A3B8' : '#64748B',
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      fontSize: '10px',
+                      fontWeight: 600
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Right Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Right Controls with responsive wrap */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           {/* Device Filter Dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Filter size={13} color="#64748B" />
@@ -317,7 +324,8 @@ export default function NotifikasiView({ onNavigateTab }: NotifikasiViewProps) {
                 border: '1px solid #CBD5E1',
                 background: '#FFFFFF',
                 cursor: 'pointer',
-                outline: 'none'
+                outline: 'none',
+                maxWidth: '180px',
               }}
             >
               <option value="all">Semua Perangkat</option>
@@ -345,6 +353,7 @@ export default function NotifikasiView({ onNavigateTab }: NotifikasiViewProps) {
               border: '1px solid #E2E8F0',
               borderRadius: '4px',
               cursor: counts.unread > 0 ? 'pointer' : 'default',
+              whiteSpace: 'nowrap',
               transition: 'all 0.15s ease'
             }}
             title="Tandai semua notifikasi sudah dibaca"
@@ -369,6 +378,7 @@ export default function NotifikasiView({ onNavigateTab }: NotifikasiViewProps) {
               border: '1px solid #E2E8F0',
               borderRadius: '4px',
               cursor: notifications.length - counts.unread > 0 ? 'pointer' : 'default',
+              whiteSpace: 'nowrap',
               transition: 'all 0.15s ease'
             }}
             title="Hapus notifikasi yang sudah dibaca"

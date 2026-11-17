@@ -388,7 +388,18 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
   };
 
   return (
-    <section className="dashboard-section flat-dashboard-section" style={{ border: 'none', background: '#FFFFFF', padding: 0 }}>
+    <section
+      className="dashboard-section flat-dashboard-section"
+      style={{
+        border: 'none',
+        background: '#FFFFFF',
+        padding: 0,
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
+      }}
+    >
       {/* ==================================================
           1. STRIP REKAPAN 4 KOLOM AGREGAT (HAIRLINE DIVIDER)
           ================================================== */}
@@ -544,44 +555,56 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
             )}
           </div>
 
-          {/* Category Tabs */}
+          {/* Category Tabs with horizontal touch scroll */}
           <div
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: '#F8FAFC',
-              padding: '3px',
-              borderRadius: '8px',
-              border: '1px solid #E2E8F0',
+              width: '100%',
+              maxWidth: '100%',
+              overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              paddingBottom: '2px',
             }}
           >
-            {['Semua', 'Peringatan', 'MicroSD Sync', 'Koneksi', 'Pengaturan'].map((cat) => {
-              const isActive = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => {
-                    setSelectedCategory(cat);
-                    setCurrentPage(1);
-                  }}
-                  style={{
-                    padding: '5px 12px',
-                    fontSize: '12px',
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? '#0F172A' : '#64748B',
-                    backgroundColor: isActive ? '#FFFFFF' : 'transparent',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    boxShadow: isActive ? '0 1px 3px rgba(15, 23, 42, 0.08)' : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {cat}
-                </button>
-              );
-            })}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: '#F8FAFC',
+                padding: '3px',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0',
+                minWidth: 'max-content',
+              }}
+            >
+              {['Semua', 'Peringatan', 'MicroSD Sync', 'Koneksi', 'Pengaturan'].map((cat) => {
+                const isActive = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(cat);
+                      setCurrentPage(1);
+                    }}
+                    style={{
+                      padding: '5px 12px',
+                      fontSize: '12px',
+                      fontWeight: isActive ? 700 : 500,
+                      color: isActive ? '#0F172A' : '#64748B',
+                      backgroundColor: isActive ? '#FFFFFF' : 'transparent',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      boxShadow: isActive ? '0 1px 3px rgba(15, 23, 42, 0.08)' : 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -794,16 +817,21 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px',
             borderBottom: '1px solid #E2E8F0',
             paddingBottom: '14px',
             marginBottom: '16px',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <h2 className="panel-title" style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
               Daftar Riwayat Aktivitas & Audit
             </h2>
-            <span style={{ fontSize: '12px', color: '#64748B' }}>
+            <span style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap' }}>
               ({filteredActivities.length} entri ditemukan)
             </span>
           </div>
@@ -813,78 +841,85 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
           </span>
         </div>
 
-        <div className="data-table-container flat-table-container" style={{ border: 'none', borderRadius: 0, overflowX: 'auto' }}>
-          <table className="tembox-table flat-tembox-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#F8FAFC', textAlign: 'left', borderBottom: '1px solid #E2E8F0' }}>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '180px' }}>Waktu (WIB)</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '130px' }}>Kategori</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700 }}>Aktivitas & Keterangan</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '110px' }}>Sumber</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '150px' }}>Snapshot Suhu & Es</th>
-                <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '110px' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody id="activityTableBody">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '48px 16px', color: '#94A3B8' }}>
-                    <RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto 8px', display: 'block' }} />
-                    Memuat data aktivitas...
-                  </td>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '48px 16px', color: '#94A3B8' }}>
+            <RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto 8px', display: 'block' }} />
+            Memuat data aktivitas...
+          </div>
+        ) : paginatedActivities.length === 0 ? (
+          <div
+            style={{
+              padding: '50px 16px',
+              textAlign: 'center',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+            }}
+          >
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '22px',
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '4px',
+              }}
+            >
+              <FileText size={22} color="#94A3B8" />
+            </div>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+              {activityData.length === 0 ? 'Belum Ada Log Aktivitas' : 'Tidak Ada Log yang Cocok'}
+            </span>
+            <p style={{ fontSize: '12px', color: '#64748B', maxWidth: '420px', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+              {activityData.length === 0
+                ? 'Log aktivitas palka, sinkronisasi offline MicroSD, dan peringatan cold-chain akan tercatat otomatis saat perangkat terhubung.'
+                : 'Coba sesuaikan kata kunci pencarian atau ubah filter kategori.'}
+            </p>
+            {activityData.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('Semua');
+                }}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  backgroundColor: '#F1F5F9',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                }}
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="data-table-container flat-table-container" style={{ border: 'none', borderRadius: 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', maxWidth: '100%' }}>
+            <table className="tembox-table flat-tembox-table" style={{ width: '100%', minWidth: '580px', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#F8FAFC', textAlign: 'left', borderBottom: '1px solid #E2E8F0' }}>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '180px' }}>Waktu (WIB)</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '130px' }}>Kategori</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700 }}>Aktivitas & Keterangan</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '110px' }}>Sumber</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '150px' }}>Snapshot Suhu & Es</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 700, width: '110px' }}>Status</th>
                 </tr>
-              ) : paginatedActivities.length === 0 ? (
-                <tr className="table-empty-row">
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '60px 16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <div
-                        style={{
-                          width: '44px',
-                          height: '44px',
-                          borderRadius: '22px',
-                          backgroundColor: '#F8FAFC',
-                          border: '1px solid #E2E8F0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        <FileText size={22} color="#94A3B8" />
-                      </div>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
-                        {activityData.length === 0 ? 'Belum Ada Log Aktivitas' : 'Tidak Ada Log yang Cocok'}
-                      </span>
-                      <p style={{ fontSize: '12px', color: '#64748B', maxWidth: '420px', margin: '0 0 12px 0', lineHeight: 1.5 }}>
-                        {activityData.length === 0
-                          ? 'Log aktivitas palka, sinkronisasi offline MicroSD, dan peringatan cold-chain akan tercatat otomatis saat perangkat terhubung.'
-                          : 'Coba sesuaikan kata kunci pencarian atau ubah filter kategori.'}
-                      </p>
-                      {activityData.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSearchQuery('');
-                            setSelectedCategory('Semua');
-                          }}
-                          style={{
-                            padding: '6px 14px',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            backgroundColor: '#F1F5F9',
-                            border: '1px solid #CBD5E1',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Reset Filter
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginatedActivities.map((act) => {
+              </thead>
+              <tbody id="activityTableBody">
+                {paginatedActivities.map((act) => {
                   const isCatWarn = act.category === 'Peringatan';
                   const isCatSync = act.category === 'MicroSD Sync';
                   const isCatConn = act.category === 'Koneksi';
@@ -1008,11 +1043,11 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Pagination Controls */}
         <div

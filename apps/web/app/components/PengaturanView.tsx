@@ -72,7 +72,16 @@ export const PengaturanView: React.FC = () => {
   } = useSettingsLogic();
 
   return (
-    <section className="app-page active" id="page-pengaturan">
+    <section
+      className="app-page active"
+      id="page-pengaturan"
+      style={{
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
+      }}
+    >
       {/* 1. Status Banner */}
       <SettingsStatusBanner deviceCount={devices.length} />
 
