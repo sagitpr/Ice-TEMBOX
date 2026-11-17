@@ -84,3 +84,230 @@
     display: none !important;
   }
 }
+
+/* ==================================================
+   FLAT EDITORIAL DASHBOARD & HAIRLINE DIVIDERS
+   Menghilangkan seluruh kotak kartu dan menggunakan sekat garis tipis
+   ================================================== */
+:root {
+  --color-dashboard-bg: #FFFFFF !important;
+  --color-card-bg: #FFFFFF !important;
+  --color-card-border: #E2E8F0 !important;
+  --header-height: 68px !important;
+}
+
+.app-view-container {
+  background-color: #FFFFFF !important;
+}
+
+.app-main {
+  background-color: #FFFFFF !important;
+}
+
+.app-content {
+  background-color: #FFFFFF !important;
+  padding: 24px 32px 48px !important;
+  max-width: 1400px !important;
+}
+
+.sidebar-header {
+  height: 68px !important;
+  min-height: 68px !important;
+  box-sizing: border-box !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 24px !important;
+}
+
+.app-topbar {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  box-shadow: none !important;
+  height: 68px !important;
+  min-height: 68px !important;
+  box-sizing: border-box !important;
+}
+
+/* 1. Baris Metrik Utama Flat (Grid 4 Kolom dengan Hairline Divider) */
+.flat-metrics-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 0 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  margin-bottom: 32px !important;
+  background-color: #FFFFFF !important;
+}
+
+.metric-item-flat {
+  background: transparent !important;
+  border: none !important;
+  border-right: 1px solid #E2E8F0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 16px 24px !important;
+  margin-bottom: 0 !important;
+  transition: none !important;
+}
+
+.metric-item-flat:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.metric-item-flat.metric-item-last {
+  border-right: none !important;
+}
+
+/* 2. Grid Split Flat: Grafik Suhu & Notifikasi Terbaru */
+.flat-chart-split {
+  display: grid !important;
+  grid-template-columns: 1.85fr 1fr !important;
+  gap: 0 !important;
+  background-color: #FFFFFF !important;
+}
+
+.flat-chart-col-left {
+  padding-right: 32px !important;
+  border-right: 1px solid #E2E8F0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.flat-chart-col-right {
+  padding-left: 32px !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.flat-panel-header {
+  border-bottom: 1px solid #E2E8F0 !important;
+  padding-bottom: 14px !important;
+  margin-bottom: 20px !important;
+}
+
+.flat-empty-state {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* 3. Baris 4 Box Suhu Flat (Monitoring Suhu) */
+.flat-boxes-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 0 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  margin-bottom: 32px !important;
+  background-color: #FFFFFF !important;
+}
+
+.flat-box-item {
+  background: transparent !important;
+  border: none !important;
+  border-right: 1px solid #E2E8F0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 16px 20px !important;
+}
+
+.flat-box-item.flat-box-last {
+  border-right: none !important;
+}
+
+/* 4. Tabel Flat Bersih */
+.flat-table-container {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.flat-tembox-table {
+  border-collapse: collapse !important;
+}
+
+.flat-tembox-table th {
+  background-color: #F8FAFC !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  padding: 12px 16px !important;
+}
+
+.flat-tembox-table td {
+  border-bottom: 1px solid #F1F5F9 !important;
+  padding: 14px 16px !important;
+}
+
+/* ==================================================
+   RESPONSIVE BREAKPOINTS (DESKTOP -> TABLET -> MOBILE)
+   ================================================== */
+@media (max-width: 1024px) {
+  .flat-metrics-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .flat-metrics-row .metric-item-flat:nth-child(2) {
+    border-right: none !important;
+  }
+  .flat-metrics-row .metric-item-flat:nth-child(1),
+  .flat-metrics-row .metric-item-flat:nth-child(2) {
+    border-bottom: 1px solid #E2E8F0 !important;
+  }
+
+  .flat-boxes-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .flat-boxes-row .flat-box-item:nth-child(2) {
+    border-right: none !important;
+  }
+  .flat-boxes-row .flat-box-item:nth-child(1),
+  .flat-boxes-row .flat-box-item:nth-child(2) {
+    border-bottom: 1px solid #E2E8F0 !important;
+  }
+
+  .flat-chart-split {
+    grid-template-columns: 1fr !important;
+  }
+  .flat-chart-col-left {
+    padding-right: 0 !important;
+    border-right: none !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+    padding-bottom: 32px !important;
+    margin-bottom: 32px !important;
+  }
+  .flat-chart-col-right {
+    padding-left: 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-content {
+    padding: 16px 16px 40px !important;
+  }
+
+  .flat-metrics-row {
+    grid-template-columns: 1fr !important;
+  }
+  .flat-metrics-row .metric-item-flat {
+    border-right: none !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+    padding: 14px 0 !important;
+  }
+  .flat-metrics-row .metric-item-flat:last-child {
+    border-bottom: none !important;
+  }
+
+  .flat-boxes-row {
+    grid-template-columns: 1fr !important;
+  }
+  .flat-boxes-row .flat-box-item {
+    border-right: none !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+    padding: 14px 0 !important;
+  }
+  .flat-boxes-row .flat-box-item:last-child {
+    border-bottom: none !important;
+  }
+}

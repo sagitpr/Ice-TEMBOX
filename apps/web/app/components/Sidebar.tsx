@@ -62,7 +62,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <aside className={`app-sidebar ${isOpen ? 'open' : ''}`} id="appSidebar">
         {/* Brand Header */}
-        <div className="sidebar-header">
+        <div
+          className="sidebar-header"
+          style={{
+            height: '68px',
+            minHeight: '68px',
+            boxSizing: 'border-box',
+            borderBottom: '1px solid #E2E8F0',
+            padding: '0 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Link href="/dashboard" className="sidebar-brand-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{
               fontWeight: 800,

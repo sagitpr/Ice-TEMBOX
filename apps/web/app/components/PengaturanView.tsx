@@ -50,6 +50,8 @@ export const PengaturanView: React.FC = () => {
     handleOpenDetailModal,
     handlePingDevice,
     handleRestartTelemetry,
+    handleSaveHardwareConfig,
+    handleDisconnectDevice,
 
     // Account Edit State & Handlers
     editName,
@@ -121,6 +123,8 @@ export const PengaturanView: React.FC = () => {
         restarting={restarting}
         handlePingDevice={handlePingDevice}
         handleRestartTelemetry={handleRestartTelemetry}
+        onSaveHardwareConfig={handleSaveHardwareConfig}
+        onDisconnectDevice={handleDisconnectDevice}
       />
 
       {/* MODAL 3: Edit Profile */}

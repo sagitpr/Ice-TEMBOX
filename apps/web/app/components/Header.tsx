@@ -70,12 +70,14 @@ export const Header: React.FC<HeaderProps> = ({
  */
 export function PublicSiteHeader() {
   const pathname = usePathname() || '/';
+  const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuthSession();
 
-  // Scroll detection
+  // Hydration & scroll detection
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 24);
     };
@@ -225,7 +227,7 @@ export function PublicSiteHeader() {
           />
 
           {/* Kelompok 2: Auth / Profil User */}
-          {isAuthenticated && user ? (
+          {mounted && isAuthenticated && user ? (
             <Link
               href="/dashboard"
               className={navLinkClass}
@@ -351,7 +353,7 @@ export function PublicSiteHeader() {
             }}
           />
 
-          {isAuthenticated && user ? (
+          {mounted && isAuthenticated && user ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '4px' }}>
               <Link
                 href="/dashboard"
@@ -533,38 +535,6 @@ function DashboardHeader({
     };
   }, []);
 
-  const getHeaderTitles = () => {
-    switch (currentTab) {
-      case 'monitoring':
-        return {
-          title: 'Monitoring Suhu',
-          subtitle: 'Pantau stabilitas suhu palka kapal dan boks ikan secara real-time.',
-        };
-      case 'notifikasi':
-        return {
-          title: 'Pusat Notifikasi',
-          subtitle: 'Daftar peringatan termal palka dan riwayat pembaruan perangkat.',
-        };
-      case 'aktivitas':
-        return {
-          title: 'Log Aktivitas Armada',
-          subtitle: 'Audit trail sinkronisasi sensor palka dan catatan telemetri pelayaran.',
-        };
-      case 'pengaturan':
-        return {
-          title: 'Pengaturan Sistem',
-          subtitle: 'Konfigurasi perangkat keras palka, batas peringatan, dan profil akun.',
-        };
-      default:
-        return {
-          title: 'Dashboard Cold-Chain',
-          subtitle: 'Ringkasan operasional dan kondisi penyimpanan palka kapal hari ini.',
-        };
-    }
-  };
-
-  const { title, subtitle } = getHeaderTitles();
-
   const handleMarkAllRead = async () => {
     const updated = await markAllHeaderNotificationsRead();
     setNotifications(updated);
@@ -579,7 +549,25 @@ function DashboardHeader({
   };
 
   return (
-    <header className="app-topbar" id="appTopbar">
+    <header
+      className="app-topbar"
+      id="appTopbar"
+      style={{
+        height: '68px',
+        minHeight: '68px',
+        boxSizing: 'border-box',
+        padding: '0 28px',
+        backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid #E2E8F0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        boxShadow: 'none',
+      }}
+    >
       <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         {onToggleSidebar && (
           <button
@@ -592,22 +580,17 @@ function DashboardHeader({
               background: 'none',
               border: '1px solid #E2E8F0',
               borderRadius: '8px',
-              padding: '8px',
+              padding: '7px',
               color: '#475569',
               cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <Menu size={20} />
+            <Menu size={18} />
           </button>
         )}
-        <div className="topbar-title-wrap">
-          <h1 className="topbar-page-title" id="pageTitle">
-            {title}
-          </h1>
-          <p className="topbar-page-desc" id="pageSubtitle">
-            {subtitle}
-          </p>
-        </div>
       </div>
 
       <div

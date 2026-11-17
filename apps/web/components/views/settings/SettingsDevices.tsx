@@ -14,25 +14,47 @@ export const SettingsDevices: React.FC<SettingsDevicesProps> = ({
   onOpenDetailModal,
 }) => {
   return (
-    <div className="settings-section-card">
-      <div className="settings-section-header">
-        <div className="settings-icon-wrap">
-          <Box size={18} color="#0284C7" />
-        </div>
+    <div
+      className="settings-section-flat"
+      style={{
+        borderBottom: '1px solid #E2E8F0',
+        paddingBottom: '28px',
+        marginBottom: '28px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+        <Box size={20} color="#0284C7" />
         <div>
-          <h3 className="settings-section-title">Perangkat</h3>
-          <p className="settings-section-desc">Kelola perangkat IoT palka TEMBOX Anda.</p>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+            Perangkat
+          </h3>
+          <p style={{ fontSize: '12.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+            Kelola perangkat IoT palka TEMBOX Anda.
+          </p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
         {devices.map((device) => (
-          <div className="device-config-item" key={device.id} style={{ marginBottom: 0 }}>
-            <div className="device-config-left">
-              <Box size={22} color="#0284C7" />
+          <div
+            key={device.id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 0',
+              borderBottom: '1px solid #F1F5F9',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Box size={20} color="#0284C7" />
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span className="device-config-name">{device.name}</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>
+                    {device.name}
+                  </span>
                   <span
                     style={{
                       fontSize: '11px',
@@ -46,9 +68,9 @@ export const SettingsDevices: React.FC<SettingsDevicesProps> = ({
                     {device.placement}
                   </span>
                 </div>
-                <div className="device-config-ip">
+                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
                   <span className={`status-dot ${device.status === 'online' ? 'online' : 'offline'}`} />{' '}
-                  {device.status === 'online' ? 'Terhubung' : 'Belum terhubung'} &bull; {device.ipOrSerial}
+                  {device.status === 'online' ? 'MQTT Terhubung' : 'Offline / Siaga'} &bull; {device.serialNumber || device.ipOrSerial}
                   {device.lastPingMs !== null ? ` • ${device.lastPingMs} ms` : ''}
                 </div>
               </div>

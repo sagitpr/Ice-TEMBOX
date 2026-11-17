@@ -6,6 +6,7 @@
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- 2. HELPER FUNCTIONS: Updated At Timestamp Handler
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
@@ -77,6 +78,16 @@ CREATE TABLE IF NOT EXISTS public.devices (
   firmware_esp32 TEXT NOT NULL DEFAULT 'v2.4.1-iot-marine',
   firmware_ds18b20 TEXT NOT NULL DEFAULT 'Probe Rev.3.2 (±0.5°C)',
   microsd_interval_sec INT NOT NULL DEFAULT 30,
+  serial_number TEXT,
+  mqtt_token_hash TEXT,
+  mqtt_topic_prefix TEXT,
+  telemetry_interval_sec INT DEFAULT 30,
+  sd_interval_sec INT DEFAULT 15,
+  temp_offset NUMERIC(4,2) DEFAULT 0.00,
+  warn_threshold NUMERIC(4,2) DEFAULT 2.00,
+  crit_threshold NUMERIC(4,2) DEFAULT 4.00,
+  buzzer_enabled BOOLEAN DEFAULT true,
+  connection_status TEXT DEFAULT 'online',
   last_temperature_c NUMERIC(5,2),
   last_seen_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -90,6 +101,19 @@ CREATE TRIGGER trigger_devices_updated_at
 
 CREATE INDEX IF NOT EXISTS idx_devices_user_id ON public.devices(user_id);
 CREATE INDEX IF NOT EXISTS idx_devices_device_code ON public.devices(device_code);
+CREATE INDEX IF NOT EXISTS idx_devices_serial_number ON public.devices(serial_number);
+
+-- Idempotent column migrations for devices
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS serial_number TEXT;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS mqtt_token TEXT;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS mqtt_topic_prefix TEXT;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS telemetry_interval_sec INT DEFAULT 30;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS sd_interval_sec INT DEFAULT 15;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS temp_offset NUMERIC(4,2) DEFAULT 0.00;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS warn_threshold NUMERIC(4,2) DEFAULT 2.00;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS crit_threshold NUMERIC(4,2) DEFAULT 4.00;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS buzzer_enabled BOOLEAN DEFAULT true;
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS connection_status TEXT DEFAULT 'online';
 
 -- ==============================================================================
 -- 5. TABLE: TELEMETRY_LOGS (Real-Time Sensor & Offline RTC Buffering)
@@ -101,9 +125,19 @@ CREATE TABLE IF NOT EXISTS public.telemetry_logs (
   humidity_pct NUMERIC(5,2),
   battery_pct INT CHECK (battery_pct >= 0 AND battery_pct <= 100),
   signal_rssi INT,
+  ping_ms INT,
+  sd_status TEXT DEFAULT 'OK',
+  offline_queue_count INT DEFAULT 0,
+  device_timestamp TIMESTAMPTZ,
   is_offline_sync BOOLEAN NOT NULL DEFAULT false,
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Idempotent column migrations for telemetry_logs
+ALTER TABLE public.telemetry_logs ADD COLUMN IF NOT EXISTS ping_ms INT;
+ALTER TABLE public.telemetry_logs ADD COLUMN IF NOT EXISTS sd_status TEXT DEFAULT 'OK';
+ALTER TABLE public.telemetry_logs ADD COLUMN IF NOT EXISTS offline_queue_count INT DEFAULT 0;
+ALTER TABLE public.telemetry_logs ADD COLUMN IF NOT EXISTS device_timestamp TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_telemetry_device_recorded ON public.telemetry_logs(device_id, recorded_at DESC);
 
@@ -274,3 +308,135 @@ CREATE POLICY "Admins can view contact messages"
 -- F. OTP VERIFICATIONS RLS
 ALTER TABLE public.otp_verifications ENABLE ROW LEVEL SECURITY;
 -- Strictly accessed server-side via service_role key; no public policies needed.
+
+-- ==============================================================================
+-- 10. TABLES: FIELD DIAGNOSTICS SOP & USER DEVICE INCIDENT VECTORS (PGVECTOR)
+-- ==============================================================================
+
+-- G. FIELD DIAGNOSTICS SOP (Read-only for authenticated & public)
+CREATE TABLE IF NOT EXISTS public.field_diagnostics_sop (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  symptom_title TEXT NOT NULL,
+  error_code TEXT UNIQUE,
+  hardware_component TEXT NOT NULL,
+  root_cause TEXT NOT NULL,
+  resolution_steps TEXT[] NOT NULL,
+  embedding vector(768),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.field_diagnostics_sop ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated users can read field diagnostics SOP" ON public.field_diagnostics_sop;
+CREATE POLICY "Authenticated users can read field diagnostics SOP"
+  ON public.field_diagnostics_sop FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Public can view field diagnostics SOP" ON public.field_diagnostics_sop;
+CREATE POLICY "Public can view field diagnostics SOP"
+  ON public.field_diagnostics_sop FOR SELECT
+  TO anon
+  USING (true);
+
+-- H. DEVICE INCIDENT VECTORS (Locked strictly to auth.uid() = user_id)
+CREATE TABLE IF NOT EXISTS public.device_incident_vectors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  device_id UUID NOT NULL REFERENCES public.devices(id) ON DELETE CASCADE,
+  incident_title TEXT NOT NULL,
+  incident_description TEXT,
+  hardware_telemetry_snapshot JSONB,
+  embedding vector(768),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.device_incident_vectors ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own device incident vectors" ON public.device_incident_vectors;
+CREATE POLICY "Users can view own device incident vectors"
+  ON public.device_incident_vectors FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own device incident vectors" ON public.device_incident_vectors;
+CREATE POLICY "Users can insert own device incident vectors"
+  ON public.device_incident_vectors FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own device incident vectors" ON public.device_incident_vectors;
+CREATE POLICY "Users can update own device incident vectors"
+  ON public.device_incident_vectors FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own device incident vectors" ON public.device_incident_vectors;
+CREATE POLICY "Users can delete own device incident vectors"
+  ON public.device_incident_vectors FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- I. RPC FUNCTIONS FOR SEMANTIC VECTOR SEARCH
+CREATE OR REPLACE FUNCTION public.match_field_diagnostics (
+  query_embedding vector(768),
+  match_threshold float DEFAULT 0.4,
+  match_count int DEFAULT 5
+)
+RETURNS TABLE (
+  id UUID,
+  symptom_title TEXT,
+  error_code TEXT,
+  hardware_component TEXT,
+  root_cause TEXT,
+  resolution_steps TEXT[],
+  similarity float
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    sop.id,
+    sop.symptom_title,
+    sop.error_code,
+    sop.hardware_component,
+    sop.root_cause,
+    sop.resolution_steps,
+    (1 - (sop.embedding <=> query_embedding))::float AS similarity
+  FROM public.field_diagnostics_sop sop
+  WHERE sop.embedding IS NOT NULL AND (1 - (sop.embedding <=> query_embedding)) > match_threshold
+  ORDER BY similarity DESC
+  LIMIT match_count;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.match_device_incidents (
+  query_embedding vector(768),
+  match_threshold float DEFAULT 0.4,
+  match_count int DEFAULT 5
+)
+RETURNS TABLE (
+  id UUID,
+  device_id UUID,
+  incident_title TEXT,
+  incident_description TEXT,
+  similarity float
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    inc.id,
+    inc.device_id,
+    inc.incident_title,
+    inc.incident_description,
+    (1 - (inc.embedding <=> query_embedding))::float AS similarity
+  FROM public.device_incident_vectors inc
+  WHERE inc.user_id = auth.uid()
+    AND inc.embedding IS NOT NULL
+    AND (1 - (inc.embedding <=> query_embedding)) > match_threshold
+  ORDER BY similarity DESC
+  LIMIT match_count;
+END;
+$$;

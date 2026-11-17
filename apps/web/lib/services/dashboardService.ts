@@ -7,12 +7,22 @@ export type PalkaPlacement = 'Palka Kiri' | 'Palka Kanan' | 'Palka Utama';
 export interface TemboxDevice {
   id: string;
   name: string;
-  ipOrSerial: string;
+  serialNumber: string;
+  ipOrSerial?: string;
   placement: PalkaPlacement;
   status: 'online' | 'offline';
   firmwareEsp32: string;
   firmwareDs18b20: string;
   microSdIntervalSec: number;
+  telemetryIntervalSec: number;
+  tempOffset: number;
+  warnThreshold: number;
+  critThreshold: number;
+  buzzerEnabled: boolean;
+  mqttToken?: string;
+  mqttTokenHash?: string;
+  mqttTopicTelemetry: string;
+  mqttTopicCmd: string;
   lastTemperatureC: number | null;
   lastPingMs: number | null;
   lastSyncAt: string;
@@ -20,8 +30,21 @@ export interface TemboxDevice {
 
 export interface AddDevicePayload {
   name: string;
-  ipOrSerial: string;
+  serialNumber: string;
+  ipOrSerial?: string;
   placement: PalkaPlacement;
+  mqttToken?: string;
+}
+
+export interface UpdateHardwareConfigPayload {
+  deviceId: string;
+  telemetryIntervalSec: number;
+  sdIntervalSec: number;
+  tempOffset: number;
+  warnThreshold: number;
+  critThreshold: number;
+  buzzerEnabled: boolean;
+  placement?: PalkaPlacement;
 }
 
 export interface UserAccount {
@@ -64,15 +87,24 @@ const DEFAULT_STORE: StoreState = {
     {
       id: 'TEMBOX-001',
       name: 'TEMBOX-001',
-      ipOrSerial: '192.168.1.18',
+      serialNumber: 'TEMBOX-ESP32-9F8A21',
+      ipOrSerial: 'TEMBOX-ESP32-9F8A21',
       placement: 'Palka Utama',
-      status: 'offline',
+      status: 'online',
       firmwareEsp32: 'v2.4.1-iot-marine',
       firmwareDs18b20: 'Probe Rev.3.2 (±0.5°C)',
-      microSdIntervalSec: 30,
+      microSdIntervalSec: 15,
+      telemetryIntervalSec: 30,
+      tempOffset: 0.0,
+      warnThreshold: 2.0,
+      critThreshold: 4.0,
+      buzzerEnabled: true,
+      mqttToken: 'tbk_live_9f8a21e48bc0981a',
+      mqttTopicTelemetry: 'tembox/TEMBOX-ESP32-9F8A21/telemetry',
+      mqttTopicCmd: 'tembox/TEMBOX-ESP32-9F8A21/cmd',
       lastTemperatureC: -0.4,
-      lastPingMs: null,
-      lastSyncAt: 'Hari ini, 07:42 WIB',
+      lastPingMs: 34,
+      lastSyncAt: 'Hari ini, 14:32 WIB',
     },
   ],
   account: {
@@ -153,34 +185,51 @@ const emitStoreEvent = (eventName: string, detail?: unknown) => {
 
 export async function fetchDevices(): Promise<TemboxDevice[]> {
   await simulateNetworkDelay(160);
-  return getStore().devices.map((d) => ({ ...d }));
+  // Zero-trust sanitization: Never leak raw MQTT token to standard device lists
+  return getStore().devices.map((d) => {
+    const { mqttToken, ...safeDevice } = d;
+    return safeDevice;
+  });
 }
 
 export async function addDevice(deviceData: AddDevicePayload): Promise<TemboxDevice> {
   await simulateNetworkDelay(260);
   const store = getStore();
   const cleanName = deviceData.name.trim();
-  const cleanAddr = deviceData.ipOrSerial.trim();
+  const cleanSerial = (deviceData.serialNumber || deviceData.ipOrSerial || '').trim();
 
   if (!cleanName) {
     throw new Error('Nama perangkat tidak boleh kosong.');
   }
-  if (!cleanAddr) {
-    throw new Error('Alamat IP atau Serial ESP32 wajib diisi.');
+  if (!cleanSerial) {
+    throw new Error('Device Serial / MAC ID wajib diisi.');
   }
 
+  const generatedToken = deviceData.mqttToken || `tbk_live_${Math.random().toString(36).substring(2, 10)}${Date.now().toString(36).slice(-4)}`;
+  const teleTopic = `tembox/${cleanSerial}/telemetry`;
+  const cmdTopic = `tembox/${cleanSerial}/cmd`;
+
   const newDevice: TemboxDevice = {
-    id: `${cleanName.toUpperCase().replace(/\s+/g, '-')}-${Date.now().toString().slice(-4)}`,
+    id: cleanSerial,
     name: cleanName,
-    ipOrSerial: cleanAddr,
+    serialNumber: cleanSerial,
+    ipOrSerial: cleanSerial,
     placement: deviceData.placement,
     status: 'online',
     firmwareEsp32: 'v2.4.1-iot-marine',
     firmwareDs18b20: 'Probe Rev.3.2 (±0.5°C)',
-    microSdIntervalSec: 30,
-    lastTemperatureC: -0.6,
-    lastPingMs: 24,
-    lastSyncAt: 'Baru saja tersinkronisasi',
+    microSdIntervalSec: 15,
+    telemetryIntervalSec: 30,
+    tempOffset: 0.0,
+    warnThreshold: 2.0,
+    critThreshold: 4.0,
+    buzzerEnabled: true,
+    mqttToken: generatedToken,
+    mqttTopicTelemetry: teleTopic,
+    mqttTopicCmd: cmdTopic,
+    lastTemperatureC: -0.4,
+    lastPingMs: 28,
+    lastSyncAt: 'Baru saja terdaftar via MQTT',
   };
 
   store.devices = [...store.devices, newDevice];
@@ -188,14 +237,46 @@ export async function addDevice(deviceData: AddDevicePayload): Promise<TemboxDev
   return { ...newDevice };
 }
 
+export async function updateHardwareConfig(payload: UpdateHardwareConfigPayload): Promise<TemboxDevice> {
+  await simulateNetworkDelay(240);
+  const store = getStore();
+  const idx = store.devices.findIndex((d) => d.id === payload.deviceId || d.serialNumber === payload.deviceId);
+  if (idx === -1) {
+    throw new Error(`Perangkat ${payload.deviceId} tidak ditemukan.`);
+  }
+
+  store.devices[idx] = {
+    ...store.devices[idx],
+    telemetryIntervalSec: payload.telemetryIntervalSec,
+    microSdIntervalSec: payload.sdIntervalSec,
+    tempOffset: payload.tempOffset,
+    warnThreshold: payload.warnThreshold,
+    critThreshold: payload.critThreshold,
+    buzzerEnabled: payload.buzzerEnabled,
+    placement: payload.placement || store.devices[idx].placement,
+    lastSyncAt: 'Konfigurasi MQTT dikirim barusan',
+  };
+
+  emitStoreEvent('tembox:devices-updated', store.devices);
+  return { ...store.devices[idx] };
+}
+
+export async function deleteOrDisconnectDevice(deviceId: string): Promise<void> {
+  await simulateNetworkDelay(280);
+  const store = getStore();
+  store.devices = store.devices.filter((d) => d.id !== deviceId && d.serialNumber !== deviceId);
+  emitStoreEvent('tembox:devices-updated', store.devices);
+}
+
 export async function getDeviceDetail(deviceId: string): Promise<TemboxDevice> {
   await simulateNetworkDelay(140);
   const store = getStore();
-  const found = store.devices.find((d) => d.id === deviceId);
+  const found = store.devices.find((d) => d.id === deviceId || d.serialNumber === deviceId);
   if (!found) {
     throw new Error(`Perangkat ${deviceId} tidak ditemukan.`);
   }
-  return { ...found };
+  const { mqttToken, ...safeDetail } = found;
+  return { ...safeDetail };
 }
 
 export async function pingDevice(deviceId: string): Promise<{ latencyMs: number; device: TemboxDevice }> {

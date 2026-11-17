@@ -5,6 +5,8 @@ import {
   getDeviceDetail,
   pingDevice,
   restartTelemetry,
+  updateHardwareConfig,
+  deleteOrDisconnectDevice,
   fetchAccount,
   updateAccount,
   fetchNotificationSettings,
@@ -13,6 +15,7 @@ import {
   type PalkaPlacement,
   type UserAccount,
   type NotificationSettingState,
+  type UpdateHardwareConfigPayload,
 } from '../lib/services/dashboardService';
 
 export const PALKA_OPTIONS: PalkaPlacement[] = ['Palka Kiri', 'Palka Kanan', 'Palka Utama'];
@@ -136,7 +139,7 @@ export function useSettingsLogic() {
       return;
     }
     if (!newDeviceIp.trim()) {
-      setAddFormError('Alamat IP atau Serial ESP32 wajib diisi.');
+      setAddFormError('Device Serial / MAC ID hardware wajib diisi.');
       return;
     }
 
@@ -144,12 +147,25 @@ export function useSettingsLogic() {
     try {
       const created = await addDevice({
         name: newDeviceName,
+        serialNumber: newDeviceIp,
         ipOrSerial: newDeviceIp,
         placement: newDevicePlacement,
       });
+
+      // Synchronize with backend API route in background
+      fetch('/api/iot/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newDeviceName,
+          serialNumber: newDeviceIp,
+          placement: newDevicePlacement,
+        }),
+      }).catch(() => {});
+
       setDevices((prev) => [...prev, created]);
       setAddModalOpen(false);
-      showToast(`Perangkat ${created.name} berhasil ditambahkan ke ${created.placement}.`, 'success');
+      showToast(`Perangkat ${created.name} (${created.serialNumber}) berhasil didaftarkan ke broker MQTT.`, 'success');
     } catch (err: unknown) {
       setAddFormError(err instanceof Error ? err.message : 'Gagal menyimpan perangkat.');
     } finally {
@@ -259,6 +275,63 @@ export function useSettingsLogic() {
     }
   };
 
+  // Hardware Config & Disconnect Handlers
+  const handleSaveHardwareConfig = async (payload: UpdateHardwareConfigPayload) => {
+    try {
+      const updated = await updateHardwareConfig(payload);
+      setSelectedDevice(updated);
+      setDevices((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+      fetch('/api/iot/device-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId: updated.id,
+          serialNumber: updated.serialNumber,
+          action: 'UPDATE_CONFIG',
+          config: {
+            telemetryIntervalSec: payload.telemetryIntervalSec,
+            sdIntervalSec: payload.sdIntervalSec,
+            tempOffset: payload.tempOffset,
+            warnThreshold: payload.warnThreshold,
+            critThreshold: payload.critThreshold,
+            buzzerEnabled: payload.buzzerEnabled,
+            placement: payload.placement,
+          },
+        }),
+      }).catch(() => {});
+
+      showToast(`Konfigurasi MQTT untuk ${updated.name} berhasil disimpan dan dikirim.`, 'success');
+      return true;
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Gagal menyimpan konfigurasi.', 'warning');
+      return false;
+    }
+  };
+
+  const handleDisconnectDevice = async (deviceId: string) => {
+    try {
+      await deleteOrDisconnectDevice(deviceId);
+      setDevices((prev) => prev.filter((d) => d.id !== deviceId && d.serialNumber !== deviceId));
+      setSelectedDevice(null);
+      setDetailModalOpen(false);
+
+      fetch('/api/iot/device-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId,
+          action: 'DISCONNECT_DEVICE',
+        }),
+      }).catch(() => {});
+
+      showToast('Perangkat berhasil diputuskan dan token MQTT dicabut.', 'info');
+      return true;
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Gagal memutuskan perangkat.', 'warning');
+      return false;
+    }
+  };
+
   return {
     // Entities
     devices,
@@ -293,6 +366,8 @@ export function useSettingsLogic() {
     handleOpenDetailModal,
     handlePingDevice,
     handleRestartTelemetry,
+    handleSaveHardwareConfig,
+    handleDisconnectDevice,
 
     // Account Edit State
     editName,

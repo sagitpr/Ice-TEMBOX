@@ -5,7 +5,9 @@ import dynamic from 'next/dynamic';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import DashboardCards from '../components/DashboardCards';
+import MarineWeatherBar from '../components/MarineWeatherBar';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { useTelemetryRealtime } from '../../hooks/useTelemetryRealtime';
 
 // Dynamic imports for chart and heavy views (SSR false to minimize main-thread blocking)
 const SensorChart = dynamic(() => import('../components/SensorChart'), {
@@ -37,6 +39,9 @@ export default function DashboardPage() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Real-time IoT hardware telemetry & Supabase live synchronization
+  const telemetry = useTelemetryRealtime();
 
   // Initial smooth load transition (simulating telemetry fetch with zero CLS)
   useEffect(() => {
@@ -96,12 +101,43 @@ export default function DashboardPage() {
             <>
               {currentTab === 'dashboard' && (
                 <section className="app-page active" id="page-dashboard">
-                  <DashboardCards />
-                  <SensorChart onViewAllNotif={() => handleSelectTab('notifikasi')} />
+                  <DashboardCards
+                    currentTemp={telemetry.currentTemp}
+                    tempStatus={telemetry.tempStatus}
+                    iceCondition={telemetry.iceCondition}
+                    minTemp={telemetry.minTemp}
+                    maxTemp={telemetry.maxTemp}
+                    tempDeltaPerHour={telemetry.tempDeltaPerHour}
+                    iceRemainingHours={telemetry.iceRemainingHours}
+                    systemStatus={telemetry.systemStatus}
+                    systemConnected={telemetry.systemConnected}
+                    pingMs={telemetry.pingMs}
+                    signalRssi={telemetry.signalRssi}
+                    lastUpdate={telemetry.lastUpdate}
+                    lastUpdateDate={telemetry.lastUpdateDate}
+                    sdStatus={telemetry.sdStatus}
+                    rtcStatus={telemetry.rtcStatus}
+                  />
+                  <MarineWeatherBar
+                    currentPalkaTemp={telemetry.currentTempNum}
+                    selectedDeviceCode={telemetry.selectedDeviceCode}
+                    onDeviceChange={telemetry.setSelectedDeviceCode}
+                    onPingTested={() => telemetry.testPing()}
+                    telemetryLogs={telemetry.telemetryLogs}
+                  />
+                  <SensorChart
+                    onViewAllNotif={() => handleSelectTab('notifikasi')}
+                    telemetryLogs={telemetry.telemetryLogs}
+                  />
                 </section>
               )}
 
-              {currentTab === 'monitoring' && <MonitoringView />}
+              {currentTab === 'monitoring' && (
+                <MonitoringView
+                  telemetryLogs={telemetry.telemetryLogs}
+                  currentTempNum={telemetry.currentTempNum}
+                />
+              )}
 
               {currentTab === 'notifikasi' && <NotifikasiView />}
 

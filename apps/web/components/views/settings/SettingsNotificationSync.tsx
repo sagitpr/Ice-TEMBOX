@@ -12,25 +12,43 @@ export const SettingsNotificationSync: React.FC<SettingsNotificationSyncProps> =
   onToggleSetting,
 }) => {
   return (
-    <div className="settings-section-card">
-      <div className="settings-section-header">
-        <div className="settings-icon-wrap">
-          <Bell size={18} color="#0284C7" />
-        </div>
+    <div
+      className="settings-section-flat"
+      style={{
+        borderBottom: '1px solid #E2E8F0',
+        paddingBottom: '28px',
+        marginBottom: '28px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+        <Bell size={20} color="#0284C7" />
         <div>
-          <h3 className="settings-section-title">Kontrol Notifikasi &amp; Sinkronisasi</h3>
-          <p className="settings-section-desc">Atur peringatan dini palka dan sinkronisasi data otomatis.</p>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+            Kontrol Notifikasi &amp; Sinkronisasi
+          </h3>
+          <p style={{ fontSize: '12.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+            Atur peringatan dini palka dan sinkronisasi data otomatis.
+          </p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        <div className="info-table-row" style={{ padding: '10px 0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 0',
+            borderBottom: '1px solid #F1F5F9',
+            gap: '16px',
+          }}
+        >
           <div>
-            <div style={{ fontWeight: 600, color: 'var(--color-ocean)', fontSize: '13.5px' }}>
+            <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '13.5px' }}>
               Peringatan Suhu Kritis (&gt; +2°C)
             </div>
-            <div style={{ fontSize: '12px', color: '#64748B' }}>
-              Tampilkan notifikasi otomatis saat suhu palka melewati ambang aman.
+            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+              Tampilkan notifikasi otomatis saat suhu palka melewati ambang batas aman.
             </div>
           </div>
           <button
@@ -42,10 +60,12 @@ export const SettingsNotificationSync: React.FC<SettingsNotificationSyncProps> =
               width: '44px',
               height: '24px',
               borderRadius: '9999px',
-              background: notifSettings.thermalAlertEnabled ? '#0284C7' : '#CBD5E1',
+              backgroundColor: notifSettings.thermalAlertEnabled ? '#0284C7' : '#CBD5E1',
               position: 'relative',
               transition: 'background-color 0.2s ease',
               flexShrink: 0,
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span
@@ -56,7 +76,7 @@ export const SettingsNotificationSync: React.FC<SettingsNotificationSyncProps> =
                 width: '18px',
                 height: '18px',
                 borderRadius: '50%',
-                background: '#FFFFFF',
+                backgroundColor: '#FFFFFF',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                 transition: 'left 0.2s ease',
               }}
@@ -64,12 +84,20 @@ export const SettingsNotificationSync: React.FC<SettingsNotificationSyncProps> =
           </button>
         </div>
 
-        <div className="info-table-row" style={{ padding: '10px 0' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 0',
+            gap: '16px',
+          }}
+        >
           <div>
-            <div style={{ fontWeight: 600, color: 'var(--color-ocean)', fontSize: '13.5px' }}>
+            <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '13.5px' }}>
               Sinkronisasi Cloud Otomatis (Saat Sandar)
             </div>
-            <div style={{ fontSize: '12px', color: '#64748B' }}>
+            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
               Unggah log offline MicroSD FAT32 seketika perangkat terhubung Wi-Fi pelabuhan.
             </div>
           </div>
@@ -82,10 +110,12 @@ export const SettingsNotificationSync: React.FC<SettingsNotificationSyncProps> =
               width: '44px',
               height: '24px',
               borderRadius: '9999px',
-              background: notifSettings.autoCloudSyncEnabled ? '#0284C7' : '#CBD5E1',
+              backgroundColor: notifSettings.autoCloudSyncEnabled ? '#0284C7' : '#CBD5E1',
               position: 'relative',
               transition: 'background-color 0.2s ease',
               flexShrink: 0,
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span
@@ -96,7 +126,7 @@ export const SettingsNotificationSync: React.FC<SettingsNotificationSyncProps> =
                 width: '18px',
                 height: '18px',
                 borderRadius: '50%',
-                background: '#FFFFFF',
+                backgroundColor: '#FFFFFF',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                 transition: 'left 0.2s ease',
               }}

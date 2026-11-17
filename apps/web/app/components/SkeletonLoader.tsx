@@ -48,17 +48,16 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
 }) => {
   if (type === 'metrics') {
     return (
-      <div className="metrics-row" aria-busy="true" aria-label="Memuat data metrik">
+      <div className="metrics-row flat-metrics-row" aria-busy="true" aria-label="Memuat data metrik">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="metric-card skeleton-container"
+            className={`metric-card metric-item-flat skeleton-container ${i === 3 ? 'metric-item-last' : ''}`}
             style={{
               position: 'relative',
               overflow: 'hidden',
-              minHeight: '140px',
-              backgroundColor: '#F8FAFC',
-              borderColor: '#E2EDF4',
+              minHeight: '130px',
+              backgroundColor: '#FAFCFE',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
@@ -70,12 +69,12 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
 
             {/* Pulsing Ice-TEMBOX Logo */}
             <div className="skeleton-logo-pulse">
-              <IceTemboxLogoSvg size={36} />
+              <IceTemboxLogoSvg size={32} />
               <div
                 style={{
-                  height: '8px',
-                  width: '64px',
-                  borderRadius: '4px',
+                  height: '6px',
+                  width: '56px',
+                  borderRadius: '3px',
                   background: '#E2E8F0',
                   marginTop: '6px',
                 }}
@@ -89,17 +88,16 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
 
   if (type === 'boxes') {
     return (
-      <div className="boxes-cards-grid" aria-busy="true" aria-label="Memuat data boks">
+      <div className="boxes-cards-grid flat-boxes-row" aria-busy="true" aria-label="Memuat data boks">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="box-temp-card skeleton-container"
+            className={`box-temp-card flat-box-item skeleton-container ${i === 3 ? 'flat-box-last' : ''}`}
             style={{
               position: 'relative',
               overflow: 'hidden',
-              minHeight: '110px',
-              backgroundColor: '#F8FAFC',
-              borderColor: '#E2EDF4',
+              minHeight: '100px',
+              backgroundColor: '#FAFCFE',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
@@ -108,7 +106,7 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
           >
             <div className="skeleton-shimmer" />
             <div className="skeleton-logo-pulse">
-              <IceTemboxLogoSvg size={30} />
+              <IceTemboxLogoSvg size={28} />
             </div>
           </div>
         ))}
@@ -119,13 +117,13 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
   if (type === 'chart') {
     return (
       <div
-        className="dashboard-panel-card skeleton-container"
+        className="flat-section skeleton-container"
         style={{
           position: 'relative',
           overflow: 'hidden',
-          minHeight: height || '340px',
-          backgroundColor: '#F8FAFC',
-          borderColor: '#E2EDF4',
+          minHeight: height || '320px',
+          backgroundColor: '#FAFCFE',
+          borderBottom: '1px solid #E2E8F0',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -137,10 +135,10 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
       >
         <div className="skeleton-shimmer" />
         <div className="skeleton-logo-pulse">
-          <IceTemboxLogoSvg size={44} />
+          <IceTemboxLogoSvg size={40} />
           <span
             style={{
-              fontSize: '12px',
+              fontSize: '11.5px',
               fontWeight: 600,
               color: '#94A3B8',
               letterSpacing: '0.5px',
@@ -157,13 +155,13 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
   if (type === 'table') {
     return (
       <div
-        className="dashboard-panel-card skeleton-container"
+        className="flat-section skeleton-container"
         style={{
           position: 'relative',
           overflow: 'hidden',
-          minHeight: height || '280px',
-          backgroundColor: '#F8FAFC',
-          borderColor: '#E2EDF4',
+          minHeight: height || '260px',
+          backgroundColor: '#FAFCFE',
+          borderBottom: '1px solid #E2E8F0',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',

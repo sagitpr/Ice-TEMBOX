@@ -9,23 +9,22 @@ export const SettingsStatusBanner: React.FC<SettingsStatusBannerProps> = ({ devi
   return (
     <div
       style={{
-        background: '#F0F9FF',
-        border: '1px solid #BAE6FD',
-        borderRadius: '10px',
-        padding: '12px 16px',
-        marginBottom: '20px',
+        padding: '14px 0',
+        borderBottom: '1px solid #E2E8F0',
+        marginBottom: '24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '10px',
-        color: '#0369A1',
         fontSize: '13px',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Info size={18} />
-        <span>Mode interaktif aktif menggunakan service state lokal (siap dihubungkan ke API backend).</span>
+        <Info size={18} color="#0284C7" />
+        <span style={{ color: '#475569' }}>
+          Mode interaktif aktif menggunakan service state lokal (siap dihubungkan ke API backend).
+        </span>
       </div>
       <span
         style={{
