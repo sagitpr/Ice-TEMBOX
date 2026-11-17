@@ -48,7 +48,18 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
 }) => {
   if (type === 'metrics') {
     return (
-      <div className="metrics-row flat-metrics-row" aria-busy="true" aria-label="Memuat data metrik">
+      <div
+        className="metrics-row flat-metrics-row"
+        aria-busy="true"
+        aria-label="Memuat data metrik"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          borderBottom: '1px solid #E2E8F0',
+          width: '100%',
+          backgroundColor: '#FFFFFF',
+        }}
+      >
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
@@ -62,6 +73,7 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
+              borderRight: i === 3 ? 'none' : '1px solid #E2E8F0',
             }}
           >
             {/* Shimmer Sweep Effect */}

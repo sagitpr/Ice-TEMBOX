@@ -454,8 +454,10 @@ function DashboardHeader({
   const { user } = useAuthSession();
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [accountName, setAccountName] = useState(user?.name || 'Nelayan');
-  const [accountEmail, setAccountEmail] = useState(user?.email || 'nelayan@example.com');
+  const initialName = user?.name || (user?.email ? user.email.split('@')[0] : 'Pengguna TEMBOX');
+  const initialEmail = user?.email || 'user@tembox.id';
+  const [accountName, setAccountName] = useState(initialName);
+  const [accountEmail, setAccountEmail] = useState(initialEmail);
   const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
 
   const notifRef = useRef<HTMLDivElement>(null);
@@ -463,7 +465,11 @@ function DashboardHeader({
 
   useEffect(() => {
     if (user) {
-      if (user.name) setAccountName(user.name);
+      if (user.name && user.name.trim() !== '') {
+        setAccountName(user.name);
+      } else if (user.email) {
+        setAccountName(user.email.split('@')[0]);
+      }
       if (user.email) setAccountEmail(user.email);
     }
   }, [user]);
@@ -479,8 +485,12 @@ function DashboardHeader({
           fetchHeaderNotifications(),
         ]);
         if (!isMounted) return;
-        setAccountName(acc.fullName);
-        setAccountEmail(acc.email);
+        if (acc && acc.fullName && acc.fullName !== 'Nelayan') {
+          setAccountName(acc.fullName);
+        }
+        if (acc && acc.email && acc.email !== 'nelayan@example.com') {
+          setAccountEmail(acc.email);
+        }
         setNotifications(notifList);
       } catch {}
     };

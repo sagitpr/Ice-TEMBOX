@@ -108,8 +108,8 @@ const DEFAULT_STORE: StoreState = {
     },
   ],
   account: {
-    fullName: 'Nelayan',
-    email: 'nelayan@example.com',
+    fullName: 'Pengguna TEMBOX',
+    email: 'user@tembox.id',
     role: 'Pemilik Armada / Operator TPI',
   },
   notifSettings: {

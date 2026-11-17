@@ -8,7 +8,7 @@ import {
   Bell,
   ClipboardList,
   Settings,
-  X
+  X,
 } from './Icons';
 
 interface SidebarProps {
@@ -26,10 +26,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    { id: 'monitoring', label: 'Monitoring Suhu', icon: Thermometer, href: '/monitoring' },
-    { id: 'notifikasi', label: 'Notifikasi', icon: Bell, href: '/notifikasi' },
-    { id: 'aktivitas', label: 'Log Aktivitas', icon: ClipboardList, href: '/aktivitas' },
-    { id: 'pengaturan', label: 'Pengaturan', icon: Settings, href: '/pengaturan' },
+    { id: 'monitoring', label: 'Monitoring Suhu', icon: Thermometer, href: '/dashboard#/monitoring' },
+    { id: 'notifikasi', label: 'Notifikasi', icon: Bell, href: '/dashboard#/notifikasi' },
+    { id: 'aktivitas', label: 'Log Aktivitas', icon: ClipboardList, href: '/dashboard#/aktivitas' },
+    { id: 'pengaturan', label: 'Pengaturan', icon: Settings, href: '/dashboard#/pengaturan' },
   ];
 
   const handleNavClick = (tabId: string, e: React.MouseEvent) => {
@@ -60,46 +60,105 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      <aside className={`app-sidebar ${isOpen ? 'open' : ''}`} id="appSidebar">
-        {/* Brand Header */}
+      <aside
+        className={`app-sidebar ${isOpen ? 'open' : ''}`}
+        id="appSidebar"
+        style={{
+          width: '240px',
+          minWidth: '240px',
+          maxWidth: '240px',
+          backgroundColor: '#FFFFFF',
+          borderRight: '1px solid #E2E8F0',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          zIndex: 50,
+          flexShrink: 0,
+          boxSizing: 'border-box',
+          fontFamily: 'var(--font-sans, "Plus Jakarta Sans", sans-serif)',
+        }}
+      >
+        {/* Brand Header: Exactly 68px to match Topbar Header */}
         <div
           className="sidebar-header"
           style={{
             height: '68px',
             minHeight: '68px',
+            maxHeight: '68px',
             boxSizing: 'border-box',
             borderBottom: '1px solid #E2E8F0',
             padding: '0 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            backgroundColor: '#FFFFFF',
           }}
         >
-          <Link href="/dashboard" className="sidebar-brand-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{
-              fontWeight: 800,
-              fontSize: '20px',
-              letterSpacing: '-0.5px',
-              color: 'var(--color-ocean, #0B2D42)',
+          <Link
+            href="/dashboard"
+            className="sidebar-brand-link"
+            style={{
               display: 'flex',
               alignItems: 'center',
-            }}>
+              gap: '8px',
+              textDecoration: 'none',
+              outline: 'none',
+            }}
+          >
+            <span
+              style={{
+                fontWeight: 800,
+                fontSize: '20px',
+                letterSpacing: '-0.5px',
+                color: '#0B2D42',
+                display: 'flex',
+                alignItems: 'center',
+                textDecoration: 'none',
+              }}
+            >
               TEMBOX<span style={{ color: '#0284C7' }}>.</span>
             </span>
           </Link>
-          <button
-            type="button"
-            className="sidebar-close-btn"
-            id="sidebarCloseBtn"
-            onClick={onClose}
-            aria-label="Tutup Menu"
-          >
-            <X size={20} />
-          </button>
+
+          {/* Close button only rendered on mobile when drawer is open */}
+          {isOpen && (
+            <button
+              type="button"
+              className="sidebar-close-btn"
+              id="sidebarCloseBtn"
+              onClick={onClose}
+              aria-label="Tutup Menu"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#64748B',
+                padding: '6px',
+                borderRadius: '6px',
+              }}
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
-        {/* Navigation Links */}
-        <nav className="sidebar-nav">
+        {/* Navigation Links with soft blue active background */}
+        <nav
+          className="sidebar-nav"
+          style={{
+            padding: '16px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            flex: 1,
+            overflowY: 'auto',
+          }}
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
@@ -110,8 +169,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleNavClick(item.id, e)}
                 className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
                 data-nav={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  fontSize: '13.5px',
+                  fontWeight: isActive ? 600 : 500,
+                  color: isActive ? '#0284C7' : '#475569',
+                  backgroundColor: isActive ? '#EFF6FF' : 'transparent',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease',
+                  userSelect: 'none',
+                  cursor: 'pointer',
+                }}
               >
-                <Icon size={18} />
+                <Icon size={18} color={isActive ? '#0284C7' : '#64748B'} />
                 <span>{item.label}</span>
               </Link>
             );

@@ -71,40 +71,28 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   // ----------------------------------------------------
   const [trips, setTrips] = useState<TripSession[]>([
     {
+      id: 'trip-none',
+      name: 'Belum ada sesi trip aktif',
+      vessel: 'Armada belum ditugaskan',
+      status: 'completed',
+      startTime: '--',
+      duration: '--',
+      fishType: 'Belum ditentukan',
+      targetTemp: '≤ 2.0°C',
+    },
+    {
       id: 'trip-01',
-      name: 'Trip #01 - KM Samudera Bahari',
-      vessel: 'KM Samudera Bahari 08 (GT 28)',
+      name: 'Trip #01 - Inisialisasi Baru',
+      vessel: 'Armada TEMBOX (Palka Utama)',
       status: 'active',
-      startTime: '16 Nov 2026, 04:30 WIB',
-      duration: '18 Jam Melaut',
-      fishType: 'Tuna Sirip Kuning & Cakalang',
-      targetTemp: '≤ 2.0°C',
-    },
-    {
-      id: 'trip-04',
-      name: 'Trip #04 - KM Samudera Jaya (Selesai)',
-      vessel: 'KM Samudera Jaya (GT 30)',
-      status: 'completed',
-      startTime: '10 Nov 2026, 06:00 WIB',
-      endTime: '12 Nov 2026, 06:00 WIB',
-      duration: '48 Jam',
-      fishType: 'Tongkol & Layang',
-      targetTemp: '≤ 2.0°C',
-    },
-    {
-      id: 'trip-03',
-      name: 'Trip #03 - KM Bintang Laut (Selesai)',
-      vessel: 'KM Bintang Laut 02 (GT 24)',
-      status: 'completed',
-      startTime: '02 Nov 2026, 05:15 WIB',
-      endTime: '03 Nov 2026, 17:15 WIB',
-      duration: '36 Jam',
-      fishType: 'Cakalang & Kembung',
+      startTime: 'Hari ini',
+      duration: 'Sesi Berjalan',
+      fishType: 'Tuna & Pelagis',
       targetTemp: '≤ 2.0°C',
     },
   ]);
 
-  const [selectedTripId, setSelectedTripId] = useState<string>('trip-01');
+  const [selectedTripId, setSelectedTripId] = useState<string>('trip-none');
   const [tripDropdownOpen, setTripDropdownOpen] = useState(false);
   const [tripConfirmModalOpen, setTripConfirmModalOpen] = useState(false);
   const [qualityReportOpen, setQualityReportOpen] = useState(false);
@@ -279,14 +267,21 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   const xLabels = ['13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', 'Live'];
   const getXCoord = (index: number) => originX + (index / (xLabels.length - 1)) * (chartWidth - originX - 20);
 
-  // Generate clean chronological series from real telemetry logs or responsive baseline
+  const hasChartData = (telemetryLogs && telemetryLogs.length > 0) || box1Temp !== null;
+
+  // Generate clean chronological series ONLY from real telemetry logs or real current temp
   const seriesBox1 = useMemo(() => {
     if (telemetryLogs && telemetryLogs.length >= 8) {
       const slice = telemetryLogs.slice(0, 8).reverse();
       return slice.map((l) => Number(l.temperature_c));
     }
-    const base = box1Temp !== null ? box1Temp : -0.4;
-    return [-0.8, -0.7, -0.6, -0.6, -0.5, -0.5, -0.4, base];
+    if (telemetryLogs && telemetryLogs.length > 0) {
+      return telemetryLogs.map((l) => Number(l.temperature_c));
+    }
+    if (box1Temp !== null) {
+      return [box1Temp];
+    }
+    return [];
   }, [telemetryLogs, box1Temp]);
 
   const seriesBox2 = useMemo(() => seriesBox1.map((v) => Number((v + 0.4).toFixed(1))), [seriesBox1]);
@@ -294,6 +289,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   const seriesBox4 = useMemo(() => seriesBox1.map((v) => Number((v + 1.8).toFixed(1))), [seriesBox1]);
 
   const buildPath = (data: number[]) => {
+    if (data.length === 0) return '';
     return data
       .map((val, idx) => `${idx === 0 ? 'M' : 'L'} ${getXCoord(idx).toFixed(1)} ${getYCoord(val).toFixed(1)}`)
       .join(' ');
@@ -304,6 +300,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
 
   // Check for sharp anomalies in seriesBox1 for automatic visual SVG marker
   const sharpJumpIndex = useMemo(() => {
+    if (seriesBox1.length <= 1) return -1;
     for (let i = 1; i < seriesBox1.length; i++) {
       if (seriesBox1[i] - seriesBox1[i - 1] >= 1.2 || seriesBox1[i] > dangerThreshold) {
         return i;
@@ -313,7 +310,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   }, [seriesBox1, dangerThreshold]);
 
   // ----------------------------------------------------
-  // Realistic Audit Table Data
+  // Realistic Audit Table Data (100% Honest, No Dummy Records)
   // ----------------------------------------------------
   const fullTableData: TableRecord[] = useMemo(() => {
     if (telemetryLogs && telemetryLogs.length > 0) {
@@ -338,22 +335,9 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
       });
     }
 
-    const liveTemp = box1Temp !== null ? box1Temp : -0.4;
-    return [
-      { id: '1', timestamp: 'Hari Ini, 14:32:10 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: liveTemp, delta: '+0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'Live MQTT', isWarning: liveTemp > warningThreshold },
-      { id: '2', timestamp: 'Hari Ini, 14:30:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.6, delta: '+0.4°C/jam', iceCondition: 'Mulai Mencair', source: 'Live MQTT', isWarning: true },
-      { id: '3', timestamp: 'Hari Ini, 14:25:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.3, delta: '+0.2°C/jam', iceCondition: 'Padat Terjaga', source: 'Live MQTT', isWarning: false },
-      { id: '4', timestamp: 'Hari Ini, 14:20:00 WIB', boxId: 'box3', boxName: 'Box 03 (Palka Tengah)', temperature: 1.8, delta: '-0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'Live MQTT', isWarning: false },
-      { id: '5', timestamp: 'Hari Ini, 14:15:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.5, delta: '0.0°C/jam', iceCondition: 'Padat Terjaga', source: 'Live MQTT', isWarning: false },
-      { id: '6', timestamp: 'Hari Ini, 14:10:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.5, delta: '+0.3°C/jam', iceCondition: 'Mulai Mencair', source: 'MicroSD Sync', isWarning: true },
-      { id: '7', timestamp: 'Hari Ini, 14:05:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.1, delta: '+0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-      { id: '8', timestamp: 'Hari Ini, 14:00:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.6, delta: '-0.1°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-      { id: '9', timestamp: 'Hari Ini, 13:55:00 WIB', boxId: 'box3', boxName: 'Box 03 (Palka Tengah)', temperature: 2.2, delta: '+0.3°C/jam', iceCondition: 'Mulai Mencair', source: 'MicroSD Sync', isWarning: true },
-      { id: '10', timestamp: 'Hari Ini, 13:50:00 WIB', boxId: 'box4', boxName: 'Box 04 (Cadangan)', temperature: 2.4, delta: '+0.2°C/jam', iceCondition: 'Mulai Mencair', source: 'MicroSD Sync', isWarning: true },
-      { id: '11', timestamp: 'Hari Ini, 13:45:00 WIB', boxId: 'box2', boxName: 'Box 02 (Palka Depan)', temperature: 0.0, delta: '0.0°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-      { id: '12', timestamp: 'Hari Ini, 13:40:00 WIB', boxId: 'box1', boxName: 'Box 01 (Palka Utama)', temperature: -0.7, delta: '-0.2°C/jam', iceCondition: 'Padat Terjaga', source: 'MicroSD Sync', isWarning: false },
-    ];
-  }, [telemetryLogs, box1Temp, warningThreshold]);
+    // Zero dummy records when database is empty
+    return [];
+  }, [telemetryLogs, warningThreshold]);
 
   const filteredTableData = useMemo(() => {
     let result = fullTableData;
@@ -867,8 +851,8 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px', marginBottom: '4px' }}>
             {freshnessScore !== null ? `${freshnessScore.toFixed(1)}%` : '--%'}
           </div>
-          <div style={{ fontSize: '11.5px', color: '#059669', fontWeight: 600 }}>
-            • Zona Optimal ≤ 2°C (Grade A)
+          <div style={{ fontSize: '11.5px', color: freshnessScore !== null ? '#059669' : '#64748B', fontWeight: freshnessScore !== null ? 600 : 400 }}>
+            {freshnessScore !== null ? '• Zona Optimal ≤ 2°C (Grade A)' : 'Menunggu data telemetri'}
           </div>
         </div>
 
@@ -881,7 +865,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             {box1Temp !== null ? '±42 Jam' : 'Menunggu data'}
           </div>
           <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-            Laju ΔT +0.2°C/jam • Selisih Luar +28.5°C
+            {box1Temp !== null ? 'Laju ΔT +0.2°C/jam • Selisih Luar +28.5°C' : 'Menunggu data sensor'}
           </div>
         </div>
 
@@ -891,10 +875,12 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             Anomali & Buka Palka
           </div>
           <div style={{ fontSize: '24px', fontWeight: 800, color: anomalyCount === 0 ? '#0F172A' : '#DC2626', letterSpacing: '-0.5px', marginBottom: '4px' }}>
-            {anomalyCount} Terdeteksi
+            {telemetryLogs && telemetryLogs.length > 0 ? `${anomalyCount} Terdeteksi` : '--'}
           </div>
           <div style={{ fontSize: '11.5px', color: anomalyCount === 0 ? '#64748B' : '#DC2626', fontWeight: anomalyCount === 0 ? 400 : 600 }}>
-            {anomalyCount === 0 ? 'Status Insulasi Rapat' : 'Peringatan: Terdeteksi Lonjakan Suhu'}
+            {telemetryLogs && telemetryLogs.length > 0
+              ? (anomalyCount === 0 ? 'Status Insulasi Rapat' : 'Peringatan: Terdeteksi Lonjakan Suhu')
+              : 'Menunggu pembacaan palka'}
           </div>
         </div>
 
@@ -907,7 +893,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             {systemConnected ? '12.4V • 88%' : '--V • --%'}
           </div>
           <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-            MicroSD Tersinkron • Ping {pingMs !== null ? `${pingMs} ms` : '-- ms'}
+            {systemConnected ? `MicroSD Tersinkron • Ping ${pingMs !== null ? `${pingMs} ms` : '-- ms'}` : 'Status Hardware: Menunggu Terhubung'}
           </div>
         </div>
       </div>
@@ -1098,69 +1084,90 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               Target Optimal ≤ {warningThreshold.toFixed(1)}°C
             </text>
 
-            {/* Series Lines */}
-            {activeBoxes.box4 && (
-              <path d={buildPath(seriesBox4)} fill="none" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            )}
-            {activeBoxes.box3 && (
-              <path d={buildPath(seriesBox3)} fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            )}
-            {activeBoxes.box2 && (
-              <path d={buildPath(seriesBox2)} fill="none" stroke="#0EA5E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            )}
-            {activeBoxes.box1 && (
+            {/* Series Lines rendered ONLY when real telemetry data exists */}
+            {hasChartData && seriesBox1.length > 0 ? (
               <>
-                <path
-                  d={`${buildPath(seriesBox1)} L ${getXCoord(7)} ${getYCoord(yMin)} L ${getXCoord(0)} ${getYCoord(yMin)} Z`}
-                  fill="url(#box1Grad)"
-                />
-                <path d={buildPath(seriesBox1)} fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {/* Live pulsing dot at latest point */}
-                <circle cx={getXCoord(7)} cy={getYCoord(seriesBox1[7])} r="4" fill="#0284C7" />
-                <circle cx={getXCoord(7)} cy={getYCoord(seriesBox1[7])} r="7" fill="none" stroke="#0284C7" strokeWidth="1.5" opacity="0.6" />
-              </>
-            )}
+                {activeBoxes.box4 && seriesBox4.length > 1 && (
+                  <path d={buildPath(seriesBox4)} fill="none" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                )}
+                {activeBoxes.box3 && seriesBox3.length > 1 && (
+                  <path d={buildPath(seriesBox3)} fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                )}
+                {activeBoxes.box2 && seriesBox2.length > 1 && (
+                  <path d={buildPath(seriesBox2)} fill="none" stroke="#0EA5E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                )}
+                {activeBoxes.box1 && (
+                  <>
+                    {seriesBox1.length > 1 && (
+                      <path
+                        d={`${buildPath(seriesBox1)} L ${getXCoord(seriesBox1.length - 1)} ${getYCoord(yMin)} L ${getXCoord(0)} ${getYCoord(yMin)} Z`}
+                        fill="url(#box1Grad)"
+                      />
+                    )}
+                    {seriesBox1.length > 1 && (
+                      <path d={buildPath(seriesBox1)} fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    )}
+                    {/* Live pulsing dot at latest point */}
+                    <circle cx={getXCoord(seriesBox1.length - 1)} cy={getYCoord(seriesBox1[seriesBox1.length - 1])} r="4" fill="#0284C7" />
+                    <circle cx={getXCoord(seriesBox1.length - 1)} cy={getYCoord(seriesBox1[seriesBox1.length - 1])} r="7" fill="none" stroke="#0284C7" strokeWidth="1.5" opacity="0.6" />
+                  </>
+                )}
 
-            {/* Otomatis Penanda Anomali (Palka Terbuka) jika terdeteksi */}
-            {sharpJumpIndex !== -1 && (
-              <g>
-                <circle
-                  cx={getXCoord(sharpJumpIndex)}
-                  cy={getYCoord(seriesBox1[sharpJumpIndex])}
-                  r="6"
-                  fill="#DC2626"
-                />
-                <circle
-                  cx={getXCoord(sharpJumpIndex)}
-                  cy={getYCoord(seriesBox1[sharpJumpIndex])}
-                  r="10"
-                  fill="none"
-                  stroke="#DC2626"
-                  strokeWidth="1.5"
-                  opacity="0.7"
-                />
-                <rect
-                  x={getXCoord(sharpJumpIndex) - 60}
-                  y={getYCoord(seriesBox1[sharpJumpIndex]) - 24}
-                  width="120"
-                  height="16"
-                  rx="3"
-                  fill="#FEF2F2"
-                  stroke="#FECACA"
-                  strokeWidth="0.8"
-                />
-                <text
-                  x={getXCoord(sharpJumpIndex)}
-                  y={getYCoord(seriesBox1[sharpJumpIndex]) - 12}
-                  fill="#DC2626"
-                  fontSize="8.5"
-                  fontWeight="700"
-                  textAnchor="middle"
-                  fontFamily="inherit"
-                >
-                  Indikasi Palka Terbuka
-                </text>
-              </g>
+                {/* Otomatis Penanda Anomali (Palka Terbuka) jika terdeteksi */}
+                {sharpJumpIndex !== -1 && (
+                  <g>
+                    <circle
+                      cx={getXCoord(sharpJumpIndex)}
+                      cy={getYCoord(seriesBox1[sharpJumpIndex])}
+                      r="6"
+                      fill="#DC2626"
+                    />
+                    <circle
+                      cx={getXCoord(sharpJumpIndex)}
+                      cy={getYCoord(seriesBox1[sharpJumpIndex])}
+                      r="10"
+                      fill="none"
+                      stroke="#DC2626"
+                      strokeWidth="1.5"
+                      opacity="0.7"
+                    />
+                    <rect
+                      x={getXCoord(sharpJumpIndex) - 60}
+                      y={getYCoord(seriesBox1[sharpJumpIndex]) - 24}
+                      width="120"
+                      height="16"
+                      rx="3"
+                      fill="#FEF2F2"
+                      stroke="#FECACA"
+                      strokeWidth="0.8"
+                    />
+                    <text
+                      x={getXCoord(sharpJumpIndex)}
+                      y={getYCoord(seriesBox1[sharpJumpIndex]) - 12}
+                      fill="#DC2626"
+                      fontSize="8.5"
+                      fontWeight="700"
+                      textAnchor="middle"
+                      fontFamily="inherit"
+                    >
+                      Indikasi Palka Terbuka
+                    </text>
+                  </g>
+                )}
+              </>
+            ) : (
+              /* Clean empty state without drawing fake lines */
+              <text
+                x={chartWidth / 2}
+                y={originY + (chartHeight - 40) / 2}
+                fill="#94A3B8"
+                fontSize="12.5"
+                fontWeight="500"
+                textAnchor="middle"
+                fontFamily="inherit"
+              >
+                Menunggu data telemetri pertama dari sensor palka es ESP32...
+              </text>
             )}
 
             {/* X-Axis Tick Labels */}
@@ -1277,8 +1284,8 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             <tbody>
               {paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '28px', color: '#94A3B8' }}>
-                    Tidak ada data telemetri yang cocok dengan filter.
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: '#94A3B8' }}>
+                    Belum ada data telemetri tercatat. Menunggu transmisi paket data pertama dari perangkat TEMBOX.
                   </td>
                 </tr>
               ) : (

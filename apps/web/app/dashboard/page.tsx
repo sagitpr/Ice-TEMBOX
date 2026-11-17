@@ -6,46 +6,43 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import DashboardCards from '../components/DashboardCards';
 import MarineWeatherBar from '../components/MarineWeatherBar';
-import SkeletonLoader from '../components/SkeletonLoader';
 import { useTelemetryRealtime } from '../../hooks/useTelemetryRealtime';
 
-// Dynamic imports for chart and heavy views (SSR false to minimize main-thread blocking)
+// Lightweight hairline fallbacks to eliminate CLS and prevent stacked icon shimmering
 const SensorChart = dynamic(() => import('../components/SensorChart'), {
   ssr: false,
-  loading: () => <SkeletonLoader type="chart" />,
+  loading: () => <div style={{ minHeight: '260px', borderBottom: '1px solid #E2E8F0' }} />,
 });
 
 const MonitoringView = dynamic(() => import('../components/MonitoringView'), {
   ssr: false,
-  loading: () => <SkeletonLoader type="chart" />,
+  loading: () => <div style={{ minHeight: '320px', borderBottom: '1px solid #E2E8F0' }} />,
 });
 
 const NotifikasiView = dynamic(() => import('../components/NotifikasiView'), {
   ssr: false,
-  loading: () => <SkeletonLoader type="table" />,
+  loading: () => <div style={{ minHeight: '300px', borderBottom: '1px solid #E2E8F0' }} />,
 });
 
 const AktivitasView = dynamic(() => import('../components/AktivitasView'), {
   ssr: false,
-  loading: () => <SkeletonLoader type="table" />,
+  loading: () => <div style={{ minHeight: '300px', borderBottom: '1px solid #E2E8F0' }} />,
 });
 
 const PengaturanView = dynamic(() => import('../components/PengaturanView'), {
   ssr: false,
-  loading: () => <SkeletonLoader type="table" />,
+  loading: () => <div style={{ minHeight: '300px', borderBottom: '1px solid #E2E8F0' }} />,
 });
 
 export default function DashboardPage() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   // Real-time IoT hardware telemetry & Supabase live synchronization
   const telemetry = useTelemetryRealtime();
 
-  // Instant hydration sync with hash
+  // Instant sync with URL hash
   useEffect(() => {
-    setMounted(true);
     const hash = window.location.hash.replace('#/', '').replace('#', '');
     if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(hash)) {
       setCurrentTab(hash);
@@ -67,8 +64,18 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="app-view-container" id="appView">
-      {/* 1. Sidebar on the left */}
+    <div
+      className="app-view-container"
+      id="appView"
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        minHeight: '100vh',
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+      }}
+    >
+      {/* 1. Sidebar on the left (Fixed 240px, White, Hairline Border) */}
       <Sidebar
         currentTab={currentTab}
         onSelectTab={handleSelectTab}
@@ -77,77 +84,86 @@ export default function DashboardPage() {
       />
 
       {/* 2. Main content area on the right */}
-      <main className="app-main">
-        {/* Topbar Header */}
+      <main
+        className="app-main"
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
+          height: '100vh',
+          backgroundColor: '#FFFFFF',
+        }}
+      >
+        {/* Topbar Header (Fixed 68px, White, Hairline Border) */}
         <Header
           currentTab={currentTab}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onSelectTab={handleSelectTab}
         />
 
-        {/* Dynamic App Content */}
-        <div className="app-content">
-          {!mounted ? (
-            <>
-              <SkeletonLoader type="metrics" />
-              <div style={{ marginTop: '24px' }}>
-                <SkeletonLoader type="chart" />
-              </div>
-            </>
-          ) : (
-            <>
-              {currentTab === 'dashboard' && (
-                <section className="app-page active" id="page-dashboard">
-                  <DashboardCards
-                    currentTemp={telemetry.currentTemp}
-                    tempStatus={telemetry.tempStatus}
-                    iceCondition={telemetry.iceCondition}
-                    minTemp={telemetry.minTemp}
-                    maxTemp={telemetry.maxTemp}
-                    tempDeltaPerHour={telemetry.tempDeltaPerHour}
-                    iceRemainingHours={telemetry.iceRemainingHours}
-                    systemStatus={telemetry.systemStatus}
-                    systemConnected={telemetry.systemConnected}
-                    pingMs={telemetry.pingMs}
-                    signalRssi={telemetry.signalRssi}
-                    lastUpdate={telemetry.lastUpdate}
-                    lastUpdateDate={telemetry.lastUpdateDate}
-                    sdStatus={telemetry.sdStatus}
-                    rtcStatus={telemetry.rtcStatus}
-                  />
-                  <MarineWeatherBar
-                    currentPalkaTemp={telemetry.currentTempNum}
-                    selectedDeviceCode={telemetry.selectedDeviceCode}
-                    onDeviceChange={telemetry.setSelectedDeviceCode}
-                    onPingTested={() => telemetry.testPing()}
-                    telemetryLogs={telemetry.telemetryLogs}
-                  />
-                  <SensorChart
-                    onViewAllNotif={() => handleSelectTab('notifikasi')}
-                    telemetryLogs={telemetry.telemetryLogs}
-                  />
-                </section>
-              )}
-
-              {currentTab === 'monitoring' && (
-                <MonitoringView
-                  telemetryLogs={telemetry.telemetryLogs}
-                  currentTempNum={telemetry.currentTempNum}
-                  pingMs={telemetry.pingMs}
-                  signalRssi={telemetry.signalRssi}
-                  systemConnected={telemetry.systemConnected}
-                  selectedDeviceCode={telemetry.selectedDeviceCode}
-                  onRefreshTelemetry={telemetry.refreshTelemetry}
-                />
-              )}
-
-              {currentTab === 'notifikasi' && <NotifikasiView />}
-
-              {currentTab === 'aktivitas' && <AktivitasView />}
-
-              {currentTab === 'pengaturan' && <PengaturanView />}
-            </>
+        {/* Dynamic App Content rendered directly without stacked skeleton blocking */}
+        <div
+          className="app-content"
+          style={{
+            backgroundColor: '#FFFFFF',
+            padding: '24px 32px 48px',
+            maxWidth: '1400px',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          {currentTab === 'dashboard' && (
+            <section className="app-page active" id="page-dashboard">
+              <DashboardCards
+                currentTemp={telemetry.currentTemp}
+                tempStatus={telemetry.tempStatus}
+                iceCondition={telemetry.iceCondition}
+                minTemp={telemetry.minTemp}
+                maxTemp={telemetry.maxTemp}
+                tempDeltaPerHour={telemetry.tempDeltaPerHour}
+                iceRemainingHours={telemetry.iceRemainingHours}
+                systemStatus={telemetry.systemStatus}
+                systemConnected={telemetry.systemConnected}
+                pingMs={telemetry.pingMs}
+                signalRssi={telemetry.signalRssi}
+                lastUpdate={telemetry.lastUpdate}
+                lastUpdateDate={telemetry.lastUpdateDate}
+                sdStatus={telemetry.sdStatus}
+                rtcStatus={telemetry.rtcStatus}
+              />
+              <MarineWeatherBar
+                currentPalkaTemp={telemetry.currentTempNum}
+                selectedDeviceCode={telemetry.selectedDeviceCode}
+                onDeviceChange={telemetry.setSelectedDeviceCode}
+                onPingTested={() => telemetry.testPing()}
+                telemetryLogs={telemetry.telemetryLogs}
+              />
+              <SensorChart
+                onViewAllNotif={() => handleSelectTab('notifikasi')}
+                telemetryLogs={telemetry.telemetryLogs}
+              />
+            </section>
           )}
+
+          {currentTab === 'monitoring' && (
+            <MonitoringView
+              telemetryLogs={telemetry.telemetryLogs}
+              currentTempNum={telemetry.currentTempNum}
+              pingMs={telemetry.pingMs}
+              signalRssi={telemetry.signalRssi}
+              systemConnected={telemetry.systemConnected}
+              selectedDeviceCode={telemetry.selectedDeviceCode}
+              onRefreshTelemetry={telemetry.refreshTelemetry}
+            />
+          )}
+
+          {currentTab === 'notifikasi' && <NotifikasiView />}
+
+          {currentTab === 'aktivitas' && <AktivitasView />}
+
+          {currentTab === 'pengaturan' && <PengaturanView />}
         </div>
       </main>
     </div>
