@@ -68,8 +68,16 @@ export interface HeaderNotificationItem {
   title: string;
   message: string;
   time: string;
-  severity: 'warning' | 'info' | 'success';
+  severity: 'warning' | 'info' | 'success' | 'critical';
+  category?: 'warning' | 'system' | 'info';
   unread: boolean;
+  deviceId?: string | null;
+  deviceName?: string | null;
+  placement?: string | null;
+  triggerValue?: string | null;
+  channelSent?: string | null;
+  actionType?: 'mute_buzzer' | 'view_diagnostics' | 'check_graph' | string | null;
+  createdAt?: string;
 }
 
 // ==================================================
@@ -327,14 +335,79 @@ export async function toggleNotificationSettings(
 }
 
 export async function fetchHeaderNotifications(): Promise<HeaderNotificationItem[]> {
-  await simulateNetworkDelay(100);
+  try {
+    const res = await fetch('/api/notifications', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.notifications)) {
+        const mapped: HeaderNotificationItem[] = data.notifications.map((n: {
+          id: string;
+          title: string;
+          message: string;
+          severity?: 'warning' | 'info' | 'success' | 'critical';
+          category?: 'warning' | 'system' | 'info';
+          is_read?: boolean;
+          unread?: boolean;
+          device_id?: string;
+          device_name?: string;
+          placement?: string;
+          trigger_value?: string;
+          channel_sent?: string;
+          action_type?: string;
+          created_at?: string;
+        }) => {
+          const recDate = n.created_at ? new Date(n.created_at) : new Date();
+          const timeStr = recDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+          return {
+            id: String(n.id),
+            title: n.title,
+            message: n.message,
+            time: timeStr,
+            severity: n.severity || 'info',
+            category: n.category || (n.severity === 'critical' || n.severity === 'warning' ? 'warning' : 'info'),
+            unread: n.is_read !== undefined ? !n.is_read : (n.unread ?? true),
+            deviceId: n.device_id || null,
+            deviceName: n.device_name || null,
+            placement: n.placement || null,
+            triggerValue: n.trigger_value || null,
+            channelSent: n.channel_sent || 'Terkirim via Email & WA',
+            actionType: n.action_type || 'view_diagnostics',
+            createdAt: n.created_at || new Date().toISOString(),
+          };
+        });
+        const store = getStore();
+        store.notifications = mapped;
+        return mapped;
+      }
+    }
+  } catch {
+    // Fall back to local store
+  }
   return getStore().notifications.map((n) => ({ ...n }));
 }
 
 export async function markAllHeaderNotificationsRead(): Promise<HeaderNotificationItem[]> {
-  await simulateNetworkDelay(120);
+  try {
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+  } catch {}
+
   const store = getStore();
   store.notifications = store.notifications.map((n) => ({ ...n, unread: false }));
+  emitStoreEvent('tembox:notifications-updated', store.notifications);
+  return store.notifications.map((n) => ({ ...n }));
+}
+
+export async function clearReadNotifications(): Promise<HeaderNotificationItem[]> {
+  try {
+    await fetch('/api/notifications', { method: 'DELETE' });
+  } catch {}
+
+  const store = getStore();
+  store.notifications = store.notifications.filter((n) => n.unread);
   emitStoreEvent('tembox:notifications-updated', store.notifications);
   return store.notifications.map((n) => ({ ...n }));
 }

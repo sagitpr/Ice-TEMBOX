@@ -98,6 +98,9 @@ export async function GET(request: Request) {
     const sanitized = (devices || []).map((dev) => ({
       id: dev.id,
       name: dev.device_name,
+      device_name: dev.device_name,
+      device_code: dev.device_code,
+      serial_number: dev.serial_number || dev.device_code,
       serialNumber: dev.serial_number || dev.device_code,
       placement: dev.placement,
       status: dev.status,

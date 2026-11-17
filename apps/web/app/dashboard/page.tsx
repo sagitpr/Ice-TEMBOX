@@ -182,7 +182,7 @@ export default function DashboardPage() {
             />
           )}
 
-          {currentTab === 'notifikasi' && <NotifikasiView />}
+          {currentTab === 'notifikasi' && <NotifikasiView onNavigateTab={handleSelectTab} />}
 
           {currentTab === 'aktivitas' && <AktivitasView telemetryLogs={telemetry.telemetryLogs} />}
 

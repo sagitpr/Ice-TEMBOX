@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   Calendar,
   ChevronDown,
@@ -20,8 +20,23 @@ import {
   AlertTriangle,
   RefreshCw,
   FileText,
+  Box,
+  Plus,
 } from './Icons';
 import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
+import { getSupabaseClient } from '../../modules/supabase/supabaseClient';
+
+export interface MonitoringDeviceItem {
+  id: string;
+  name: string;
+  device_code?: string;
+  serialNumber?: string;
+  placement: string;
+  status?: string;
+  lastTemperatureC?: number | null;
+  warnThreshold?: number;
+  critThreshold?: number;
+}
 
 export interface MonitoringViewProps {
   telemetryLogs?: TelemetryLogItem[];
@@ -32,6 +47,17 @@ export interface MonitoringViewProps {
   selectedDeviceCode?: string | null;
   onRefreshTelemetry?: () => Promise<void>;
 }
+
+const DEVICE_COLORS = [
+  '#0284C7', // Sky Blue
+  '#0EA5E9', // Light Blue
+  '#F59E0B', // Amber
+  '#10B981', // Emerald
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+  '#14B8A6', // Teal
+  '#F97316', // Orange
+];
 
 interface TableRecord {
   id: string;
@@ -66,6 +92,62 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   selectedDeviceCode = null,
   onRefreshTelemetry,
 }) => {
+  // ----------------------------------------------------
+  // 0. Registered Devices State & Real-time Supabase Sync
+  // ----------------------------------------------------
+  const [devices, setDevices] = useState<MonitoringDeviceItem[]>([]);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(true);
+
+  const loadDevices = useCallback(async () => {
+    try {
+      const res = await fetch('/api/iot/devices');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.devices)) {
+        setDevices(data.devices);
+      }
+    } catch (err) {
+      console.warn('[Monitoring] Error loading devices:', err);
+    } finally {
+      setIsLoadingDevices(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDevices();
+
+    let supabaseChannel: ReturnType<ReturnType<typeof getSupabaseClient>['channel']> | null = null;
+    try {
+      const supabase = getSupabaseClient();
+      supabaseChannel = supabase
+        .channel('monitoring_devices_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
+          loadDevices();
+        })
+        .subscribe();
+    } catch {}
+
+    const handleDeviceEvent = () => {
+      loadDevices();
+    };
+    window.addEventListener('tembox:device-added', handleDeviceEvent);
+    window.addEventListener('tembox:device-updated', handleDeviceEvent);
+    window.addEventListener('tembox:device-deleted', handleDeviceEvent);
+    window.addEventListener('tembox:devices-updated', handleDeviceEvent);
+
+    return () => {
+      if (supabaseChannel) {
+        try {
+          supabaseChannel.unsubscribe();
+        } catch {}
+      }
+      window.removeEventListener('tembox:device-added', handleDeviceEvent);
+      window.removeEventListener('tembox:device-updated', handleDeviceEvent);
+      window.removeEventListener('tembox:device-deleted', handleDeviceEvent);
+      window.removeEventListener('tembox:devices-updated', handleDeviceEvent);
+    };
+  }, [loadDevices]);
+
   // ----------------------------------------------------
   // 1. Sesi Trip Melaut (Fishing Trip Management)
   // ----------------------------------------------------
@@ -103,7 +185,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   // 2. Toolbar & Filter Controls
   // ----------------------------------------------------
   const [timeRange, setTimeRange] = useState<'live' | '1h' | '24h' | '7d'>('live');
-  const [selectedBoxFilter, setSelectedBoxFilter] = useState<'all' | 'box1' | 'box2' | 'box3' | 'box4'>('all');
+  const [selectedBoxFilter, setSelectedBoxFilter] = useState<string>('all');
   const [slotDropdownOpen, setSlotDropdownOpen] = useState(false);
 
   // ----------------------------------------------------
@@ -121,14 +203,9 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   const [syncFeedbackToast, setSyncFeedbackToast] = useState<string | null>(null);
 
   // ----------------------------------------------------
-  // 5. Interactive Multi-Sensor Series Visibility
+  // 5. Interactive Multi-Sensor Series Visibility per registered device
   // ----------------------------------------------------
-  const [activeBoxes, setActiveBoxes] = useState<Record<string, boolean>>({
-    box1: true,
-    box2: true,
-    box3: true,
-    box4: true,
-  });
+  const [activeDeviceIds, setActiveDeviceIds] = useState<Record<string, boolean>>({});
 
   // ----------------------------------------------------
   // 6. Audit Table Filter & Pagination
@@ -157,6 +234,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   // Hardware Sync Handler
   // ----------------------------------------------------
   const handleForceSyncSD = async () => {
+    if (devices.length === 0) return;
     setIsSyncingSD(true);
     setSyncFeedbackToast('Mengirim perintah sinkronisasi MicroSD ke ESP32...');
     try {
@@ -176,63 +254,54 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   };
 
   // ----------------------------------------------------
-  // Multi-Sensor Readings Data
+  // Helper for Status Calculation
   // ----------------------------------------------------
-  const box1Temp = currentTempNum !== null ? currentTempNum : null;
-  const box2Temp = box1Temp !== null ? Number((box1Temp + 0.4).toFixed(1)) : null;
-  const box3Temp = box1Temp !== null ? Number((box1Temp + 1.1).toFixed(1)) : null;
-  const box4Temp = box1Temp !== null ? Number((box1Temp + 1.8).toFixed(1)) : null;
-
-  const getBoxStatus = (temp: number | null) => {
+  const getBoxStatus = useCallback((temp: number | null) => {
     if (temp === null) return { text: '• Menunggu sensor', color: '#64748B' };
     if (temp <= warningThreshold) return { text: `• Aman (Min ${(temp - 0.4).toFixed(1)}° / Max ${(temp + 0.3).toFixed(1)}°)`, color: '#059669' };
     if (temp <= dangerThreshold) return { text: `• Waspada (Mendekati ${dangerThreshold}°C)`, color: '#D97706' };
     return { text: `• Bahaya (> ${dangerThreshold}°C)`, color: '#DC2626' };
-  };
+  }, [warningThreshold, dangerThreshold]);
 
-  const boxCardsData = [
-    {
-      id: 'box1',
-      title: 'Box 01 (Palka Utama)',
-      temp: box1Temp,
-      tempStr: box1Temp !== null ? `${box1Temp > 0 ? '+' : ''}${box1Temp.toFixed(1)} °C` : '-- °C',
-      status: getBoxStatus(box1Temp),
-    },
-    {
-      id: 'box2',
-      title: 'Box 02 (Palka Depan)',
-      temp: box2Temp,
-      tempStr: box2Temp !== null ? `${box2Temp > 0 ? '+' : ''}${box2Temp.toFixed(1)} °C` : '-- °C',
-      status: getBoxStatus(box2Temp),
-    },
-    {
-      id: 'box3',
-      title: 'Box 03 (Palka Tengah)',
-      temp: box3Temp,
-      tempStr: box3Temp !== null ? `${box3Temp > 0 ? '+' : ''}${box3Temp.toFixed(1)} °C` : '-- °C',
-      status: getBoxStatus(box3Temp),
-    },
-    {
-      id: 'box4',
-      title: 'Box 04 (Palka Cadangan)',
-      temp: box4Temp,
-      tempStr: box4Temp !== null ? `${box4Temp > 0 ? '+' : ''}${box4Temp.toFixed(1)} °C` : '-- °C',
-      status: getBoxStatus(box4Temp),
-    },
-  ];
+  // ----------------------------------------------------
+  // 100% Dynamic Box Cards Data from Registered Devices
+  // ----------------------------------------------------
+  const boxCardsData = useMemo(() => {
+    return devices.map((dev, idx) => {
+      const devCode = dev.device_code || dev.serialNumber || '';
+      let temp: number | null = null;
+
+      if (currentTempNum !== null && (selectedDeviceCode === devCode || (!selectedDeviceCode && idx === 0))) {
+        temp = currentTempNum;
+      } else if (dev.lastTemperatureC !== null && dev.lastTemperatureC !== undefined) {
+        temp = Number(dev.lastTemperatureC);
+      }
+
+      return {
+        id: dev.id || devCode || `dev-${idx}`,
+        title: `${dev.name} (${dev.placement})`,
+        temp,
+        tempStr: temp !== null ? `${temp > 0 ? '+' : ''}${temp.toFixed(1)} °C` : '-- °C',
+        status: getBoxStatus(temp),
+      };
+    });
+  }, [devices, currentTempNum, selectedDeviceCode, getBoxStatus]);
+
+  // Primary box temp for aggregate calculation
+  const primaryTemp = boxCardsData.length > 0 ? boxCardsData[0].temp : null;
 
   // ----------------------------------------------------
   // Analitik Cold-Chain & Freshness Computation
   // ----------------------------------------------------
   const freshnessScore = useMemo(() => {
     if (!telemetryLogs || telemetryLogs.length === 0) {
-      return box1Temp !== null ? 98.5 : null;
+      return primaryTemp !== null ? 98.5 : null;
     }
     const valid = telemetryLogs.filter((l) => typeof l.temperature_c === 'number' && !isNaN(l.temperature_c));
     if (valid.length === 0) return null;
     const inSafeZone = valid.filter((l) => l.temperature_c <= warningThreshold);
     return Math.round((inSafeZone.length / valid.length) * 1000) / 10;
-  }, [telemetryLogs, warningThreshold, box1Temp]);
+  }, [telemetryLogs, warningThreshold, primaryTemp]);
 
   const anomalyCount = useMemo(() => {
     if (!telemetryLogs || telemetryLogs.length === 0) return 0;
@@ -267,26 +336,24 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   const xLabels = ['13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', 'Live'];
   const getXCoord = (index: number) => originX + (index / (xLabels.length - 1)) * (chartWidth - originX - 20);
 
-  const hasChartData = (telemetryLogs && telemetryLogs.length > 0) || box1Temp !== null;
+  const hasChartData = Boolean(telemetryLogs && telemetryLogs.length > 0);
 
-  // Generate clean chronological series ONLY from real telemetry logs or real current temp
-  const seriesBox1 = useMemo(() => {
-    if (telemetryLogs && telemetryLogs.length >= 8) {
-      const slice = telemetryLogs.slice(0, 8).reverse();
-      return slice.map((l) => Number(l.temperature_c));
-    }
-    if (telemetryLogs && telemetryLogs.length > 0) {
-      return telemetryLogs.map((l) => Number(l.temperature_c));
-    }
-    if (box1Temp !== null) {
-      return [box1Temp];
-    }
-    return [];
-  }, [telemetryLogs, box1Temp]);
+  // Helper to extract series strictly from telemetry logs
+  const getDeviceSeries = useCallback((dev: MonitoringDeviceItem, index: number) => {
+    if (!telemetryLogs || telemetryLogs.length === 0) return [];
+    
+    // In multi-device setups, if logs specify device_id, match them; otherwise render the device's recorded history
+    const matchingLogs = telemetryLogs.filter((l) => {
+      if ((l as { device_id?: string }).device_id) {
+        return (l as { device_id?: string }).device_id === dev.id;
+      }
+      return true;
+    });
 
-  const seriesBox2 = useMemo(() => seriesBox1.map((v) => Number((v + 0.4).toFixed(1))), [seriesBox1]);
-  const seriesBox3 = useMemo(() => seriesBox1.map((v) => Number((v + 1.1).toFixed(1))), [seriesBox1]);
-  const seriesBox4 = useMemo(() => seriesBox1.map((v) => Number((v + 1.8).toFixed(1))), [seriesBox1]);
+    const targetLogs = matchingLogs.length > 0 ? matchingLogs : telemetryLogs;
+    const slice = targetLogs.slice(0, 8).reverse();
+    return slice.map((l) => Number(l.temperature_c));
+  }, [telemetryLogs]);
 
   const buildPath = (data: number[]) => {
     if (data.length === 0) return '';
@@ -298,16 +365,22 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   const dangerY = getYCoord(dangerThreshold);
   const targetY = getYCoord(warningThreshold);
 
-  // Check for sharp anomalies in seriesBox1 for automatic visual SVG marker
+  // Primary series for anomaly detection and overview
+  const primarySeries = useMemo(() => {
+    if (!telemetryLogs || telemetryLogs.length === 0) return [];
+    return telemetryLogs.slice(0, 8).reverse().map((l) => Number(l.temperature_c));
+  }, [telemetryLogs]);
+
+  // Check for sharp anomalies in primary series
   const sharpJumpIndex = useMemo(() => {
-    if (seriesBox1.length <= 1) return -1;
-    for (let i = 1; i < seriesBox1.length; i++) {
-      if (seriesBox1[i] - seriesBox1[i - 1] >= 1.2 || seriesBox1[i] > dangerThreshold) {
+    if (primarySeries.length <= 1) return -1;
+    for (let i = 1; i < primarySeries.length; i++) {
+      if (primarySeries[i] - primarySeries[i - 1] >= 1.2 || primarySeries[i] > dangerThreshold) {
         return i;
       }
     }
     return -1;
-  }, [seriesBox1, dangerThreshold]);
+  }, [primarySeries, dangerThreshold]);
 
   // ----------------------------------------------------
   // Realistic Audit Table Data (100% Honest, No Dummy Records)
@@ -321,11 +394,18 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           : `T-${idx * 2}m`;
         const temp = Number(log.temperature_c);
         const isWarn = temp > warningThreshold;
+
+        // Match device
+        const logDevId = (log as { device_id?: string }).device_id;
+        const matched = devices.find((d) => d.id === logDevId) || devices[0];
+        const boxId = matched?.id || matched?.device_code || 'dev-0';
+        const boxName = matched ? `${matched.name} (${matched.placement})` : 'Palka Utama';
+
         return {
           id: String(log.id || idx),
           timestamp: timeStr,
-          boxId: 'box1',
-          boxName: 'Box 01 (Palka Utama)',
+          boxId,
+          boxName,
           temperature: temp,
           delta: '+0.1°C/jam',
           iceCondition: temp > 4.0 ? 'Mencair Cepat' : temp > 2.0 ? 'Mulai Mencair' : 'Padat Terjaga',
@@ -337,7 +417,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
 
     // Zero dummy records when database is empty
     return [];
-  }, [telemetryLogs, warningThreshold]);
+  }, [telemetryLogs, warningThreshold, devices]);
 
   const filteredTableData = useMemo(() => {
     let result = fullTableData;
@@ -487,29 +567,31 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           {/* Tombol Mulai / Selesai Trip */}
           <button
             type="button"
+            disabled={devices.length === 0}
             onClick={() => setTripConfirmModalOpen(true)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               padding: '6px 12px',
-              backgroundColor: activeTrip.status === 'active' ? '#FEF2F2' : '#F0FDF4',
-              border: `1px solid ${activeTrip.status === 'active' ? '#FECACA' : '#BBF7D0'}`,
+              backgroundColor: devices.length === 0 ? '#F1F5F9' : activeTrip.status === 'active' ? '#FEF2F2' : '#F0FDF4',
+              border: `1px solid ${devices.length === 0 ? '#E2E8F0' : activeTrip.status === 'active' ? '#FECACA' : '#BBF7D0'}`,
               borderRadius: '8px',
               fontSize: '12px',
               fontWeight: 600,
-              color: activeTrip.status === 'active' ? '#DC2626' : '#16A34A',
-              cursor: 'pointer',
+              color: devices.length === 0 ? '#94A3B8' : activeTrip.status === 'active' ? '#DC2626' : '#16A34A',
+              cursor: devices.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: devices.length === 0 ? 0.5 : 1,
             }}
           >
             {activeTrip.status === 'active' ? (
               <>
-                <Square size={11} color="#DC2626" />
+                <Square size={11} color={devices.length === 0 ? '#94A3B8' : '#DC2626'} />
                 <span>Selesai Trip</span>
               </>
             ) : (
               <>
-                <Play size={11} color="#16A34A" />
+                <Play size={11} color={devices.length === 0 ? '#94A3B8' : '#16A34A'} />
                 <span>Mulai Trip Baru</span>
               </>
             )}
@@ -518,6 +600,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           {/* Tombol Laporan Mutu (Cetak / CSV) */}
           <button
             type="button"
+            disabled={devices.length === 0}
             onClick={() => setQualityReportOpen(true)}
             style={{
               display: 'inline-flex',
@@ -529,11 +612,12 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               borderRadius: '8px',
               fontSize: '12px',
               fontWeight: 600,
-              color: '#334155',
-              cursor: 'pointer',
+              color: devices.length === 0 ? '#94A3B8' : '#334155',
+              cursor: devices.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: devices.length === 0 ? 0.5 : 1,
             }}
           >
-            <Printer size={13} color="#0284C7" />
+            <Printer size={13} color={devices.length === 0 ? '#94A3B8' : '#0284C7'} />
             <span>Laporan Mutu (CSV/Cetak)</span>
           </button>
         </div>
@@ -605,14 +689,8 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               <Filter size={12} color="#64748B" />
               <span>
                 {selectedBoxFilter === 'all'
-                  ? 'Semua Box'
-                  : selectedBoxFilter === 'box1'
-                    ? 'Box 01'
-                    : selectedBoxFilter === 'box2'
-                      ? 'Box 02'
-                      : selectedBoxFilter === 'box3'
-                        ? 'Box 03'
-                        : 'Box 04'}
+                  ? `Semua Box (${devices.length})`
+                  : devices.find((d) => (d.id || d.device_code) === selectedBoxFilter)?.name || 'Filter Box'}
               </span>
               <ChevronDown size={11} color="#64748B" />
             </button>
@@ -629,21 +707,23 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                   borderRadius: '8px',
                   boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
                   padding: '4px',
-                  minWidth: '150px',
+                  minWidth: '180px',
+                  maxHeight: '260px',
+                  overflowY: 'auto',
                 }}
               >
                 {[
-                  { id: 'all', label: 'Semua Box (4)' },
-                  { id: 'box1', label: 'Box 01 (Utama)' },
-                  { id: 'box2', label: 'Box 02 (Depan)' },
-                  { id: 'box3', label: 'Box 03 (Tengah)' },
-                  { id: 'box4', label: 'Box 04 (Cadangan)' },
+                  { id: 'all', label: `Semua Box (${devices.length})` },
+                  ...devices.map((d, i) => ({
+                    id: d.id || d.device_code || String(i),
+                    label: `${d.name} (${d.placement})`,
+                  })),
                 ].map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
                     onClick={() => {
-                      setSelectedBoxFilter(opt.id as any);
+                      setSelectedBoxFilter(opt.id);
                       setSlotDropdownOpen(false);
                       setCurrentPage(1);
                     }}
@@ -675,6 +755,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           <div ref={thresholdRef} style={{ position: 'relative' }}>
             <button
               type="button"
+              disabled={devices.length === 0}
               onClick={() => setThresholdModalOpen(!thresholdModalOpen)}
               style={{
                 display: 'inline-flex',
@@ -686,11 +767,12 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
                 borderRadius: '8px',
                 fontSize: '12px',
                 fontWeight: 600,
-                color: '#334155',
-                cursor: 'pointer',
+                color: devices.length === 0 ? '#94A3B8' : '#334155',
+                cursor: devices.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: devices.length === 0 ? 0.5 : 1,
               }}
             >
-              <Sliders size={13} color="#0284C7" />
+              <Sliders size={13} color={devices.length === 0 ? '#94A3B8' : '#0284C7'} />
               <span>Atur Batas & Interval</span>
             </button>
 
@@ -788,23 +870,23 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           <button
             type="button"
             onClick={handleForceSyncSD}
-            disabled={isSyncingSD}
+            disabled={devices.length === 0 || isSyncingSD}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               padding: '6px 12px',
-              backgroundColor: '#0F172A',
+              backgroundColor: devices.length === 0 ? '#F1F5F9' : '#0F172A',
               border: 'none',
               borderRadius: '8px',
               fontSize: '12px',
               fontWeight: 600,
-              color: '#FFFFFF',
-              cursor: isSyncingSD ? 'not-allowed' : 'pointer',
-              opacity: isSyncingSD ? 0.7 : 1,
+              color: devices.length === 0 ? '#94A3B8' : '#FFFFFF',
+              cursor: (devices.length === 0 || isSyncingSD) ? 'not-allowed' : 'pointer',
+              opacity: (devices.length === 0 || isSyncingSD) ? 0.5 : 1,
             }}
           >
-            <RefreshCw size={12} color="#FFFFFF" className={isSyncingSD ? 'animate-spin' : ''} />
+            <RefreshCw size={12} color={devices.length === 0 ? '#94A3B8' : '#FFFFFF'} className={isSyncingSD ? 'animate-spin' : ''} />
             <span>{isSyncingSD ? 'Menyinkronkan...' : 'Paksa Sync SD'}</span>
           </button>
         </div>
@@ -862,10 +944,10 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             Ketahanan Es & Laju
           </div>
           <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px', marginBottom: '4px' }}>
-            {box1Temp !== null ? '±42 Jam' : 'Menunggu data'}
+            {primaryTemp !== null ? '±42 Jam' : 'Menunggu data'}
           </div>
           <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-            {box1Temp !== null ? 'Laju ΔT +0.2°C/jam • Selisih Luar +28.5°C' : 'Menunggu data sensor'}
+            {primaryTemp !== null ? 'Laju ΔT +0.2°C/jam • Selisih Luar +28.5°C' : 'Menunggu data sensor'}
           </div>
         </div>
 
@@ -899,59 +981,116 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
       </div>
 
       {/* ==================================================
-          3. GRID 4 SLOT SENSOR (BOX 01 - BOX 04)
+          3. GRID SLOT SENSOR (DINAMIS 100% SESUAI PERANGKAT)
           ================================================== */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          borderBottom: '1px solid #E2E8F0',
-          marginBottom: '28px',
-        }}
-      >
-        {boxCardsData.map((box, idx) => (
+      {devices.length === 0 ? (
+        <div
+          style={{
+            padding: '36px 20px',
+            textAlign: 'center',
+            borderBottom: '1px solid #E2E8F0',
+            backgroundColor: '#FAFAFA',
+            marginBottom: '28px',
+          }}
+        >
           <div
-            key={box.id}
             style={{
-              padding: '12px 18px',
-              borderRight: idx === 3 ? 'none' : '1px solid #E2E8F0',
+              width: '42px',
+              height: '42px',
+              borderRadius: '8px',
+              backgroundColor: '#F1F5F9',
+              color: '#64748B',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 10px',
             }}
           >
-            {/* Baris 1: Label Box */}
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-              {box.title}
-            </div>
-
-            {/* Baris 2: Nilai Suhu Besar */}
-            <div
-              style={{
-                fontSize: '24px',
-                fontWeight: 800,
-                color: '#0F172A',
-                letterSpacing: '-0.5px',
-                lineHeight: 1.2,
-                marginBottom: '4px',
-              }}
-            >
-              {box.tempStr}
-            </div>
-
-            {/* Baris 3: Status 1 Baris Polos */}
-            <div
-              style={{
-                fontSize: '11.5px',
-                fontWeight: 500,
-                color: box.status.color,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {box.status.text}
-            </div>
+            <Box size={22} color="#64748B" />
           </div>
-        ))}
-      </div>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+            Belum ada perangkat palka terdaftar
+          </h3>
+          <p style={{ fontSize: '13px', color: '#64748B', margin: '0 0 16px 0', maxWidth: '440px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+            Tambahkan perangkat di Pengaturan untuk memantau suhu palka cold-chain armada Anda secara real-time.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = '#/pengaturan';
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              backgroundColor: '#0284C7',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '12.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <Plus size={14} color="#FFFFFF" />
+            <span>Tambahkan Perangkat di Pengaturan</span>
+          </button>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            borderBottom: '1px solid #E2E8F0',
+            marginBottom: '28px',
+          }}
+        >
+          {boxCardsData.map((box) => (
+            <div
+              key={box.id}
+              style={{
+                padding: '14px 18px',
+                borderRight: '1px solid #E2E8F0',
+                borderBottom: '1px solid #E2E8F0',
+              }}
+            >
+              {/* Baris 1: Label Box */}
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                {box.title}
+              </div>
+
+              {/* Baris 2: Nilai Suhu Besar */}
+              <div
+                style={{
+                  fontSize: '24px',
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  letterSpacing: '-0.5px',
+                  lineHeight: 1.2,
+                  marginBottom: '4px',
+                }}
+              >
+                {box.tempStr}
+              </div>
+
+              {/* Baris 3: Status 1 Baris Polos */}
+              <div
+                style={{
+                  fontSize: '11.5px',
+                  fontWeight: 500,
+                  color: box.status.color,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {box.status.text}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ==================================================
           4. GRAFIK MULTI-SENSOR & PENANDA ANOMALI
@@ -982,48 +1121,49 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             </h2>
           </div>
 
-          {/* Legenda Box Klik untuk Toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12px' }}>
-            {[
-              { id: 'box1', name: 'Box 01 (Utama)', color: '#0284C7' },
-              { id: 'box2', name: 'Box 02 (Depan)', color: '#0EA5E9' },
-              { id: 'box3', name: 'Box 03 (Tengah)', color: '#F59E0B' },
-              { id: 'box4', name: 'Box 04 (Cadangan)', color: '#14B8A6' },
-            ].map((b) => {
-              const isEnabled = activeBoxes[b.id];
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => setActiveBoxes((prev) => ({ ...prev, [b.id]: !prev[b.id] }))}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: isEnabled ? b.color : '#94A3B8',
-                    textDecoration: isEnabled ? 'none' : 'line-through',
-                    opacity: isEnabled ? 1 : 0.45,
-                    fontWeight: isEnabled ? 700 : 500,
-                    padding: '2px 0',
-                  }}
-                  title={`Klik untuk menyembunyikan/menampilkan ${b.name}`}
-                >
-                  <span
+          {/* Legenda Box Dinamis per Perangkat */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12px', flexWrap: 'wrap' }}>
+            {devices.length === 0 ? (
+              <span style={{ color: '#94A3B8', fontSize: '12px' }}>Belum ada perangkat terdaftar</span>
+            ) : (
+              devices.map((d, i) => {
+                const devId = d.id || d.device_code || String(i);
+                const isEnabled = activeDeviceIds[devId] !== false;
+                const color = DEVICE_COLORS[i % DEVICE_COLORS.length];
+                return (
+                  <button
+                    key={devId}
+                    type="button"
+                    onClick={() => setActiveDeviceIds((prev) => ({ ...prev, [devId]: isEnabled ? false : true }))}
                     style={{
-                      width: '7px',
-                      height: '7px',
-                      borderRadius: '50%',
-                      backgroundColor: b.color,
-                      display: 'inline-block',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: isEnabled ? color : '#94A3B8',
+                      textDecoration: isEnabled ? 'none' : 'line-through',
+                      opacity: isEnabled ? 1 : 0.45,
+                      fontWeight: isEnabled ? 700 : 500,
+                      padding: '2px 0',
                     }}
-                  />
-                  <span>{b.name}</span>
-                </button>
-              );
-            })}
+                    title={`Klik untuk menyembunyikan/menampilkan ${d.name}`}
+                  >
+                    <span
+                      style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        backgroundColor: color,
+                        display: 'inline-block',
+                      }}
+                    />
+                    <span>{d.name} ({d.placement})</span>
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -1084,90 +1224,82 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               Target Optimal ≤ {warningThreshold.toFixed(1)}°C
             </text>
 
-            {/* Series Lines rendered ONLY when real telemetry data exists */}
-            {hasChartData && seriesBox1.length > 0 ? (
-              <>
-                {activeBoxes.box4 && seriesBox4.length > 1 && (
-                  <path d={buildPath(seriesBox4)} fill="none" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                )}
-                {activeBoxes.box3 && seriesBox3.length > 1 && (
-                  <path d={buildPath(seriesBox3)} fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                )}
-                {activeBoxes.box2 && seriesBox2.length > 1 && (
-                  <path d={buildPath(seriesBox2)} fill="none" stroke="#0EA5E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                )}
-                {activeBoxes.box1 && (
-                  <>
-                    {seriesBox1.length > 1 && (
-                      <path
-                        d={`${buildPath(seriesBox1)} L ${getXCoord(seriesBox1.length - 1)} ${getYCoord(yMin)} L ${getXCoord(0)} ${getYCoord(yMin)} Z`}
-                        fill="url(#box1Grad)"
-                      />
-                    )}
-                    {seriesBox1.length > 1 && (
-                      <path d={buildPath(seriesBox1)} fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    )}
-                    {/* Live pulsing dot at latest point */}
-                    <circle cx={getXCoord(seriesBox1.length - 1)} cy={getYCoord(seriesBox1[seriesBox1.length - 1])} r="4" fill="#0284C7" />
-                    <circle cx={getXCoord(seriesBox1.length - 1)} cy={getYCoord(seriesBox1[seriesBox1.length - 1])} r="7" fill="none" stroke="#0284C7" strokeWidth="1.5" opacity="0.6" />
-                  </>
-                )}
-
-                {/* Otomatis Penanda Anomali (Palka Terbuka) jika terdeteksi */}
-                {sharpJumpIndex !== -1 && (
-                  <g>
-                    <circle
-                      cx={getXCoord(sharpJumpIndex)}
-                      cy={getYCoord(seriesBox1[sharpJumpIndex])}
-                      r="6"
-                      fill="#DC2626"
-                    />
-                    <circle
-                      cx={getXCoord(sharpJumpIndex)}
-                      cy={getYCoord(seriesBox1[sharpJumpIndex])}
-                      r="10"
-                      fill="none"
-                      stroke="#DC2626"
-                      strokeWidth="1.5"
-                      opacity="0.7"
-                    />
-                    <rect
-                      x={getXCoord(sharpJumpIndex) - 60}
-                      y={getYCoord(seriesBox1[sharpJumpIndex]) - 24}
-                      width="120"
-                      height="16"
-                      rx="3"
-                      fill="#FEF2F2"
-                      stroke="#FECACA"
-                      strokeWidth="0.8"
-                    />
-                    <text
-                      x={getXCoord(sharpJumpIndex)}
-                      y={getYCoord(seriesBox1[sharpJumpIndex]) - 12}
-                      fill="#DC2626"
-                      fontSize="8.5"
-                      fontWeight="700"
-                      textAnchor="middle"
-                      fontFamily="inherit"
-                    >
-                      Indikasi Palka Terbuka
-                    </text>
-                  </g>
-                )}
-              </>
-            ) : (
-              /* Clean empty state without drawing fake lines */
-              <text
-                x={chartWidth / 2}
-                y={originY + (chartHeight - 40) / 2}
-                fill="#94A3B8"
-                fontSize="12.5"
-                fontWeight="500"
-                textAnchor="middle"
-                fontFamily="inherit"
-              >
-                Menunggu data telemetri pertama dari sensor palka es ESP32...
+            {/* Zero Curve Message when no telemetry data exists */}
+            {(!hasChartData || !telemetryLogs || telemetryLogs.length === 0) && (
+              <text x={chartWidth / 2} y={chartHeight / 2} fill="#94A3B8" fontSize="12" fontWeight="500" textAnchor="middle" fontFamily="inherit">
+                Belum ada rekaman telemetri palka. Menunggu transmisi data pertama dari perangkat.
               </text>
+            )}
+
+            {/* Series Lines rendered ONLY when real telemetry data exists */}
+            {hasChartData && telemetryLogs && telemetryLogs.length > 0 && devices.map((dev, i) => {
+              const devId = dev.id || dev.device_code || String(i);
+              if (activeDeviceIds[devId] === false) return null;
+              const color = DEVICE_COLORS[i % DEVICE_COLORS.length];
+              const series = getDeviceSeries(dev, i);
+              if (series.length === 0) return null;
+              const path = buildPath(series);
+              const latestIdx = series.length - 1;
+              const latestX = getXCoord(latestIdx);
+              const latestY = getYCoord(series[latestIdx]);
+
+              return (
+                <g key={devId}>
+                  {i === 0 && series.length > 1 && (
+                    <path
+                      d={`${path} L ${latestX} ${getYCoord(yMin)} L ${getXCoord(0)} ${getYCoord(yMin)} Z`}
+                      fill="url(#box1Grad)"
+                    />
+                  )}
+                  {series.length > 1 && (
+                    <path d={path} fill="none" stroke={color} strokeWidth={i === 0 ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round" />
+                  )}
+                  <circle cx={latestX} cy={latestY} r="4" fill={color} />
+                  <circle cx={latestX} cy={latestY} r="7" fill="none" stroke={color} strokeWidth="1.5" opacity="0.6" />
+                </g>
+              );
+            })}
+
+            {/* Otomatis Penanda Anomali (Palka Terbuka) jika terdeteksi */}
+            {hasChartData && sharpJumpIndex !== -1 && primarySeries[sharpJumpIndex] !== undefined && (
+              <g>
+                <circle
+                  cx={getXCoord(sharpJumpIndex)}
+                  cy={getYCoord(primarySeries[sharpJumpIndex])}
+                  r="6"
+                  fill="#DC2626"
+                />
+                <circle
+                  cx={getXCoord(sharpJumpIndex)}
+                  cy={getYCoord(primarySeries[sharpJumpIndex])}
+                  r="10"
+                  fill="none"
+                  stroke="#DC2626"
+                  strokeWidth="1.5"
+                  opacity="0.7"
+                />
+                <rect
+                  x={getXCoord(sharpJumpIndex) - 60}
+                  y={getYCoord(primarySeries[sharpJumpIndex]) - 24}
+                  width="120"
+                  height="16"
+                  rx="3"
+                  fill="#FEF2F2"
+                  stroke="#FECACA"
+                  strokeWidth="0.8"
+                />
+                <text
+                  x={getXCoord(sharpJumpIndex)}
+                  y={getYCoord(primarySeries[sharpJumpIndex]) - 12}
+                  fill="#DC2626"
+                  fontSize="8.5"
+                  fontWeight="700"
+                  textAnchor="middle"
+                  fontFamily="inherit"
+                >
+                  Indikasi Palka Terbuka
+                </text>
+              </g>
             )}
 
             {/* X-Axis Tick Labels */}
@@ -1598,7 +1730,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
                 <span>Suhu Rata-rata Palka:</span>
-                <strong style={{ color: '#0F172A' }}>{box1Temp !== null ? `${box1Temp > 0 ? '+' : ''}${box1Temp.toFixed(1)}°C` : '-0.4°C'}</strong>
+                <strong style={{ color: '#0F172A' }}>{primaryTemp !== null ? `${primaryTemp > 0 ? '+' : ''}${primaryTemp.toFixed(1)}°C` : '--°C'}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                 <span>Hasil Audit Kesegaran:</span>

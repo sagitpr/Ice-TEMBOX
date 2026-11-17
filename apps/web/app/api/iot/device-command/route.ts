@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export interface DeviceCommandPayload {
   deviceId: string;
   serialNumber?: string;
-  action: 'UPDATE_CONFIG' | 'TEST_PING' | 'FORCE_SYNC' | 'DISCONNECT_DEVICE' | 'RESTART_TELEMETRY';
+  action: 'UPDATE_CONFIG' | 'TEST_PING' | 'FORCE_SYNC' | 'DISCONNECT_DEVICE' | 'RESTART_TELEMETRY' | 'MUTE_BUZZER';
   config?: {
     telemetryIntervalSec?: number;
     sdIntervalSec?: number;
@@ -130,6 +130,13 @@ export async function POST(request: Request) {
             mqtt_token_hash: null,
           })
           .eq('id', targetDevice.id);
+      } else if (action === 'MUTE_BUZZER') {
+        await admin
+          .from('devices')
+          .update({
+            buzzer_enabled: false,
+          })
+          .eq('id', targetDevice.id);
       } else if (action === 'UPDATE_CONFIG' && body.config) {
         const cfg = body.config;
         await admin
@@ -168,7 +175,9 @@ export async function POST(request: Request) {
             ? 'Perintah ping MQTT berhasil dikirim ke perangkat.'
             : action === 'FORCE_SYNC'
               ? 'Perintah paksa sinkronisasi MicroSD berhasil dikirim ke perangkat.'
-              : 'Perangkat berhasil diputuskan dan token MQTT telah dicabut.',
+              : action === 'MUTE_BUZZER'
+                ? 'Perintah mematikan buzzer darurat berhasil dikirim ke perangkat.'
+                : 'Perangkat berhasil diputuskan dan token MQTT telah dicabut.',
     });
   } catch (error) {
     return NextResponse.json(
