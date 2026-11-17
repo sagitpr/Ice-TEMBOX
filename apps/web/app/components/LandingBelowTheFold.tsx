@@ -266,10 +266,10 @@ export const LandingBelowTheFold: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsWorkflowOpen(true)}
-                className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-[#072538] shadow-sm transition-all duration-200 hover:border-sky-500 hover:bg-sky-50 hover:text-sky-700"
+                className="btn-pill-outline mt-6"
               >
                 <span>Lihat Alur Kerja Sistem</span>
-                <span aria-hidden="true">→</span>
+                <span className="cta-arrow" aria-hidden="true">→</span>
               </button>
             </div>
 
@@ -568,7 +568,6 @@ export const LandingBelowTheFold: React.FC = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
                     gap: '12px',
                   }}
                 >
@@ -585,19 +584,6 @@ export const LandingBelowTheFold: React.FC = () => {
                   >
                     [ {node.code}. {node.label} ]
                   </span>
-                  {index < ECOSYSTEM_PIPELINE.length - 1 && (
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        color: 'rgba(125, 220, 232, 0.6)',
-                        fontSize: '15px',
-                        letterSpacing: '-1px',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      ───►
-                    </span>
-                  )}
                 </div>
 
                 <p
@@ -710,9 +696,9 @@ export const LandingBelowTheFold: React.FC = () => {
               })}
 
               <div>
-                <Link className="mt-8 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-[#072538] shadow-sm transition-all duration-200 hover:border-sky-500 hover:bg-sky-50 hover:text-sky-700" href="/market">
+                <Link className="btn-pill-outline mt-8" href="/market">
                   <span>Lihat Katalog &amp; Pesan</span>
-                  <span aria-hidden="true">→</span>
+                  <span className="cta-arrow" aria-hidden="true">→</span>
                 </Link>
               </div>
             </div>

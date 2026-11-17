@@ -2,6 +2,8 @@ export interface OtpEmailOptions {
   otpCode: string;
   recipientName?: string;
   bannerUrl?: string;
+  purposeTitle?: string;
+  purposeMessage?: string;
 }
 
 /**
@@ -13,9 +15,12 @@ export function buildOtpVerificationEmail({
   otpCode,
   recipientName,
   bannerUrl = 'https://ice-tembox.vercel.app/assets/Verifikasi-OTP-TEMBOX.png',
+  purposeTitle = 'Verifikasi Akun',
+  purposeMessage,
 }: OtpEmailOptions): string {
   const displayName = recipientName && recipientName.trim() ? recipientName.trim() : 'Pengguna TEMBOX';
   const registerUrl = 'https://ice-tembox.vercel.app/register';
+  const introMessage = purposeMessage || `Terima kasih telah mendaftar di platform <strong style="color: #ffffff;">TEMBOX</strong>. Gunakan kode verifikasi One-Time Password (OTP) berikut untuk menyelesaikan aktivasi akun Anda:`;
 
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="id">
@@ -59,7 +64,7 @@ export function buildOtpVerificationEmail({
                   </td>
                   <td align="right" valign="middle">
                     <span style="display: inline-block; padding: 4px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #38bdf8; background-color: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 9999px;">
-                      Verifikasi Akun
+                      ${purposeTitle}
                     </span>
                   </td>
                 </tr>
@@ -90,7 +95,7 @@ export function buildOtpVerificationEmail({
 
               <!-- Pengantar Singkat 2 Baris -->
               <p style="margin: 0 0 24px 0; font-size: 14.5px; line-height: 1.7; color: #94a3b8;">
-                Terima kasih telah mendaftar di platform <strong style="color: #ffffff;">TEMBOX</strong>. Gunakan kode verifikasi One-Time Password (OTP) berikut untuk menyelesaikan aktivasi akun Anda:
+                ${introMessage}
               </p>
 
               <!-- AREA KODE OTP (Latar Lembut Tunggal, Tanpa Border Tebal, Tanpa Badge Tambahan) -->

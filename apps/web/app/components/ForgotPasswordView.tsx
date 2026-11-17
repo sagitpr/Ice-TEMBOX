@@ -30,31 +30,94 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
-  // Step 1: Submit email to request OTP
-  const handleRequestOtp = (e: React.FormEvent) => {
+  // Step 1: Submit email to request OTP via API
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    if (!email || !email.includes('@')) {
+    setSuccessMsg('');
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
       setErrorMsg('Masukkan alamat email yang valid.');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error || data.message || `Gagal mengirim OTP (Status ${res.status})`);
+      }
+
+      // Only advance to step 'reset' after email is verified as successfully dispatched
       setStep('reset');
-    }, 450);
+      setSuccessMsg(data.message || `Kode OTP 6 digit telah dikirim ke ${cleanEmail}.`);
+    } catch (err: unknown) {
+      console.error('[Forgot Password Request Error]:', err);
+      const msg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan saat mengirim kode verifikasi.';
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend OTP handler for OTP input screen
+  const handleResendOtp = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    setOtp('');
+    setOtpError('');
+    setResending(true);
+
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      const res = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          purpose: 'reset_password',
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error || data.message || `Gagal mengirim ulang OTP (Status ${res.status})`);
+      }
+
+      setSuccessMsg(data.message || 'Kode OTP baru telah berhasil dikirim ke email Anda.');
+    } catch (err: unknown) {
+      console.error('[Resend OTP Error]:', err);
+      const msg = err instanceof Error ? err.message : 'Gagal mengirim ulang kode OTP.';
+      setErrorMsg(msg);
+    } finally {
+      setResending(false);
+    }
   };
 
   // Step 2: Submit OTP and new password
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    setSuccessMsg('');
     setOtpError('');
 
-    if (otp.length < 6) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.trim();
+
+    if (cleanOtp.length < 6) {
       setOtpError('Masukkan 6 digit kode OTP yang lengkap.');
       return;
     }
@@ -70,10 +133,37 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          otpCode: cleanOtp,
+          newPassword,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data.success === false) {
+        if (data.remainingAttempts !== undefined) {
+          setOtpError(data.error || 'Kode OTP tidak valid.');
+        }
+        throw new Error(data.error || data.message || `Gagal memperbarui password (Status ${res.status})`);
+      }
+
       setStep('success');
-    }, 500);
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err: unknown) {
+      console.error('[Reset Password Error]:', err);
+      const msg = err instanceof Error ? err.message : 'Terjadi kesalahan saat memproses reset password.';
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const rightFormPane = (
@@ -84,7 +174,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
           <>
             <h2 className="login-title">Lupa Password?</h2>
             <p className="login-desc">
-              Masukkan email akun Anda. Kami akan mengirimkan 6 digit kode OTP untuk verifikasi.
+              Masukkan email akun Anda. Kami akan mengirimkan 6 digit kode OTP untuk verifikasi reset password.
             </p>
 
             {errorMsg && (
@@ -97,6 +187,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                   marginBottom: '16px',
                   color: '#B91C1C',
                   fontSize: '13px',
+                  lineHeight: 1.4,
                 }}
               >
                 {errorMsg}
@@ -123,7 +214,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
               </div>
 
               <button type="submit" className="btn-primary-block" disabled={loading} style={{ marginTop: '8px' }}>
-                <span>{loading ? 'Mengirim Kode...' : 'Kirim Kode Verifikasi'}</span>
+                <span>{loading ? 'Mengirim Kode OTP...' : 'Kirim Kode Verifikasi'}</span>
               </button>
             </form>
 
@@ -171,9 +262,29 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
         {step === 'reset' && (
           <>
             <h2 className="login-title">Verifikasi &amp; Reset</h2>
-            <p className="login-desc" style={{ marginBottom: '20px' }}>
+            <p className="login-desc" style={{ marginBottom: '16px' }}>
               Kode 6 digit telah dikirim ke <strong style={{ color: '#0B2D42' }}>{email}</strong>.
             </p>
+
+            {successMsg && (
+              <div
+                style={{
+                  backgroundColor: '#F0FDF4',
+                  border: '1px solid #BBF7D0',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  marginBottom: '16px',
+                  color: '#15803D',
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Check size={16} color="#15803D" />
+                <span>{successMsg}</span>
+              </div>
+            )}
 
             {errorMsg && (
               <div
@@ -185,6 +296,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                   marginBottom: '16px',
                   color: '#B91C1C',
                   fontSize: '13px',
+                  lineHeight: 1.4,
                 }}
               >
                 {errorMsg}
@@ -204,10 +316,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                     setOtpError('');
                   }}
                   error={otpError}
-                  onResend={() => {
-                    setOtp('');
-                    setOtpError('');
-                  }}
+                  onResend={handleResendOtp}
                 />
               </div>
 
@@ -229,12 +338,13 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                   />
                   <button
                     type="button"
-                    className="input-toggle-pwd"
+                    className="password-toggle-btn"
                     onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
                     aria-label="Toggle password visibility"
                   >
                     <span style={{ fontSize: '11px', color: '#64748B' }}>
-                      {showPassword ? 'Hide' : 'Show'}
+                      {showPassword ? 'Sembunyikan' : 'Lihat'}
                     </span>
                   </button>
                 </div>
@@ -259,15 +369,26 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary-block" disabled={loading} style={{ marginTop: '12px' }}>
-                <span>{loading ? 'Menyimpan...' : 'Simpan Password Baru'}</span>
+              <button
+                type="submit"
+                className="btn-primary-block"
+                disabled={loading || resending}
+                style={{ marginTop: '12px' }}
+              >
+                <span>{loading ? 'Menyimpan Password...' : 'Simpan Password Baru'}</span>
               </button>
             </form>
 
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
               <button
                 type="button"
-                onClick={() => setStep('email')}
+                onClick={() => {
+                  setStep('email');
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                  setOtp('');
+                  setOtpError('');
+                }}
                 style={{
                   fontSize: '12.5px',
                   color: '#64748B',

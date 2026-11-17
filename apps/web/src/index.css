@@ -898,6 +898,40 @@ button {
   transform: translateY(-2px);
 }
 
+/* ==================================================
+   PILL OUTLINE CTA BUTTON FOR LANDING PAGE
+   ================================================== */
+.btn-pill-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 28px;
+  border-radius: 9999px;
+  background: transparent;
+  color: #0F172A;
+  border: 1.5px solid #0284C7;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.btn-pill-outline:hover {
+  background: #0284C7;
+  color: #FFFFFF;
+}
+
+.btn-pill-outline .cta-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.btn-pill-outline:hover .cta-arrow {
+  transform: translateX(4px);
+}
+
 /* old cta disabled:
   display: inline-flex;
   align-items: center;
