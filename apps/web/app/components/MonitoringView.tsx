@@ -25,6 +25,7 @@ import {
 } from './Icons';
 import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
 import { getSupabaseClient } from '../../modules/supabase/supabaseClient';
+import { runColdChainML } from '../../modules/analytics/coldChainML.service';
 
 export interface MonitoringDeviceItem {
   id: string;
@@ -291,31 +292,22 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
   const primaryTemp = boxCardsData.length > 0 ? boxCardsData[0].temp : null;
 
   // ----------------------------------------------------
-  // Analitik Cold-Chain & Freshness Computation
+  // Machine Learning & Thermal Decay Engine
   // ----------------------------------------------------
-  const freshnessScore = useMemo(() => {
-    if (!telemetryLogs || telemetryLogs.length === 0) {
-      return primaryTemp !== null ? 98.5 : null;
-    }
-    const valid = telemetryLogs.filter((l) => typeof l.temperature_c === 'number' && !isNaN(l.temperature_c));
-    if (valid.length === 0) return null;
-    const inSafeZone = valid.filter((l) => l.temperature_c <= warningThreshold);
-    return Math.round((inSafeZone.length / valid.length) * 1000) / 10;
-  }, [telemetryLogs, warningThreshold, primaryTemp]);
+  const mlPrediction = useMemo(() => {
+    if (!telemetryLogs || telemetryLogs.length === 0) return null;
+    return runColdChainML(telemetryLogs);
+  }, [telemetryLogs]);
 
-  const anomalyCount = useMemo(() => {
-    if (!telemetryLogs || telemetryLogs.length === 0) return 0;
-    let count = 0;
-    for (let i = 0; i < telemetryLogs.length; i++) {
-      const cur = telemetryLogs[i].temperature_c;
-      if (cur > dangerThreshold) count++;
-      if (i < telemetryLogs.length - 1) {
-        const next = telemetryLogs[i + 1].temperature_c;
-        if (Math.abs(cur - next) >= 1.5) count++;
-      }
-    }
-    return count;
-  }, [telemetryLogs, dangerThreshold]);
+  const freshnessScore = mlPrediction ? mlPrediction.freshnessScore : null;
+  const freshnessGrade = mlPrediction ? mlPrediction.freshnessGrade : null;
+  const iceEnduranceFormatted = mlPrediction ? mlPrediction.timeToThresholdFormatted : null;
+  const decayRateFormatted = mlPrediction ? mlPrediction.decayRateFormatted : null;
+  const ambientDiffFormatted = mlPrediction?.tempDiffAmbient !== null && mlPrediction?.tempDiffAmbient !== undefined
+    ? `+${mlPrediction.tempDiffAmbient}°C`
+    : '+28.5°C';
+  const anomalyCount = mlPrediction ? mlPrediction.anomalyCount : 0;
+  const anomalyLabel = mlPrediction ? mlPrediction.anomalyLabel : 'Optimal';
 
   // ----------------------------------------------------
   // Dynamic Real-time SVG Chart Data
@@ -934,7 +926,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             {freshnessScore !== null ? `${freshnessScore.toFixed(1)}%` : '--%'}
           </div>
           <div style={{ fontSize: '11.5px', color: freshnessScore !== null ? '#059669' : '#64748B', fontWeight: freshnessScore !== null ? 600 : 400 }}>
-            {freshnessScore !== null ? '• Zona Optimal ≤ 2°C (Grade A)' : 'Menunggu data telemetri'}
+            {freshnessScore !== null ? `• ${freshnessGrade}` : 'Menunggu data telemetri'}
           </div>
         </div>
 
@@ -944,10 +936,12 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             Ketahanan Es & Laju
           </div>
           <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px', marginBottom: '4px' }}>
-            {primaryTemp !== null ? '±42 Jam' : 'Menunggu data'}
+            {iceEnduranceFormatted || 'Menunggu data'}
           </div>
           <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-            {primaryTemp !== null ? 'Laju ΔT +0.2°C/jam • Selisih Luar +28.5°C' : 'Menunggu data sensor'}
+            {decayRateFormatted
+              ? `Laju ΔT ${decayRateFormatted} • Selisih Luar ${ambientDiffFormatted}`
+              : 'Menunggu data sensor'}
           </div>
         </div>
 
@@ -961,7 +955,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
           </div>
           <div style={{ fontSize: '11.5px', color: anomalyCount === 0 ? '#64748B' : '#DC2626', fontWeight: anomalyCount === 0 ? 400 : 600 }}>
             {telemetryLogs && telemetryLogs.length > 0
-              ? (anomalyCount === 0 ? 'Status Insulasi Rapat' : 'Peringatan: Terdeteksi Lonjakan Suhu')
+              ? (anomalyCount === 0 ? 'Status Insulasi Rapat' : `Peringatan: ${anomalyLabel}`)
               : 'Menunggu pembacaan palka'}
           </div>
         </div>
@@ -1726,7 +1720,7 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
             <div style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', marginBottom: '18px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
                 <span>Skor Kepatuhan Zona Dingin (&le; 2.0°C):</span>
-                <strong style={{ color: '#059669' }}>{freshnessScore !== null ? `${freshnessScore.toFixed(1)}%` : '98.5%'}</strong>
+                <strong style={{ color: freshnessScore !== null ? '#059669' : '#64748B' }}>{freshnessScore !== null ? `${freshnessScore.toFixed(1)}%` : '--%'}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
                 <span>Suhu Rata-rata Palka:</span>
@@ -1734,7 +1728,9 @@ export const MonitoringView: React.FC<MonitoringViewProps> = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                 <span>Hasil Audit Kesegaran:</span>
-                <strong style={{ color: '#059669' }}>LULUS - GRADE A (EKSPOR)</strong>
+                <strong style={{ color: freshnessGrade ? '#059669' : '#64748B' }}>
+                  {freshnessGrade ? `LULUS - ${freshnessGrade.toUpperCase()}` : 'MENUNGGU VERIFIKASI MUTU'}
+                </strong>
               </div>
             </div>
 

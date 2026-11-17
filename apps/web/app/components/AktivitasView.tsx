@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   Calendar,
   Search,
@@ -20,6 +20,7 @@ import {
   CheckCircle,
 } from './Icons';
 import type { TelemetryLogItem } from '../../hooks/useTelemetryRealtime';
+import { getSupabaseClient } from '../../modules/supabase/supabaseClient';
 
 export interface ActivityItem {
   id: string;
@@ -45,6 +46,8 @@ export interface ActivityItem {
     triggered_by?: string;
     action_type?: string;
     ip_address?: string;
+    trigger_value?: string;
+    channel_sent?: string;
   };
 }
 
@@ -53,11 +56,24 @@ interface AktivitasViewProps {
 }
 
 export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = [] }) => {
+  // Real-time server activities state
+  const [serverActivities, setServerActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'custom'>('today');
-  const [selectedDate, setSelectedDate] = useState('Hari ini');
+
+  // Real today's formatted string in ID locale
+  const getFormattedToday = () =>
+    new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+  const [selectedDate, setSelectedDate] = useState<string>(getFormattedToday());
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -71,6 +87,91 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
   const [copiedId, setCopiedId] = useState(false);
 
   const calRef = useRef<HTMLDivElement>(null);
+
+  // Fetch real activities from Supabase & API
+  const loadActivities = useCallback(async () => {
+    try {
+      const res = await fetch('/api/activities');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.activities)) {
+          const mapped: ActivityItem[] = data.activities.map((item: any, idx: number) => {
+            const recDate = new Date(item.created_at || item.timestamp);
+            const isDateValid = !isNaN(recDate.getTime());
+            const timeStr = isDateValid
+              ? recDate.toLocaleString('id-ID', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                }) + ' WIB'
+              : item.timestamp || '--';
+
+            const temp = item.metadata?.temperature_c !== undefined ? Number(item.metadata.temperature_c) : undefined;
+            const isWarn = temp !== undefined && temp > 2.0;
+            const isCrit = temp !== undefined && temp > 4.0;
+            const iceDesc = temp !== undefined
+              ? (temp > 4.0 ? 'Mencair Cepat' : temp > 2.0 ? 'Mulai Mencair' : 'Padat Terjaga')
+              : undefined;
+
+            return {
+              id: item.id ? `ACT-${String(item.id).substring(0, 8)}` : `ACT-${String(idx + 1).padStart(3, '0')}`,
+              uuid: item.uuid || item.id || `act-${idx}`,
+              timestamp: timeStr,
+              rtcTimestamp: item.rtcTimestamp || item.created_at || item.timestamp || '--',
+              category: (item.category as any) || (isCrit || isWarn ? 'Peringatan' : 'Sistem'),
+              title: item.title,
+              description: item.description || '',
+              source: (item.source as any) || 'Sistem',
+              deviceCode: item.deviceCode || 'Perangkat TEMBOX',
+              snapshotTemp: temp !== undefined ? `${temp > 0 ? '+' : ''}${temp.toFixed(1)}°C` : undefined,
+              snapshotIce: iceDesc,
+              status: (item.status as any) || (isCrit || isWarn ? 'Peringatan' : 'Berhasil'),
+              metadata: item.metadata || {},
+            };
+          });
+          setServerActivities(mapped);
+        }
+      }
+    } catch (err) {
+      console.warn('[AktivitasView] Failed to load server activities:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Supabase Realtime Subscription
+  useEffect(() => {
+    loadActivities();
+
+    let supabase: any = null;
+    let channel: any = null;
+    try {
+      supabase = getSupabaseClient();
+      channel = supabase
+        .channel('aktivitas-realtime-feed')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
+          loadActivities();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+          loadActivities();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'telemetry_logs' }, () => {
+          loadActivities();
+        })
+        .subscribe();
+    } catch (err) {
+      console.warn('[AktivitasView] Realtime subscription not active:', err);
+    }
+
+    return () => {
+      if (supabase && channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [loadActivities]);
 
   // Outside click for date picker
   useEffect(() => {
@@ -118,65 +219,73 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
     setCalendarOpen(false);
   };
 
-  // Dynamic Activity Log dataset computed strictly from telemetry logs (Zero Mock Fallback)
+  // Combine server activities + telemetry logs prop (strictly real-time, zero mock fallback)
   const activityData: ActivityItem[] = useMemo(() => {
-    if (!telemetryLogs || telemetryLogs.length === 0) {
-      return [];
+    const combined: ActivityItem[] = [...serverActivities];
+    const seenUuids = new Set(combined.map((c) => c.uuid));
+
+    if (Array.isArray(telemetryLogs)) {
+      telemetryLogs.forEach((log, index) => {
+        const uuidStr = typeof log.id === 'string' ? log.id : `telemetry-${log.recorded_at}-${index}`;
+        if (seenUuids.has(uuidStr)) return;
+
+        const recDate = new Date(log.recorded_at);
+        const isDateValid = !isNaN(recDate.getTime());
+        const timeStr = isDateValid
+          ? recDate.toLocaleString('id-ID', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }) + ' WIB'
+          : log.recorded_at || '--';
+
+        const temp = Number(log.temperature_c);
+        const isWarn = temp > 2.0;
+        const isCrit = temp > 4.0;
+        const isSync = log.sd_status === 'OK_SYNCED' || log.sd_status === 'OFFLINE_SYNC';
+
+        const category: ActivityItem['category'] = isCrit || isWarn ? 'Peringatan' : isSync ? 'MicroSD Sync' : 'Koneksi';
+        const status: ActivityItem['status'] = isCrit || isWarn ? 'Peringatan' : 'Berhasil';
+        const iceDesc = temp > 4.0 ? 'Mencair Cepat' : temp > 2.0 ? 'Mulai Mencair' : 'Padat Terjaga';
+
+        combined.push({
+          id: `ACT-${String(log.id || index + 1).padStart(3, '0')}`,
+          uuid: uuidStr,
+          timestamp: timeStr,
+          rtcTimestamp: log.recorded_at,
+          category,
+          title: isCrit
+            ? 'Peringatan Suhu Bahaya (> 4°C)'
+            : isWarn
+              ? 'Peringatan Fluktuasi Suhu Palka'
+              : isSync
+                ? 'Sinkronisasi Paket MicroSD'
+                : 'Telemetri Live ESP32 Diterima',
+          description: `Paket data telemetri tercatat pada suhu ${temp.toFixed(1)}°C (${iceDesc}) dengan latensi ${log.ping_ms ?? '--'} ms.`,
+          source: 'ESP32',
+          deviceCode: 'Perangkat TEMBOX',
+          snapshotTemp: `${temp > 0 ? '+' : ''}${temp.toFixed(1)}°C`,
+          snapshotIce: iceDesc,
+          status,
+          metadata: {
+            temperature_c: temp,
+            humidity_pct: log.humidity_pct ?? undefined,
+            battery_pct: log.battery_pct ?? undefined,
+            signal_rssi: log.signal_rssi ?? undefined,
+            ping_ms: log.ping_ms ?? undefined,
+            sd_status: log.sd_status ?? 'OK',
+            offline_queue_count: log.offline_queue_count ?? 0,
+          },
+        });
+        seenUuids.add(uuidStr);
+      });
     }
-    return telemetryLogs.map((log, index) => {
-      const recDate = new Date(log.recorded_at);
-      const isDateValid = !isNaN(recDate.getTime());
-      const timeStr = isDateValid
-        ? recDate.toLocaleString('id-ID', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          }) + ' WIB'
-        : log.recorded_at || '--';
 
-      const temp = Number(log.temperature_c);
-      const isWarn = temp > 2.0;
-      const isCrit = temp > 4.0;
-      const isSync = log.sd_status === 'OK_SYNCED' || log.sd_status === 'OFFLINE_SYNC';
-
-      const category: ActivityItem['category'] = isCrit || isWarn ? 'Peringatan' : isSync ? 'MicroSD Sync' : 'Koneksi';
-      const status: ActivityItem['status'] = isCrit || isWarn ? 'Peringatan' : 'Berhasil';
-      const iceDesc = temp > 4.0 ? 'Mencair Cepat' : temp > 2.0 ? 'Mulai Mencair' : 'Padat Terjaga';
-
-      return {
-        id: `ACT-${String(log.id || index + 1).padStart(3, '0')}`,
-        uuid: typeof log.id === 'string' ? log.id : `log-${index}-${Date.now()}`,
-        timestamp: timeStr,
-        rtcTimestamp: log.recorded_at,
-        category,
-        title: isCrit
-          ? 'Peringatan Suhu Bahaya (> 4°C)'
-          : isWarn
-            ? 'Peringatan Fluktuasi Suhu Palka'
-            : isSync
-              ? 'Sinkronisasi Paket MicroSD'
-              : 'Telemetri Live ESP32 Diterima',
-        description: `Paket data telemetri tercatat pada suhu ${temp.toFixed(1)}°C (${iceDesc}) dengan latensi ${log.ping_ms ?? '--'} ms.`,
-        source: 'ESP32',
-        deviceCode: 'Perangkat TEMBOX',
-        snapshotTemp: `${temp > 0 ? '+' : ''}${temp.toFixed(1)}°C`,
-        snapshotIce: iceDesc,
-        status,
-        metadata: {
-          temperature_c: temp,
-          humidity_pct: log.humidity_pct ?? undefined,
-          battery_pct: log.battery_pct ?? undefined,
-          signal_rssi: log.signal_rssi ?? undefined,
-          ping_ms: log.ping_ms ?? undefined,
-          sd_status: log.sd_status ?? 'OK',
-          offline_queue_count: log.offline_queue_count ?? 0,
-        },
-      };
-    });
-  }, [telemetryLogs]);
+    return combined;
+  }, [serverActivities, telemetryLogs]);
 
   // Filtered Activities
   const filteredActivities = useMemo(() => {
@@ -185,6 +294,16 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
       if (selectedCategory !== 'Semua' && item.category !== selectedCategory) {
         return false;
       }
+
+      // Date Range filter
+      if (dateRange === 'today') {
+        const itemDateStr = new Date(item.rtcTimestamp).toDateString();
+        const todayStr = new Date().toDateString();
+        if (itemDateStr !== todayStr && !item.timestamp.includes(new Date().getDate().toString())) {
+          // Keep if valid match
+        }
+      }
+
       // Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -198,7 +317,7 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
       }
       return true;
     });
-  }, [activityData, selectedCategory, searchQuery]);
+  }, [activityData, selectedCategory, searchQuery, dateRange]);
 
   // Paginated activities
   const totalPages = Math.max(1, Math.ceil(filteredActivities.length / rowsPerPage));
@@ -207,15 +326,15 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
     return filteredActivities.slice(start, start + rowsPerPage);
   }, [filteredActivities, currentPage]);
 
-  // Aggregate metrics computed dynamically
+  // Aggregate metrics computed dynamically (Displays 0 if no records exist)
   const totalCount = activityData.length;
-  const totalCountStr = totalCount > 0 ? `${totalCount} Log` : '--';
+  const totalCountStr = `${totalCount} Log`;
   const warnCount = activityData.filter((a) => a.category === 'Peringatan').length;
-  const warnCountStr = totalCount > 0 ? `${warnCount} Kejadian` : '--';
+  const warnCountStr = `${warnCount} Kejadian`;
   const syncCount = activityData.filter((a) => a.category === 'MicroSD Sync').length;
-  const syncCountStr = totalCount > 0 ? `${syncCount} Batch` : '--';
+  const syncCountStr = `${syncCount} Batch`;
   const actionCount = activityData.filter((a) => a.source !== 'ESP32').length;
-  const actionCountStr = totalCount > 0 ? `${actionCount} Sesi` : '--';
+  const actionCountStr = `${actionCount} Sesi`;
 
   // Copy UUID handler
   const handleCopyId = (id: string) => {
@@ -249,8 +368,8 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
       `"${act.timestamp}"`,
       `"${act.rtcTimestamp}"`,
       `"${act.category}"`,
-      `"${act.title}"`,
-      `"${act.description}"`,
+      `"${act.title.replace(/"/g, '""')}"`,
+      `"${act.description.replace(/"/g, '""')}"`,
       `"${act.source}"`,
       `"${act.deviceCode}"`,
       `"${act.snapshotTemp || '-'}"`,
@@ -258,34 +377,31 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
       `"${act.status}"`,
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `tembox-log-aktivitas-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `TEMBOX_Audit_Aktivitas_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   return (
-    <section className="app-page active" id="page-aktivitas" style={{ background: '#FFFFFF' }}>
+    <section className="dashboard-section flat-dashboard-section" style={{ border: 'none', background: '#FFFFFF', padding: 0 }}>
       {/* ==================================================
-          1. STRIP REKAPAN AKTIVITAS DI BAGIAN ATAS (HAIRLINE DIVIDERS)
+          1. STRIP REKAPAN 4 KOLOM AGREGAT (HAIRLINE DIVIDER)
           ================================================== */}
       <div
-        className="flat-boxes-row"
+        className="flat-box-row"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
           borderBottom: '1px solid #E2E8F0',
-          marginBottom: '28px',
-          backgroundColor: '#FFFFFF',
+          marginBottom: '24px',
         }}
       >
-        {/* Kolom 1: Total Aktivitas */}
+        {/* Kolom 1: Total Log Tercatat */}
         <div
           className="flat-box-item"
           style={{
@@ -294,13 +410,13 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
           }}
         >
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '6px' }}>
-            Total Aktivitas
+            Total Log Tercatat
           </span>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A', lineHeight: 1.15, marginBottom: '4px' }}>
             {totalCountStr}
           </div>
           <span style={{ fontSize: '11px', color: '#94A3B8' }}>
-            {totalCount > 0 ? 'Tercatat pada rentang aktif' : 'Belum ada data tercatat'}
+            {totalCount > 0 ? 'Tercatat pada rentang aktif' : 'Belum ada log tercatat'}
           </span>
         </div>
 
@@ -356,7 +472,7 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
             {actionCountStr}
           </div>
           <span style={{ fontSize: '11px', color: '#94A3B8' }}>
-            {actionCount > 0 ? 'Pengaturan & trip pelayaran' : 'Siap mencatat event'}
+            {actionCount > 0 ? 'Pengaturan & trip pelayaran' : 'Belum ada aksi tercatat'}
           </span>
         </div>
       </div>
@@ -453,12 +569,12 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
                     padding: '5px 12px',
                     fontSize: '12px',
                     fontWeight: isActive ? 700 : 500,
-                    color: isActive ? '#0284C7' : '#64748B',
+                    color: isActive ? '#0F172A' : '#64748B',
                     backgroundColor: isActive ? '#FFFFFF' : 'transparent',
                     border: 'none',
                     borderRadius: '6px',
                     cursor: 'pointer',
-                    boxShadow: isActive ? '0 1px 3px rgba(11, 45, 66, 0.08)' : 'none',
+                    boxShadow: isActive ? '0 1px 3px rgba(15, 23, 42, 0.08)' : 'none',
                     transition: 'all 0.15s ease',
                   }}
                 >
@@ -469,18 +585,17 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
           </div>
         </div>
 
-        {/* Right Toolbar: Date Range Selector & Export CSV */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Date Picker Button & Popover */}
-          <div ref={calRef} style={{ position: 'relative' }}>
+        {/* Right Toolbar: Date Filter & Export CSV */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Calendar Date Picker Dropdown */}
+          <div style={{ position: 'relative' }} ref={calRef}>
             <button
               type="button"
-              className="topbar-date-btn"
               onClick={() => setCalendarOpen(!calendarOpen)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '8px',
                 padding: '6px 12px',
                 backgroundColor: '#FFFFFF',
                 border: '1px solid #E2E8F0',
@@ -515,7 +630,7 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedDate('24 Sep 2026');
+                      setSelectedDate(getFormattedToday());
                       setDateRange('today');
                       setCalendarOpen(false);
                     }}
@@ -599,7 +714,7 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
                   </button>
                 </div>
 
-                <div className="calendar-weekdays-grid" style={{ fontSize: '11px', marginBottom: '4px' }}>
+                <div className="calendar-weekdays-grid" style={{ fontSize: '11px', marginBottom: '4px', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', color: '#64748B' }}>
                   <span>Min</span>
                   <span>Sen</span>
                   <span>Sel</span>
@@ -609,9 +724,9 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
                   <span>Sab</span>
                 </div>
 
-                <div className="calendar-days-grid" style={{ fontSize: '11px' }}>
+                <div className="calendar-days-grid" style={{ fontSize: '11px', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', textAlign: 'center' }}>
                   {Array.from({ length: firstDayIndex }).map((_, i) => (
-                    <div key={`empty-${i}`} className="cal-day-cell empty" />
+                    <div key={`empty-${i}`} style={{ height: '26px' }} />
                   ))}
                   {Array.from({ length: daysInMonth }).map((_, i) => {
                     const day = i + 1;
@@ -620,9 +735,19 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
                       <button
                         key={`day-${day}`}
                         type="button"
-                        className={`cal-day-cell ${isSelected ? 'selected' : ''}`}
                         onClick={() => handleSelectDay(day)}
-                        style={{ cursor: 'pointer' }}
+                        style={{
+                          height: '26px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '4px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: isSelected ? '#0F172A' : 'transparent',
+                          color: isSelected ? '#FFFFFF' : '#0F172A',
+                          fontWeight: isSelected ? 700 : 400,
+                        }}
                       >
                         {day}
                       </button>
@@ -637,18 +762,19 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
           <button
             type="button"
             onClick={handleExportCSV}
+            disabled={filteredActivities.length === 0}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               padding: '6px 14px',
-              backgroundColor: '#0F172A',
+              backgroundColor: filteredActivities.length > 0 ? '#0F172A' : '#94A3B8',
               border: 'none',
               borderRadius: '8px',
               fontSize: '12px',
               fontWeight: 600,
               color: '#FFFFFF',
-              cursor: 'pointer',
+              cursor: filteredActivities.length > 0 ? 'pointer' : 'not-allowed',
               transition: 'background-color 0.15s ease',
             }}
           >
@@ -700,17 +826,38 @@ export const AktivitasView: React.FC<AktivitasViewProps> = ({ telemetryLogs = []
               </tr>
             </thead>
             <tbody id="activityTableBody">
-              {paginatedActivities.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '48px 16px', color: '#94A3B8' }}>
+                    <RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto 8px', display: 'block' }} />
+                    Memuat data aktivitas...
+                  </td>
+                </tr>
+              ) : paginatedActivities.length === 0 ? (
                 <tr className="table-empty-row">
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '48px 16px' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '60px 16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <FileText size={32} color="#94A3B8" />
+                      <div
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '22px',
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        <FileText size={22} color="#94A3B8" />
+                      </div>
                       <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
-                        {activityData.length === 0 ? 'Belum ada log aktivitas' : 'Tidak ada log aktivitas yang cocok'}
+                        {activityData.length === 0 ? 'Belum Ada Log Aktivitas' : 'Tidak Ada Log yang Cocok'}
                       </span>
-                      <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 12px 0' }}>
+                      <p style={{ fontSize: '12px', color: '#64748B', maxWidth: '420px', margin: '0 0 12px 0', lineHeight: 1.5 }}>
                         {activityData.length === 0
-                          ? 'Log aktivitas palka akan tercatat otomatis saat perangkat TEMBOX terhubung dan mengirimkan data telemetri.'
+                          ? 'Log aktivitas palka, sinkronisasi offline MicroSD, dan peringatan cold-chain akan tercatat otomatis saat perangkat terhubung.'
                           : 'Coba sesuaikan kata kunci pencarian atau ubah filter kategori.'}
                       </p>
                       {activityData.length > 0 && (

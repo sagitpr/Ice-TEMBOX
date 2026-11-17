@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSupabaseClient } from '../modules/supabase/supabaseClient';
+import { runColdChainML, type AnomalyType } from '../modules/analytics/coldChainML.service';
 
 export interface TelemetryLogItem {
   id?: number | string;
@@ -38,6 +39,14 @@ export interface TelemetryRealtimeState {
   telemetryLogs: TelemetryLogItem[];
   testPing: () => Promise<number>;
   refreshTelemetry: () => Promise<void>;
+  freshnessScore: number | null;
+  freshnessGrade: string;
+  anomalyType: AnomalyType;
+  anomalyLabel: string;
+  anomalyCount: number;
+  recommendation: string;
+  ambientTemp: number | null;
+  tempDiffAmbient: number | null;
 }
 
 export function useTelemetryRealtime(initialDeviceCode: string | null = null): TelemetryRealtimeState {
@@ -314,50 +323,50 @@ export function useTelemetryRealtime(initialDeviceCode: string | null = null): T
     }
   }, []);
 
-  // Compute DS18B20 analytics from log buffer
+  // Compute DS18B20 analytics & Thermal Decay ML Prediction from log buffer
   let minTempStr = '--';
   let maxTempStr = '--';
   let deltaPerHourStr = '--';
   let iceRemainingStr = '--';
+  let conditionText = 'Menunggu Data';
+  let tempStatusText = 'Menunggu Data';
+  let freshnessScoreVal: number | null = null;
+  let freshnessGradeVal = 'Menunggu Data';
+  let anomalyTypeVal: AnomalyType = 'OPTIMAL';
+  let anomalyLabelVal = 'Menunggu Data';
+  let anomalyCountVal = 0;
+  let recommendationVal = 'Menunggu pembacaan sensor aktif.';
+  let ambientTempVal: number | null = null;
+  let tempDiffVal: number | null = null;
 
-  if (telemetryLogs.length > 0) {
+  if (telemetryLogs.length > 0 && currentTempNum !== null) {
     const temps = telemetryLogs.map((l) => Number(l.temperature_c)).filter((n) => !isNaN(n));
     if (temps.length > 0) {
       const min = Math.min(...temps);
       const max = Math.max(...temps);
       minTempStr = `${min > 0 ? '+' : ''}${min.toFixed(1)}°`;
       maxTempStr = `${max > 0 ? '+' : ''}${max.toFixed(1)}°`;
-
-      if (temps.length >= 2) {
-        const diff = temps[0] - temps[temps.length - 1];
-        const diffPerHr = Math.max(0, diff);
-        deltaPerHourStr = `+${diffPerHr.toFixed(1)}°C/jam`;
-      } else {
-        deltaPerHourStr = '+0.1°C/jam';
-      }
     }
-  }
 
-  // Ice condition calculation based on current temperature
-  let conditionText = 'Menunggu Data';
-  let tempStatusText = 'Menunggu Data';
+    // Run Machine Learning & Thermal Decay Engine
+    const prediction = runColdChainML(telemetryLogs);
+    deltaPerHourStr = prediction.decayRateFormatted;
+    iceRemainingStr = prediction.timeToThresholdFormatted;
+    conditionText = prediction.iceCondition;
+    freshnessScoreVal = prediction.freshnessScore;
+    freshnessGradeVal = prediction.freshnessGrade;
+    anomalyTypeVal = prediction.anomalyType;
+    anomalyLabelVal = prediction.anomalyLabel;
+    anomalyCountVal = prediction.anomalyCount;
+    recommendationVal = prediction.recommendation;
+    ambientTempVal = prediction.ambientTemp;
+    tempDiffVal = prediction.tempDiffAmbient;
 
-  if (currentTempNum !== null) {
-    iceRemainingStr = 'Est. bertahan 48 jam';
     if (currentTempNum > 4.0) {
-      conditionText = 'Mencair Cepat';
       tempStatusText = 'Bahaya';
-      iceRemainingStr = 'Est. bertahan 12 jam';
     } else if (currentTempNum > 2.0) {
-      conditionText = 'Mulai Mencair';
       tempStatusText = 'Waspada';
-      iceRemainingStr = 'Est. bertahan 24 jam';
-    } else if (currentTempNum < -1.5) {
-      conditionText = 'Beku';
-      tempStatusText = 'Aman';
-      iceRemainingStr = 'Est. bertahan 72 jam';
     } else {
-      conditionText = 'Padat';
       tempStatusText = 'Aman';
     }
   }
@@ -389,5 +398,13 @@ export function useTelemetryRealtime(initialDeviceCode: string | null = null): T
     telemetryLogs,
     testPing,
     refreshTelemetry,
+    freshnessScore: freshnessScoreVal,
+    freshnessGrade: freshnessGradeVal,
+    anomalyType: anomalyTypeVal,
+    anomalyLabel: anomalyLabelVal,
+    anomalyCount: anomalyCountVal,
+    recommendation: recommendationVal,
+    ambientTemp: ambientTempVal,
+    tempDiffAmbient: tempDiffVal,
   };
 }
