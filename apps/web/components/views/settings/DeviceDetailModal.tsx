@@ -3,17 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   X,
-  RefreshCw,
-  ShieldCheck,
   Sliders,
-  Server,
+  ShieldCheck,
   AlertTriangle,
   Search,
   Check,
   CheckCircle,
+  Key,
 } from '../../../app/components/Icons';
 import type { TemboxDevice, UpdateHardwareConfigPayload, PalkaPlacement } from '../../../lib/services/dashboardService';
-import { PALKA_OPTIONS } from '../../../hooks/useSettingsLogic';
 
 interface DeviceDetailModalProps {
   detailModalOpen: boolean;
@@ -26,6 +24,7 @@ interface DeviceDetailModalProps {
   handleRestartTelemetry: () => void;
   onSaveHardwareConfig?: (payload: UpdateHardwareConfigPayload) => Promise<boolean>;
   onDisconnectDevice?: (deviceId: string) => Promise<boolean>;
+  onRotatePin?: (deviceId: string) => Promise<string>;
 }
 
 interface DiagnosticResult {
@@ -42,11 +41,10 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
   selectedDevice,
   detailActionFeedback,
   pinging,
-  restarting,
   handlePingDevice,
-  handleRestartTelemetry,
   onSaveHardwareConfig,
   onDisconnectDevice,
+  onRotatePin,
 }) => {
   // Navigation Tabs: 'config' | 'diagnostics'
   const [activeTab, setActiveTab] = useState<'config' | 'diagnostics'>('config');
@@ -61,8 +59,13 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
   const [placement, setPlacement] = useState<PalkaPlacement>('Palka Utama');
   const [savingConfig, setSavingConfig] = useState(false);
   const [forcingSync, setForcingSync] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState('');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Re-Pairing / Rotate PIN State
+  const [rotatingPin, setRotatingPin] = useState(false);
+  const [newRotatedPin, setNewRotatedPin] = useState<string | null>(null);
 
   // Diagnostics Search & Vector State
   const [diagSearchQuery, setDiagSearchQuery] = useState('');
@@ -81,6 +84,8 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
       setBuzzerEnabled(selectedDevice.buzzerEnabled !== undefined ? selectedDevice.buzzerEnabled : true);
       setPlacement(selectedDevice.placement || 'Palka Utama');
       setConfirmDeleteOpen(false);
+      setNewRotatedPin(null);
+      setSyncFeedback('');
 
       // Fetch auto-diagnostics
       fetchDiagnostics('', selectedDevice.lastTemperatureC, selectedDevice.status);
@@ -106,7 +111,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
         setDiagnosticsResults(data.searchResults || []);
       }
     } catch {
-      // Fallback handled gracefully
+      // Handled gracefully
     } finally {
       setLoadingDiagnostics(false);
     }
@@ -133,10 +138,26 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
     }
   };
 
+  // Rotate PIN (Re-Pairing)
+  const handleRotatePinClick = async () => {
+    if (!selectedDevice || !onRotatePin || rotatingPin) return;
+    setRotatingPin(true);
+    setNewRotatedPin(null);
+    try {
+      const pin = await onRotatePin(selectedDevice.serialNumber || selectedDevice.id);
+      setNewRotatedPin(pin);
+    } catch {
+      // Handled via toast
+    } finally {
+      setRotatingPin(false);
+    }
+  };
+
   // Force MicroSD Sync
   const handleForceSync = async () => {
     if (!selectedDevice || forcingSync) return;
     setForcingSync(true);
+    setSyncFeedback('');
     try {
       await fetch('/api/iot/device-command', {
         method: 'POST',
@@ -147,10 +168,12 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
           action: 'FORCE_SYNC',
         }),
       });
-    } catch {}
-    setTimeout(() => {
+      setSyncFeedback('Perintah sinkronisasi MicroSD offline telah dikirim ke perangkat.');
+    } catch {
+      setSyncFeedback('Gagal mengirim perintah sinkronisasi.');
+    } finally {
       setForcingSync(false);
-    }, 800);
+    }
   };
 
   // Disconnect & Delete Device
@@ -165,9 +188,12 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
     }
   };
 
-  const serialNumber = selectedDevice?.serialNumber || selectedDevice?.ipOrSerial || 'TEMBOX-ESP32-9F8A21';
-  const telemetryTopic = selectedDevice?.mqttTopicTelemetry || `tembox/${serialNumber}/telemetry`;
-  const cmdTopic = selectedDevice?.mqttTopicCmd || `tembox/${serialNumber}/cmd`;
+  // Honest connection status: Online ONLY if last_seen_at < 30s ago
+  const isOnline = selectedDevice?.lastSeenAt
+    ? Date.now() - new Date(selectedDevice.lastSeenAt).getTime() < 30000
+    : selectedDevice?.status === 'online';
+
+  const serialNumber = selectedDevice?.serialNumber || selectedDevice?.ipOrSerial || 'TEMBOX-01';
 
   return (
     <div
@@ -181,33 +207,34 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
         inset: 0,
         zIndex: 9999,
         backgroundColor: 'rgba(7, 26, 39, 0.55)',
-        backdropFilter: detailModalOpen ? 'blur(8px)' : 'none',
-        WebkitBackdropFilter: detailModalOpen ? 'blur(8px)' : 'none',
+        backdropFilter: detailModalOpen ? 'blur(6px)' : 'none',
+        WebkitBackdropFilter: detailModalOpen ? 'blur(6px)' : 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
+        padding: '16px',
         opacity: detailModalOpen ? 1 : 0,
         visibility: detailModalOpen ? 'visible' : 'hidden',
         pointerEvents: detailModalOpen ? 'auto' : 'none',
-        transition: 'opacity 0.22s ease, visibility 0.22s ease',
+        transition: 'opacity 0.2s ease, visibility 0.2s ease',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           background: '#FFFFFF',
-          border: '1px solid #E2EDF4',
-          borderRadius: '16px',
-          maxWidth: '620px',
+          border: '1px solid #E2E8F0',
+          borderRadius: '12px',
+          maxWidth: '580px',
           width: '100%',
           maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 24px 55px rgba(11, 45, 66, 0.22)',
-          transform: detailModalOpen ? 'scale(1) translateY(0)' : 'scale(0.96) translateY(10px)',
-          transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+          boxShadow: '0 20px 45px rgba(15, 23, 42, 0.18)',
+          transform: detailModalOpen ? 'scale(1) translateY(0)' : 'scale(0.97) translateY(8px)',
+          transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
           overflow: 'hidden',
+          boxSizing: 'border-box',
         }}
       >
         {selectedDevice && (
@@ -215,21 +242,32 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
             {/* Header */}
             <div
               style={{
-                padding: '22px 28px 16px',
+                padding: '20px 24px 16px',
                 borderBottom: '1px solid #E2E8F0',
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
               }}
             >
               <div>
-                <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.1em', color: '#0284C7', textTransform: 'uppercase' }}>
-                  KENDALI IOT & DIAGNOSTIK
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    letterSpacing: '0.08em',
+                    color: '#0284C7',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  DETAIL PERANGKAT
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '2px' }}>
-                  <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#0B2D42', margin: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '2px', flexWrap: 'wrap' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
                     {selectedDevice.name}
                   </h3>
+                  {/* Honest connection indicator */}
                   <span
                     style={{
                       display: 'inline-flex',
@@ -238,9 +276,10 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                       fontSize: '11px',
                       fontWeight: 700,
                       padding: '2px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: selectedDevice.status === 'online' ? '#ECFDF5' : '#FEF2F2',
-                      color: selectedDevice.status === 'online' ? '#059669' : '#DC2626',
+                      borderRadius: '9999px',
+                      backgroundColor: isOnline ? '#F0FDF4' : '#F1F5F9',
+                      color: isOnline ? '#16A34A' : '#64748B',
+                      border: `1px solid ${isOnline ? '#DCFCE7' : '#E2E8F0'}`,
                     }}
                   >
                     <span
@@ -248,21 +287,24 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                         width: '6px',
                         height: '6px',
                         borderRadius: '50%',
-                        backgroundColor: selectedDevice.status === 'online' ? '#10B981' : '#EF4444',
+                        backgroundColor: isOnline ? '#16A34A' : '#94A3B8',
                       }}
                     />
-                    {selectedDevice.status === 'online' ? 'MQTT Terhubung' : 'Offline / Siaga'}
+                    {isOnline ? '• Terkoneksi' : '• Belum Terhubung'}
                   </span>
                 </div>
+                <span style={{ fontSize: '11.5px', color: '#64748B', fontFamily: 'monospace', display: 'block', marginTop: '2px' }}>
+                  ID: {serialNumber}
+                </span>
               </div>
               <button
                 type="button"
-                aria-label="Tutup detail perangkat"
+                aria-label="Tutup detail"
                 onClick={() => setDetailModalOpen(false)}
                 style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '6px',
                   background: '#F1F5F9',
                   border: 'none',
                   color: '#475569',
@@ -270,9 +312,10 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  flexShrink: 0,
                 }}
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             </div>
 
@@ -281,7 +324,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
               style={{
                 display: 'flex',
                 borderBottom: '1px solid #E2E8F0',
-                padding: '0 28px',
+                padding: '0 24px',
                 backgroundColor: '#F8FAFC',
               }}
             >
@@ -292,18 +335,18 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '12px 14px',
+                  padding: '11px 12px',
                   border: 'none',
                   borderBottom: activeTab === 'config' ? '2px solid #0284C7' : '2px solid transparent',
                   backgroundColor: 'transparent',
                   color: activeTab === 'config' ? '#0284C7' : '#64748B',
                   fontWeight: activeTab === 'config' ? 700 : 500,
-                  fontSize: '13px',
+                  fontSize: '12.5px',
                   cursor: 'pointer',
                 }}
               >
-                <Sliders size={14} />
-                <span>Konfigurasi & Kendali Hardware</span>
+                <Sliders size={13} />
+                <span>Konfigurasi & Keamanan</span>
               </button>
 
               <button
@@ -313,90 +356,106 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '12px 14px',
+                  padding: '11px 12px',
                   border: 'none',
                   borderBottom: activeTab === 'diagnostics' ? '2px solid #0284C7' : '2px solid transparent',
                   backgroundColor: 'transparent',
                   color: activeTab === 'diagnostics' ? '#0284C7' : '#64748B',
                   fontWeight: activeTab === 'diagnostics' ? 700 : 500,
-                  fontSize: '13px',
+                  fontSize: '12.5px',
                   cursor: 'pointer',
                 }}
               >
-                <ShieldCheck size={14} />
-                <span>Bantuan & Troubleshooting (Vector DB)</span>
+                <ShieldCheck size={13} />
+                <span>Diagnostik Lapangan</span>
               </button>
             </div>
 
-            {/* Body */}
-            <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1 }}>
-              {/* TAB 1: HARDWARE CONFIGURATION & COMMANDS */}
+            {/* Modal Body */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+              {/* TAB 1: CONFIGURATION & SECURITY */}
               {activeTab === 'config' && (
-                <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                  {/* MQTT Broker & Protocol Strip */}
-                  <div
-                    style={{
-                      backgroundColor: '#F8FAFC',
-                      border: '1px solid #E2E8F0',
-                      borderRadius: '8px',
-                      padding: '12px 14px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', marginBottom: '4px' }}>
-                      <span style={{ color: '#64748B' }}>Device Serial:</span>
-                      <strong style={{ color: '#0F172A', fontFamily: 'monospace' }}>{serialNumber}</strong>
+                <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Rotated PIN Banner if active */}
+                  {newRotatedPin && (
+                    <div
+                      style={{
+                        backgroundColor: '#F0F9FF',
+                        border: '1px solid #BAE6FD',
+                        borderRadius: '8px',
+                        padding: '12px 14px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <Key size={14} color="#0284C7" />
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#0369A1' }}>
+                          PIN Baru Berhasil Dibuat
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                        <span
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: '20px',
+                            fontWeight: 800,
+                            letterSpacing: '0.25em',
+                            color: '#0284C7',
+                            backgroundColor: '#FFFFFF',
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #93C5FD',
+                          }}
+                        >
+                          {newRotatedPin}
+                        </span>
+                        <span style={{ fontSize: '11.5px', color: '#475569' }}>
+                          Masukkan PIN ini ke LCD 1602 perangkat (berlaku 15 menit).
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', marginBottom: '4px' }}>
-                      <span style={{ color: '#64748B' }}>Telemetry Topic:</span>
-                      <code style={{ color: '#0284C7' }}>{telemetryTopic}</code>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px' }}>
-                      <span style={{ color: '#64748B' }}>Command Topic:</span>
-                      <code style={{ color: '#0F172A' }}>{cmdTopic}</code>
-                    </div>
-                  </div>
+                  )}
 
-                  {/* 1. Interval Telemetri MQTT & MicroSD Offline */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  {/* 1. Interval Kirim MQTT & MicroSD Offline */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                        Interval Telemetri MQTT
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                        Interval Kirim MQTT
                       </label>
                       <select
                         value={telemetryInterval}
                         onChange={(e) => setTelemetryInterval(Number(e.target.value))}
                         style={{
                           width: '100%',
-                          padding: '9px 12px',
+                          padding: '8px 10px',
                           borderRadius: '8px',
                           border: '1px solid #CBD5E1',
-                          fontSize: '13px',
+                          fontSize: '12.5px',
                           color: '#0F172A',
                           backgroundColor: '#FFFFFF',
                           outline: 'none',
                         }}
                       >
-                        <option value={5}>5 detik (Uji Lapangan)</option>
+                        <option value={5}>5 detik</option>
                         <option value={15}>15 detik</option>
                         <option value={30}>30 detik (Standar)</option>
                         <option value={60}>60 detik</option>
-                        <option value={300}>5 menit (Hemat Daya Pelayaran)</option>
+                        <option value={300}>5 menit (Hemat Daya)</option>
                       </select>
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                        Interval Log Offline MicroSD
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                        Interval Log MicroSD (Antrean Offline)
                       </label>
                       <select
                         value={sdInterval}
                         onChange={(e) => setSdInterval(Number(e.target.value))}
                         style={{
                           width: '100%',
-                          padding: '9px 12px',
+                          padding: '8px 10px',
                           borderRadius: '8px',
                           border: '1px solid #CBD5E1',
-                          fontSize: '13px',
+                          fontSize: '12.5px',
                           color: '#0F172A',
                           backgroundColor: '#FFFFFF',
                           outline: 'none',
@@ -410,17 +469,23 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                     </div>
                   </div>
 
-                  {/* 2. Kalibrasi Offset Sensor DS18B20 */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <label style={{ fontSize: '12.5px', fontWeight: 700, color: '#334155' }}>
+                  {/* 2. Kalibrasi Offset DS18B20 */}
+                  <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
                         Kalibrasi Offset Sensor DS18B20
                       </label>
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: tempOffset === 0 ? '#64748B' : tempOffset > 0 ? '#0284C7' : '#DC2626' }}>
+                      <span
+                        style={{
+                          fontSize: '12.5px',
+                          fontWeight: 800,
+                          color: tempOffset === 0 ? '#64748B' : tempOffset > 0 ? '#0284C7' : '#DC2626',
+                        }}
+                      >
                         {tempOffset > 0 ? `+${tempOffset.toFixed(1)}` : tempOffset.toFixed(1)}°C
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <input
                         type="range"
                         min="-5.0"
@@ -434,33 +499,23 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                         type="button"
                         onClick={() => setTempOffset(0.0)}
                         style={{
-                          padding: '4px 8px',
+                          padding: '3px 8px',
                           fontSize: '11px',
-                          border: '1px solid #E2E8F0',
+                          border: '1px solid #CBD5E1',
                           borderRadius: '6px',
                           background: '#FFFFFF',
+                          color: '#475569',
                           cursor: 'pointer',
                         }}
                       >
                         Reset 0.0
                       </button>
                     </div>
-                    <span style={{ fontSize: '11px', color: '#64748B', marginTop: '4px', display: 'block' }}>
-                      Koreksi offset presisi diterapkan di hardware ESP32 sebelum paket dikirim ke broker.
-                    </span>
                   </div>
 
-                  {/* 3. Ambang Batas Suhu Alarm & Buzzer */}
-                  <div
-                    style={{
-                      borderTop: '1px solid #F1F5F9',
-                      paddingTop: '14px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '12px',
-                    }}
-                  >
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  {/* 3. Batas Waspada & Kritis */}
+                  <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#D97706', marginBottom: '4px' }}>
                           Batas Waspada Es (°C)
@@ -472,10 +527,11 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                           onChange={(e) => setWarnThreshold(parseFloat(e.target.value) || 2.0)}
                           style={{
                             width: '100%',
-                            padding: '8px 12px',
+                            padding: '7px 10px',
                             borderRadius: '8px',
                             border: '1px solid #CBD5E1',
                             fontSize: '13px',
+                            boxSizing: 'border-box',
                           }}
                         />
                       </div>
@@ -491,88 +547,90 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                           onChange={(e) => setCritThreshold(parseFloat(e.target.value) || 4.0)}
                           style={{
                             width: '100%',
-                            padding: '8px 12px',
+                            padding: '7px 10px',
                             borderRadius: '8px',
                             border: '1px solid #CBD5E1',
                             fontSize: '13px',
+                            boxSizing: 'border-box',
                           }}
                         />
                       </div>
-                    </div>
-
-                    {/* Buzzer Fisik Toggle */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        backgroundColor: '#F8FAFC',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                      }}
-                    >
-                      <div>
-                        <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A', display: 'block' }}>
-                          Buzzer Alarm Fisik di Box Palka
-                        </span>
-                        <span style={{ fontSize: '11px', color: '#64748B' }}>
-                          Membunyikan nada peringatan saat suhu melebihi batas kritis di laut.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setBuzzerEnabled(!buzzerEnabled)}
-                        style={{
-                          width: '42px',
-                          height: '24px',
-                          borderRadius: '12px',
-                          backgroundColor: buzzerEnabled ? '#0284C7' : '#CBD5E1',
-                          border: 'none',
-                          position: 'relative',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                      >
-                        <span
-                          style={{
-                            position: 'absolute',
-                            top: '3px',
-                            left: buzzerEnabled ? '21px' : '3px',
-                            width: '18px',
-                            height: '18px',
-                            borderRadius: '50%',
-                            backgroundColor: '#FFFFFF',
-                            transition: 'left 0.15s ease',
-                          }}
-                        />
-                      </button>
                     </div>
                   </div>
 
-                  {detailActionFeedback && (
+                  {/* 4. Buzzer Fisik Toggle */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor: '#F8FAFC',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <div>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', display: 'block' }}>
+                        Buzzer Box Palka Fisik
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#64748B' }}>
+                        Bunyi alarm box jika suhu melebihi batas kritis.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBuzzerEnabled(!buzzerEnabled)}
+                      style={{
+                        width: '38px',
+                        height: '22px',
+                        borderRadius: '11px',
+                        backgroundColor: buzzerEnabled ? '#0284C7' : '#CBD5E1',
+                        border: 'none',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s ease',
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '2px',
+                          left: buzzerEnabled ? '18px' : '2px',
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          backgroundColor: '#FFFFFF',
+                          transition: 'left 0.15s ease',
+                        }}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Feedback */}
+                  {(detailActionFeedback || syncFeedback) && (
                     <div
                       style={{
-                        background: '#ECFDF5',
-                        border: '1px solid #A7F3D0',
-                        color: '#065F46',
+                        background: '#F0FDF4',
+                        border: '1px solid #BBF7D0',
+                        color: '#166534',
                         fontSize: '12px',
-                        padding: '10px 12px',
+                        padding: '8px 12px',
                         borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                       }}
                     >
-                      <Check size={14} color="#059669" />
-                      <span>{detailActionFeedback}</span>
+                      <Check size={14} color="#16A34A" />
+                      <span>{detailActionFeedback || syncFeedback}</span>
                     </div>
                   )}
 
-                  {/* Field Control Actions Bar */}
+                  {/* Action Buttons */}
                   <div
                     style={{
                       borderTop: '1px solid #E2E8F0',
-                      paddingTop: '16px',
+                      paddingTop: '14px',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '10px',
@@ -584,7 +642,8 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                         disabled={savingConfig}
                         style={{
                           flex: 1,
-                          padding: '10px 16px',
+                          minWidth: '140px',
+                          padding: '9px 16px',
                           backgroundColor: '#0F172A',
                           color: '#FFFFFF',
                           border: 'none',
@@ -595,15 +654,15 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                           opacity: savingConfig ? 0.7 : 1,
                         }}
                       >
-                        {savingConfig ? 'Menyimpan & Mengirim...' : 'Simpan & Kirim Config ke ESP32'}
+                        {savingConfig ? 'Menyimpan...' : 'Simpan Config'}
                       </button>
 
                       <button
                         type="button"
-                        disabled={pinging}
-                        onClick={handlePingDevice}
+                        disabled={rotatingPin}
+                        onClick={handleRotatePinClick}
                         style={{
-                          padding: '10px 14px',
+                          padding: '9px 12px',
                           backgroundColor: '#FFFFFF',
                           color: '#0284C7',
                           border: '1px solid #0284C7',
@@ -613,7 +672,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                           cursor: 'pointer',
                         }}
                       >
-                        {pinging ? 'Pinging...' : 'Test Ping MQTT'}
+                        {rotatingPin ? 'Membuat PIN...' : 'Ganti PIN (Re-Pair)'}
                       </button>
 
                       <button
@@ -621,7 +680,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                         disabled={forcingSync}
                         onClick={handleForceSync}
                         style={{
-                          padding: '10px 14px',
+                          padding: '9px 12px',
                           backgroundColor: '#FFFFFF',
                           color: '#475569',
                           border: '1px solid #CBD5E1',
@@ -631,16 +690,16 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                           cursor: 'pointer',
                         }}
                       >
-                        {forcingSync ? 'Menyinkronkan...' : 'Paksa Sync MicroSD'}
+                        {forcingSync ? 'Syncing...' : 'Paksa Sync MicroSD'}
                       </button>
                     </div>
 
-                    {/* Disconnect / Delete Danger Action */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                    {/* Disconnect Device */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                       {confirmDeleteOpen ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '11.5px', color: '#DC2626', fontWeight: 600 }}>
-                            Cabut token & hapus perangkat ini?
+                            Putuskan perangkat ini?
                           </span>
                           <button
                             type="button"
@@ -671,7 +730,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                               cursor: 'pointer',
                             }}
                           >
-                            {isDeleting ? 'Memutuskan...' : 'Ya, Putuskan & Hapus'}
+                            {isDeleting ? 'Memutuskan...' : 'Ya, Putuskan'}
                           </button>
                         </div>
                       ) : (
@@ -689,7 +748,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                             cursor: 'pointer',
                           }}
                         >
-                          Putuskan Koneksi / Hapus Perangkat
+                          Putuskan Perangkat
                         </button>
                       )}
                     </div>
@@ -697,27 +756,27 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                 </form>
               )}
 
-              {/* TAB 2: FIELD VECTOR DIAGNOSTICS & TROUBLESHOOTING */}
+              {/* TAB 2: FIELD DIAGNOSTICS (VECTOR DB) */}
               {activeTab === 'diagnostics' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {/* Automatic Anomaly Detection Banner */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Status Banner */}
                   {detectedAnomalies.length > 0 ? (
                     <div
                       style={{
                         backgroundColor: '#FEF2F2',
                         border: '1px solid #FECACA',
                         borderRadius: '8px',
-                        padding: '12px 14px',
+                        padding: '10px 12px',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                        <AlertTriangle size={16} color="#DC2626" />
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#991B1B' }}>
-                          Anomali Hardware Terdeteksi di Lapangan
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <AlertTriangle size={15} color="#DC2626" />
+                        <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#991B1B' }}>
+                          Kode Error Hardware Terdeteksi
                         </span>
                       </div>
                       {detectedAnomalies.map((anom) => (
-                        <div key={anom.errorCode} style={{ fontSize: '12px', color: '#B91C1C', marginBottom: '4px' }}>
+                        <div key={anom.errorCode} style={{ fontSize: '11.5px', color: '#B91C1C' }}>
                           &bull; <strong>{anom.symptomTitle}</strong>: {anom.rootCause}
                         </div>
                       ))}
@@ -725,35 +784,35 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                   ) : (
                     <div
                       style={{
-                        backgroundColor: '#ECFDF5',
-                        border: '1px solid #A7F3D0',
+                        backgroundColor: '#F0FDF4',
+                        border: '1px solid #BBF7D0',
                         borderRadius: '8px',
-                        padding: '10px 14px',
+                        padding: '10px 12px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
                       }}
                     >
-                      <CheckCircle size={16} color="#059669" />
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#065F46' }}>
-                        Semua modul perangkat ({selectedDevice.name}) terdeteksi sehat dan beroperasi normal.
+                      <CheckCircle size={15} color="#16A34A" />
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#166534' }}>
+                        Modul sensor dan komponen palka ({selectedDevice.name}) terdeteksi normal.
                       </span>
                     </div>
                   )}
 
                   {/* Symptom Search Bar */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                      Pencarian Masalah Lapangan (Knowledge Base / Vector DB)
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                      Pencarian Masalah Lapangan
                     </label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <div style={{ position: 'relative', flex: 1 }}>
-                        <span style={{ position: 'absolute', left: '10px', top: '9px', color: '#94A3B8' }}>
+                        <span style={{ position: 'absolute', left: '10px', top: '8px', color: '#94A3B8' }}>
                           <Search size={14} />
                         </span>
                         <input
                           type="text"
-                          placeholder="Ketik gejala (misal: suhu -127, lampu merah, microSD mount, waktu rtc)..."
+                          placeholder="Ketik gejala (misal: suhu -127, lampu merah, microSD, RTC)..."
                           value={diagSearchQuery}
                           onChange={(e) => setDiagSearchQuery(e.target.value)}
                           onKeyDown={(e) => {
@@ -763,11 +822,12 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                           }}
                           style={{
                             width: '100%',
-                            padding: '8px 12px 8px 32px',
+                            padding: '8px 10px 8px 30px',
                             borderRadius: '8px',
                             border: '1px solid #CBD5E1',
                             fontSize: '12.5px',
                             outline: 'none',
+                            boxSizing: 'border-box',
                           }}
                         />
                       </div>
@@ -785,19 +845,17 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                           cursor: 'pointer',
                         }}
                       >
-                        {loadingDiagnostics ? 'Mencari...' : 'Cari Solusi'}
+                        {loadingDiagnostics ? '...' : 'Cari'}
                       </button>
                     </div>
 
-                    {/* Quick Diagnostic Pill Tags */}
+                    {/* Quick Tags */}
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
                       {[
-                        { q: '-127', label: 'Suhu -127°C' },
-                        { q: '+85', label: 'Suhu +85°C' },
-                        { q: 'microSD', label: 'MicroSD Mount Error' },
-                        { q: 'rtc', label: 'Jam RTC Reset' },
-                        { q: 'mqtt', label: 'Koneksi TLS Putus' },
-                        { q: 'buzzer', label: 'Buzzer Bunyi Terus' },
+                        { q: '-127', label: '-127°C (Probe Lepas)' },
+                        { q: 'microSD', label: 'MicroSD Error' },
+                        { q: 'rtc', label: 'RTC DS3231' },
+                        { q: 'buzzer', label: 'Buzzer Alarm' },
                       ].map((tag) => (
                         <button
                           key={tag.q}
@@ -822,56 +880,56 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Troubleshooting Cards List */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {diagnosticsResults.map((item) => (
-                      <div
-                        key={item.errorCode}
-                        style={{
-                          border: '1px solid #E2E8F0',
-                          borderRadius: '8px',
-                          padding: '14px',
-                          backgroundColor: '#FFFFFF',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
-                            {item.symptomTitle}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '10.5px',
-                              fontWeight: 700,
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              backgroundColor: '#E0F2FE',
-                              color: '#0284C7',
-                            }}
-                          >
-                            Modul: {item.hardwareComponent}
-                          </span>
+                  {/* Results */}
+                  {diagnosticsResults.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {diagnosticsResults.map((item) => (
+                        <div
+                          key={item.errorCode}
+                          style={{
+                            border: '1px solid #E2E8F0',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            backgroundColor: '#FFFFFF',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+                              {item.symptomTitle}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                backgroundColor: '#E0F2FE',
+                                color: '#0284C7',
+                              }}
+                            >
+                              {item.hardwareComponent}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '11.5px', color: '#64748B', margin: '0 0 6px 0', lineHeight: 1.4 }}>
+                            <strong>Penyebab: </strong>
+                            {item.rootCause}
+                          </p>
+                          <div style={{ backgroundColor: '#F8FAFC', borderRadius: '6px', padding: '8px 10px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#0F172A', display: 'block', marginBottom: '3px' }}>
+                              Langkah Perbaikan:
+                            </span>
+                            <ol style={{ margin: 0, paddingLeft: '16px', fontSize: '11px', color: '#334155', lineHeight: 1.4 }}>
+                              {item.resolutionSteps.map((step, idx) => (
+                                <li key={idx} style={{ marginBottom: '2px' }}>
+                                  {step}
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
                         </div>
-
-                        <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 10px 0', lineHeight: 1.4 }}>
-                          <strong style={{ color: '#334155' }}>Penyebab: </strong>
-                          {item.rootCause}
-                        </p>
-
-                        <div style={{ backgroundColor: '#F8FAFC', borderRadius: '6px', padding: '10px 12px' }}>
-                          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', display: 'block', marginBottom: '4px' }}>
-                            Langkah Solusi Lapangan:
-                          </span>
-                          <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '11.5px', color: '#334155', lineHeight: 1.5 }}>
-                            {item.resolutionSteps.map((step, idx) => (
-                              <li key={idx} style={{ marginBottom: '2px' }}>
-                                {step}
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

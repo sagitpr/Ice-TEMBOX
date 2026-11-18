@@ -397,4 +397,11 @@ export const Cpu: React.FC<IconProps> = ({ size = 14, className = '', color = 'c
   </svg>
 );
 
+export const Key: React.FC<IconProps> = ({ size = 20, className = '', color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-key ${className}`} {...props}>
+    <path d="m21 2-2 2m-1.5 1.5L14 9a5 5 0 1 0 3 3l3.5-3.5" />
+    <path d="m15.5 7.5 3 3" />
+  </svg>
+);
+
 

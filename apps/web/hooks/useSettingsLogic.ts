@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   fetchDevices,
   addDevice,
+  pairDevice,
+  rotateDevicePin,
   getDeviceDetail,
   pingDevice,
   restartTelemetry,
@@ -43,9 +45,10 @@ export function useSettingsLogic() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
 
-  // Add Device Form State
+  // Add Device Form State (LCD 1602 Pairing Workflow)
   const [newDeviceName, setNewDeviceName] = useState('');
-  const [newDeviceIp, setNewDeviceIp] = useState('');
+  const [newDeviceIp, setNewDeviceIp] = useState(''); // Holds Device ID (e.g. TBX-9F8A21)
+  const [newDevicePin, setNewDevicePin] = useState(''); // Holds 6-digit numeric PIN
   const [newDevicePlacement, setNewDevicePlacement] = useState<PalkaPlacement>('Palka Utama');
   const [addFormError, setAddFormError] = useState('');
   const [savingDevice, setSavingDevice] = useState(false);
@@ -120,56 +123,67 @@ export function useSettingsLogic() {
     };
   }, [anyModalOpen]);
 
-  // Open Add Device Modal
+  // Open Add Device Modal (LCD 1602 Pairing)
   const handleOpenAddModal = useCallback(() => {
-    const nextNumber = String(devices.length + 1).padStart(3, '0');
-    setNewDeviceName(`TEMBOX-${nextNumber}`);
+    const nextNumber = String(devices.length + 1).padStart(2, '0');
+    setNewDeviceName(`Box ${nextNumber}`);
     setNewDeviceIp('');
+    setNewDevicePin('');
     setNewDevicePlacement('Palka Utama');
     setAddFormError('');
     setAddModalOpen(true);
   }, [devices.length]);
 
-  // Submit Add Device
+  // Submit Add Device via LCD 1602 ID + PIN Pairing
   const handleSaveDevice = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddFormError('');
-    if (!newDeviceName.trim()) {
-      setAddFormError('Nama perangkat wajib diisi (misal: TEMBOX-002).');
+
+    const cleanName = newDeviceName.trim();
+    const cleanId = newDeviceIp.trim();
+    const cleanPin = newDevicePin.trim();
+
+    if (!cleanName) {
+      setAddFormError('Nama Box / Palka wajib diisi (misal: Box 01 atau Palka Utama).');
       return;
     }
-    if (!newDeviceIp.trim()) {
-      setAddFormError('Device Serial / MAC ID hardware wajib diisi.');
+    if (!cleanId) {
+      setAddFormError('Device ID (dari LCD 1602) wajib diisi (contoh: TBX-9F8A21).');
+      return;
+    }
+    if (!/^\d{6}$/.test(cleanPin)) {
+      setAddFormError('PIN verifikasi harus berupa 6 digit angka dari layar LCD 1602.');
       return;
     }
 
     setSavingDevice(true);
     try {
-      const created = await addDevice({
-        name: newDeviceName,
-        serialNumber: newDeviceIp,
-        ipOrSerial: newDeviceIp,
-        placement: newDevicePlacement,
+      const created = await pairDevice({
+        boxName: cleanName,
+        deviceId: cleanId,
+        pin: cleanPin,
       });
 
-      // Synchronize with backend API route in background
-      fetch('/api/iot/devices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newDeviceName,
-          serialNumber: newDeviceIp,
-          placement: newDevicePlacement,
-        }),
-      }).catch(() => {});
-
-      setDevices((prev) => [...prev, created]);
+      setDevices((prev) => [...prev.filter((d) => d.id !== created.id && d.serialNumber !== created.serialNumber), created]);
       setAddModalOpen(false);
-      showToast(`Perangkat ${created.name} (${created.serialNumber}) berhasil didaftarkan ke broker MQTT.`, 'success');
+      showToast(`Perangkat ${created.name} (${created.serialNumber}) berhasil dihubungkan via LCD 1602!`, 'success');
     } catch (err: unknown) {
-      setAddFormError(err instanceof Error ? err.message : 'Gagal menyimpan perangkat.');
+      setAddFormError(err instanceof Error ? err.message : 'Gagal menghubungkan perangkat.');
     } finally {
       setSavingDevice(false);
+    }
+  };
+
+  // Rotate Device PIN for re-pairing
+  const handleRotatePin = async (deviceId: string): Promise<string> => {
+    try {
+      const newPin = await rotateDevicePin(deviceId);
+      showToast(`PIN baru dibuat: ${newPin}. Masukkan PIN ini pada LCD 1602.`, 'info');
+      return newPin;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal merotasi PIN.';
+      showToast(msg, 'warning');
+      throw err;
     }
   };
 
@@ -346,11 +360,13 @@ export function useSettingsLogic() {
     accountModalOpen,
     setAccountModalOpen,
 
-    // Add Device State
+    // Add Device State (LCD 1602 Pairing)
     newDeviceName,
     setNewDeviceName,
     newDeviceIp,
     setNewDeviceIp,
+    newDevicePin,
+    setNewDevicePin,
     newDevicePlacement,
     setNewDevicePlacement,
     addFormError,
@@ -368,6 +384,7 @@ export function useSettingsLogic() {
     handleRestartTelemetry,
     handleSaveHardwareConfig,
     handleDisconnectDevice,
+    handleRotatePin,
 
     // Account Edit State
     editName,

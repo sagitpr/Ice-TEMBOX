@@ -78,7 +78,8 @@ export async function GET(request: Request) {
         firmware_esp32,
         firmware_ds18b20,
         last_temperature_c,
-        last_seen_at
+        last_seen_at,
+        is_paired
       `);
 
     if (userId) {
@@ -95,28 +96,39 @@ export async function GET(request: Request) {
     }
 
     // Sanitize output: ensure NO token or hash field is present
-    const sanitized = (devices || []).map((dev) => ({
-      id: dev.id,
-      name: dev.device_name,
-      device_name: dev.device_name,
-      device_code: dev.device_code,
-      serial_number: dev.serial_number || dev.device_code,
-      serialNumber: dev.serial_number || dev.device_code,
-      placement: dev.placement,
-      status: dev.status,
-      telemetryIntervalSec: dev.telemetry_interval_sec ?? 30,
-      sdIntervalSec: dev.sd_interval_sec ?? 15,
-      tempOffset: Number(dev.temp_offset ?? 0),
-      warnThreshold: Number(dev.warn_threshold ?? 2.0),
-      critThreshold: Number(dev.crit_threshold ?? 4.0),
-      buzzerEnabled: Boolean(dev.buzzer_enabled ?? true),
-      firmwareEsp32: dev.firmware_esp32,
-      firmwareDs18b20: dev.firmware_ds18b20,
-      mqttTopicTelemetry: `tembox/${dev.serial_number || dev.device_code}/telemetry`,
-      mqttTopicCmd: `tembox/${dev.serial_number || dev.device_code}/cmd`,
-      lastTemperatureC: dev.last_temperature_c ? Number(dev.last_temperature_c) : null,
-      lastSyncAt: dev.last_seen_at ? new Date(dev.last_seen_at).toLocaleString('id-ID') : 'Belum ada data',
-    }));
+    const sanitized = (devices || []).map((dev) => {
+      // Honest connection check: online ONLY if last_seen_at is less than 30s ago
+      const isRecentlySeen = dev.last_seen_at
+        ? (Date.now() - new Date(dev.last_seen_at).getTime() < 30000)
+        : false;
+      const honestStatus: 'online' | 'offline' = isRecentlySeen ? 'online' : 'offline';
+
+      return {
+        id: dev.id,
+        name: dev.device_name,
+        device_name: dev.device_name,
+        device_code: dev.device_code,
+        serial_number: dev.serial_number || dev.device_code,
+        serialNumber: dev.serial_number || dev.device_code,
+        placement: dev.placement,
+        status: honestStatus,
+        connection_status: honestStatus,
+        isPaired: Boolean(dev.is_paired),
+        telemetryIntervalSec: dev.telemetry_interval_sec ?? 30,
+        sdIntervalSec: dev.sd_interval_sec ?? 15,
+        tempOffset: Number(dev.temp_offset ?? 0),
+        warnThreshold: Number(dev.warn_threshold ?? 2.0),
+        critThreshold: Number(dev.crit_threshold ?? 4.0),
+        buzzerEnabled: Boolean(dev.buzzer_enabled ?? true),
+        firmwareEsp32: dev.firmware_esp32,
+        firmwareDs18b20: dev.firmware_ds18b20,
+        mqttTopicTelemetry: `tembox/${dev.serial_number || dev.device_code}/telemetry`,
+        mqttTopicCmd: `tembox/${dev.serial_number || dev.device_code}/cmd`,
+        lastTemperatureC: dev.last_temperature_c ? Number(dev.last_temperature_c) : null,
+        lastSeenAt: dev.last_seen_at || null,
+        lastSyncAt: dev.last_seen_at ? new Date(dev.last_seen_at).toLocaleString('id-ID') : 'Belum pernah terhubung',
+      };
+    });
 
     return NextResponse.json({
       success: true,

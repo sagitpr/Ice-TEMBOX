@@ -1,5 +1,4 @@
 import React from 'react';
-import { Info } from '../../../app/components/Icons';
 
 interface SettingsStatusBannerProps {
   deviceCount: number;
@@ -9,7 +8,7 @@ export const SettingsStatusBanner: React.FC<SettingsStatusBannerProps> = ({ devi
   return (
     <div
       style={{
-        padding: '14px 0',
+        padding: '12px 0',
         borderBottom: '1px solid #E2E8F0',
         marginBottom: '24px',
         display: 'flex',
@@ -20,10 +19,9 @@ export const SettingsStatusBanner: React.FC<SettingsStatusBannerProps> = ({ devi
         fontSize: '13px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Info size={18} color="#0284C7" />
-        <span style={{ color: '#475569' }}>
-          Mode interaktif aktif menggunakan service state lokal (siap dihubungkan ke API backend).
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
+          Manajemen Perangkat & Sistem
         </span>
       </div>
       <span
@@ -32,8 +30,9 @@ export const SettingsStatusBanner: React.FC<SettingsStatusBannerProps> = ({ devi
           fontWeight: 700,
           padding: '3px 10px',
           borderRadius: '9999px',
-          background: '#E0F2FE',
-          color: '#0284C7',
+          background: deviceCount > 0 ? '#F0FDF4' : '#F1F5F9',
+          color: deviceCount > 0 ? '#16A34A' : '#64748B',
+          border: `1px solid ${deviceCount > 0 ? '#DCFCE7' : '#E2E8F0'}`,
         }}
       >
         {deviceCount} Perangkat Terdaftar

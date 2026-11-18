@@ -26,6 +26,14 @@ export interface TemboxDevice {
   lastTemperatureC: number | null;
   lastPingMs: number | null;
   lastSyncAt: string;
+  lastSeenAt?: string | null;
+  isPaired?: boolean;
+}
+
+export interface PairDevicePayload {
+  boxName: string;
+  deviceId: string;
+  pin: string;
 }
 
 export interface AddDevicePayload {
@@ -144,12 +152,91 @@ const emitStoreEvent = (eventName: string, detail?: unknown) => {
 // ==================================================
 
 export async function fetchDevices(): Promise<TemboxDevice[]> {
+  try {
+    if (typeof window !== 'undefined') {
+      const res = await fetch('/api/iot/devices');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.devices)) {
+          const store = getStore();
+          store.devices = data.devices;
+          return data.devices;
+        }
+      }
+    }
+  } catch {}
   await simulateNetworkDelay(160);
-  // Zero-trust sanitization: Never leak raw MQTT token to standard device lists
   return getStore().devices.map((d) => {
     const { mqttToken, ...safeDevice } = d;
     return safeDevice;
   });
+}
+
+export async function pairDevice(payload: PairDevicePayload): Promise<TemboxDevice> {
+  const cleanName = payload.boxName.trim();
+  const cleanSerial = payload.deviceId.trim().toUpperCase();
+
+  const res = await fetch('/api/iot/pair', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'pair',
+      boxName: cleanName,
+      deviceId: cleanSerial,
+      pin: payload.pin,
+    }),
+  });
+
+  const data = await res.json();
+  if (!data.success) {
+    throw new Error(data.error || 'Gagal menghubungkan perangkat.');
+  }
+
+  const pairedDev: TemboxDevice = {
+    id: data.deviceId || cleanSerial,
+    name: cleanName,
+    serialNumber: cleanSerial,
+    ipOrSerial: cleanSerial,
+    placement: cleanName as PalkaPlacement,
+    status: 'offline', // Honest status: stays offline until physical telemetry heartbeat arrives
+    firmwareEsp32: 'v2.4.1-iot-marine',
+    firmwareDs18b20: 'Probe Rev.3.2 (±0.5°C)',
+    microSdIntervalSec: 15,
+    telemetryIntervalSec: 30,
+    tempOffset: 0.0,
+    warnThreshold: 2.0,
+    critThreshold: 4.0,
+    buzzerEnabled: true,
+    mqttTopicTelemetry: `tembox/${cleanSerial}/telemetry`,
+    mqttTopicCmd: `tembox/${cleanSerial}/cmd`,
+    lastTemperatureC: null,
+    lastPingMs: null,
+    lastSyncAt: 'Baru saja di-pair via LCD 1602',
+    lastSeenAt: null,
+    isPaired: true,
+  };
+
+  const store = getStore();
+  store.devices = [...store.devices.filter((d) => d.id !== pairedDev.id && d.serialNumber !== pairedDev.serialNumber), pairedDev];
+  emitStoreEvent('tembox:devices-updated', store.devices);
+  return pairedDev;
+}
+
+export async function rotateDevicePin(deviceId: string): Promise<string> {
+  const res = await fetch('/api/iot/pair', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'rotate_pin',
+      deviceId,
+    }),
+  });
+
+  const data = await res.json();
+  if (!data.success) {
+    throw new Error(data.error || 'Gagal merotasi PIN.');
+  }
+  return data.newPin;
 }
 
 export async function addDevice(deviceData: AddDevicePayload): Promise<TemboxDevice> {
@@ -222,7 +309,14 @@ export async function updateHardwareConfig(payload: UpdateHardwareConfigPayload)
 }
 
 export async function deleteOrDisconnectDevice(deviceId: string): Promise<void> {
-  await simulateNetworkDelay(280);
+  try {
+    await fetch('/api/iot/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'unpair', deviceId }),
+    });
+  } catch {}
+  await simulateNetworkDelay(200);
   const store = getStore();
   store.devices = store.devices.filter((d) => d.id !== deviceId && d.serialNumber !== deviceId);
   emitStoreEvent('tembox:devices-updated', store.devices);

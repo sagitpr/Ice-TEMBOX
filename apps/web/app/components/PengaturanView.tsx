@@ -35,6 +35,8 @@ export const PengaturanView: React.FC = () => {
     setNewDeviceName,
     newDeviceIp,
     setNewDeviceIp,
+    newDevicePin,
+    setNewDevicePin,
     newDevicePlacement,
     setNewDevicePlacement,
     addFormError,
@@ -52,6 +54,7 @@ export const PengaturanView: React.FC = () => {
     handleRestartTelemetry,
     handleSaveHardwareConfig,
     handleDisconnectDevice,
+    handleRotatePin,
 
     // Account Edit State & Handlers
     editName,
@@ -107,7 +110,7 @@ export const PengaturanView: React.FC = () => {
       {/* 5. System Info */}
       <SettingsSystemInfo />
 
-      {/* MODAL 1: Add Device */}
+      {/* MODAL 1: Add Device (LCD 1602 Pairing) */}
       <AddDeviceModal
         addModalOpen={addModalOpen}
         setAddModalOpen={setAddModalOpen}
@@ -115,8 +118,8 @@ export const PengaturanView: React.FC = () => {
         setNewDeviceName={setNewDeviceName}
         newDeviceIp={newDeviceIp}
         setNewDeviceIp={setNewDeviceIp}
-        newDevicePlacement={newDevicePlacement}
-        setNewDevicePlacement={setNewDevicePlacement}
+        newDevicePin={newDevicePin}
+        setNewDevicePin={setNewDevicePin}
         addFormError={addFormError}
         savingDevice={savingDevice}
         handleSaveDevice={handleSaveDevice}
@@ -134,6 +137,7 @@ export const PengaturanView: React.FC = () => {
         handleRestartTelemetry={handleRestartTelemetry}
         onSaveHardwareConfig={handleSaveHardwareConfig}
         onDisconnectDevice={handleDisconnectDevice}
+        onRotatePin={handleRotatePin}
       />
 
       {/* MODAL 3: Edit Profile */}

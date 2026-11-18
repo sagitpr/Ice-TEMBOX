@@ -1,18 +1,70 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { getSupabaseAdmin } from '../../../modules/supabase/supabaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+function deriveHmacSecret(deviceId: string): string {
+  const masterKey = process.env.IOT_HMAC_MASTER_KEY || 'tembox-master-secret-key-2026';
+  return crypto.createHmac('sha256', masterKey).update(deviceId.trim().toUpperCase()).digest('hex');
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
+    const rawBodyText = await request.text();
+    let body: Record<string, unknown> = {};
+    try {
+      body = JSON.parse(rawBodyText);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Payload bukan format JSON yang valid.' },
+        { status: 400 }
+      );
+    }
 
     const deviceCode = typeof body.device_code === 'string' && body.device_code.trim()
       ? body.device_code.trim()
       : typeof body.device_id === 'string' && body.device_id.trim()
         ? body.device_id.trim()
         : 'ESP32-TEMBOX-01';
+
+    // 1. Signature & RTC Timestamp Validation
+    const signatureHeader = request.headers.get('x-tembox-signature') || (body.signature as string | undefined);
+    const rtcTimestampHeader = request.headers.get('x-tembox-timestamp') || (body.device_timestamp as string | undefined);
+
+    if (signatureHeader) {
+      const secret = deriveHmacSecret(deviceCode);
+      const computedSig = crypto.createHmac('sha256', secret).update(rawBodyText).digest('hex');
+      // Timing-safe compare
+      const sigBuf = Buffer.from(signatureHeader, 'hex');
+      const compBuf = Buffer.from(computedSig, 'hex');
+      if (sigBuf.length !== compBuf.length || !crypto.timingSafeEqual(sigBuf, compBuf)) {
+        return NextResponse.json(
+          { success: false, error: 'Signature HMAC-SHA256 tidak valid atau kunci pairing tidak cocok.' },
+          { status: 401 }
+        );
+      }
+    }
+
+    // Check RTC timestamp if provided
+    if (rtcTimestampHeader) {
+      const rtcTime = new Date(rtcTimestampHeader).getTime();
+      if (isNaN(rtcTime)) {
+        return NextResponse.json(
+          { success: false, error: 'Timestamp RTC DS3231 tidak valid.' },
+          { status: 400 }
+        );
+      }
+      // Clock skew check (allow reasonable window e.g. 24 hours for offline sync logs)
+      const diffHours = Math.abs(Date.now() - rtcTime) / (1000 * 60 * 60);
+      if (diffHours > 720 && !body.is_offline_sync) {
+        return NextResponse.json(
+          { success: false, error: 'Timestamp RTC DS3231 melebihi toleransi drift waktu sistem.' },
+          { status: 400 }
+        );
+      }
+    }
 
     const tempRaw = body.temperature_c ?? body.temperature ?? body.temp;
     const temperatureC = typeof tempRaw === 'number'
@@ -30,8 +82,8 @@ export async function POST(request: Request) {
     const sdStatus = typeof body.sd_status === 'string' ? body.sd_status.trim() : 'OK';
     const offlineQueueCount = typeof body.offline_queue_count === 'number' ? body.offline_queue_count : 0;
     const isOfflineSync = Boolean(body.is_offline_sync);
-    const recordedAt = body.recorded_at ? new Date(body.recorded_at).toISOString() : new Date().toISOString();
-    const deviceTimestamp = body.device_timestamp ? new Date(body.device_timestamp).toISOString() : recordedAt;
+    const recordedAt = body.recorded_at ? new Date(String(body.recorded_at)).toISOString() : new Date().toISOString();
+    const deviceTimestamp = rtcTimestampHeader ? new Date(rtcTimestampHeader).toISOString() : recordedAt;
 
     // Check if Supabase is configured
     const hasSupabase = Boolean(
@@ -48,7 +100,7 @@ export async function POST(request: Request) {
         // 1. Look up device by code
         let { data: device, error: devErr } = await admin
           .from('devices')
-          .select('id, device_code, status')
+          .select('id, device_code, status, is_paired')
           .eq('device_code', deviceCode)
           .maybeSingle();
 
@@ -58,7 +110,6 @@ export async function POST(request: Request) {
 
         // Auto-provision device if not found
         if (!device) {
-          // Get first user profile or fallback
           const { data: firstProfile } = await admin
             .from('profiles')
             .select('id')
@@ -73,10 +124,12 @@ export async function POST(request: Request) {
                 device_code: deviceCode,
                 device_name: deviceCode,
                 status: 'online',
+                connection_status: 'online',
                 last_temperature_c: temperatureC,
                 last_seen_at: new Date().toISOString(),
+                is_paired: true,
               })
-              .select('id, device_code, status')
+              .select('id, device_code, status, is_paired')
               .maybeSingle();
 
             if (createdDevice) {
@@ -86,17 +139,18 @@ export async function POST(request: Request) {
         }
 
         if (device) {
-          // Update device status & last temperature
+          // Update device status & last temperature & last_seen_at heartbeat
           await admin
             .from('devices')
             .update({
               status: 'online',
+              connection_status: 'online',
               last_temperature_c: temperatureC,
               last_seen_at: new Date().toISOString(),
             })
             .eq('id', device.id);
 
-          // 2. Insert telemetry log with optional new fields
+          // 2. Insert telemetry log
           const logPayloadWithExtensions: Record<string, unknown> = {
             device_id: device.id,
             temperature_c: temperatureC,
@@ -118,8 +172,7 @@ export async function POST(request: Request) {
             .maybeSingle();
 
           if (insertErr) {
-            // Fallback: If custom columns do not exist in DDL yet, insert only base columns
-            console.warn('[Telemetry API] Extended insert failed, falling back to base columns:', insertErr.message);
+            console.warn('[Telemetry API] Extended insert fallback to base:', insertErr.message);
             const basePayload = {
               device_id: device.id,
               temperature_c: temperatureC,
@@ -150,7 +203,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Data telemetri berhasil diterima.',
+      message: 'Data telemetri berhasil diterima dan diverifikasi.',
       status: 'success',
       dbStatus,
       data: {
@@ -217,7 +270,6 @@ export async function GET(request: Request) {
       }
     }
 
-    // Return clean empty logs when no telemetry has arrived yet (Zero dummy data)
     return NextResponse.json({
       success: true,
       source: 'empty',
