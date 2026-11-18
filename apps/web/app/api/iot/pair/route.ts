@@ -64,9 +64,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // ==========================================
-    // ACTION 1: ROTATE PIN (Ganti PIN Baru)
-    // ==========================================
+    // 1. Rotate PIN
     if (action === 'rotate_pin') {
       const deviceId = typeof body.deviceId === 'string' ? body.deviceId.trim().toUpperCase() : '';
       if (!deviceId) {
@@ -108,9 +106,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // ==========================================
-    // ACTION 2: UNPAIR (Putuskan Perangkat)
-    // ==========================================
+    // 2. Unpair
     if (action === 'unpair') {
       const deviceId = typeof body.deviceId === 'string' ? body.deviceId.trim().toUpperCase() : '';
       if (!deviceId) {
@@ -139,9 +135,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // ==========================================
-    // ACTION 3: PAIR (Hubungkan Perangkat dari LCD 1602)
-    // ==========================================
+    // 3. Pair (LCD 1602)
     const boxName = typeof body.boxName === 'string' ? body.boxName.trim() : typeof body.name === 'string' ? body.name.trim() : '';
     const rawDeviceId = typeof body.deviceId === 'string' ? body.deviceId.trim() : '';
     const cleanDeviceId = rawDeviceId.toUpperCase();

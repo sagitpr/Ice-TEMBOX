@@ -88,9 +88,7 @@ export interface HeaderNotificationItem {
   createdAt?: string;
 }
 
-// ==================================================
-// IN-MEMORY MOCK STORE (Persisted across SPA tab switches & route changes via window)
-// ==================================================
+// In-memory store
 interface StoreState {
   devices: TemboxDevice[];
   account: UserAccount;
@@ -147,9 +145,7 @@ const emitStoreEvent = (eventName: string, detail?: unknown) => {
   }
 };
 
-// ==================================================
-// EXPORTED SERVICE FUNCTIONS
-// ==================================================
+// Service functions
 
 export async function fetchDevices(): Promise<TemboxDevice[]> {
   try {

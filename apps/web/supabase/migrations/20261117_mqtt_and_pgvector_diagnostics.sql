@@ -1,10 +1,5 @@
--- ==============================================================================
--- MIGRATION: ZERO-TRUST LAYERED ARCHITECTURE, MQTT TOKEN HASHING, & STRICT RLS
--- Project: Ice-TEMBOX - Smart Monitoring for Fresher Catch
--- Target Database: Supabase PostgreSQL
--- ==============================================================================
+-- Migration: MQTT token hashing, hardware config, and pgvector diagnostics
 
--- 1. EXTENSIONS: Enable pgvector for semantic vector searches
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- 2. ALTER TABLE: devices (Enforce hashed MQTT token & two-way hardware config)

@@ -1,7 +1,4 @@
--- ==============================================================================
--- MIGRATION: NOTIFICATIONS TABLE & REALTIME SUPPORT
--- Project: Ice-TEMBOX - Smart Monitoring for Fresher Catch
--- ==============================================================================
+-- Migration: Notifications table and RLS policies
 
 CREATE TABLE IF NOT EXISTS public.notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
