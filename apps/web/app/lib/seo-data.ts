@@ -407,9 +407,12 @@ export function generateProgrammaticUrls(): { slug: string; priority: number }[]
   const result: { slug: string; priority: number }[] = [];
 
   // High-converting commercial search terms
-  result.push({ slug: 'box-ikan', priority: 0.9 });
+  result.push({ slug: 'ikan', priority: 0.95 });
+  result.push({ slug: 'box', priority: 0.95 });
+  result.push({ slug: 'box-ikan', priority: 0.95 });
+  result.push({ slug: 'palka-ikan', priority: 0.95 });
+  result.push({ slug: 'coolbox-ikan', priority: 0.9 });
   result.push({ slug: 'ikan-segar', priority: 0.9 });
-  result.push({ slug: 'coolbox-ikan', priority: 0.85 });
 
   // 1. Primary Topics
   PRIMARY_TOPICS.forEach((t) => {

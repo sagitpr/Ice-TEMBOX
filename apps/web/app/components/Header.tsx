@@ -194,31 +194,8 @@ export function PublicSiteHeader() {
             alignItems: 'center',
           }}
         >
-          {/* Kelompok 1: Navigasi Publik */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <Link
-              href="/market"
-              prefetch={false}
-              className={navLinkClass}
-              style={navLinkBaseStyle}
-            >
-              Katalog &amp; Produk
-            </Link>
-            <Link
-              href="/solusi"
-              prefetch={false}
-              className={navLinkClass}
-              style={navLinkBaseStyle}
-            >
-              Solusi
-            </Link>
-            <Link
-              href="/about"
-              className={navLinkClass}
-              style={navLinkBaseStyle}
-            >
-              About
-            </Link>
+          {/* Kelompok 1: Contact & About dengan jarak 28px */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
             <Link
               href="/contact"
               prefetch={false}
@@ -226,6 +203,13 @@ export function PublicSiteHeader() {
               style={navLinkBaseStyle}
             >
               Contact
+            </Link>
+            <Link
+              href="/about"
+              className={navLinkClass}
+              style={navLinkBaseStyle}
+            >
+              About
             </Link>
           </div>
 
@@ -331,7 +315,7 @@ export function PublicSiteHeader() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <Link
-              href="/market"
+              href="/contact"
               prefetch={false}
               className={navLinkClass}
               style={{
@@ -343,22 +327,7 @@ export function PublicSiteHeader() {
               }}
               onClick={() => setMobileMenuOpen(false)}
             >
-              Katalog &amp; Produk
-            </Link>
-            <Link
-              href="/solusi"
-              prefetch={false}
-              className={navLinkClass}
-              style={{
-                ...navLinkBaseStyle,
-                display: 'block',
-                padding: '8px 0',
-                fontSize: '15px',
-                fontWeight: 600,
-              }}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Solusi Industri
+              Contact
             </Link>
             <Link
               href="/about"
@@ -373,21 +342,6 @@ export function PublicSiteHeader() {
               onClick={() => setMobileMenuOpen(false)}
             >
               About
-            </Link>
-            <Link
-              href="/contact"
-              prefetch={false}
-              className={navLinkClass}
-              style={{
-                ...navLinkBaseStyle,
-                display: 'block',
-                padding: '8px 0',
-                fontSize: '15px',
-                fontWeight: 600,
-              }}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Contact
             </Link>
           </div>
 

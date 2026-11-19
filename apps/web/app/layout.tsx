@@ -86,25 +86,45 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-tembox.vercel.app'),
   title: {
-    default: 'TEMBOX — Smart Monitoring for Fresher Catch',
+    default: 'TEMBOX — Pemantau Suhu Palka & Box Pendingin Ikan IoT',
     template: '%s | TEMBOX',
   },
   description:
-    'TEMBOX adalah sistem pemantauan suhu dan kondisi penyimpanan palka ikan secara real-time berbasis IoT untuk menjaga kualitas kesegaran hasil tangkapan laut nelayan.',
+    'Sistem IoT pemantau suhu palka ikan dan box pendingin coolbox nelayan secara real-time untuk menjaga kualitas kesegaran hasil tangkapan laut.',
   keywords: [
-    'TEMBOX',
+    'ikan',
+    'box',
+    'box ikan',
+    'palka ikan',
+    'box pendingin ikan',
+    'coolbox ikan',
+    'coolbox nelayan',
     'monitoring suhu palka ikan',
     'cold chain perikanan',
-    'IoT maritim',
+    'IoT maritim nelayan',
     'rantai dingin ikan',
-    'kualitas tangkapan laut',
-    'sensor DS18B20 kapal',
+    'es palka ikan',
+    'suhu ikan segar',
+    'sensor suhu ikan',
+    'alat pemantau ikan kapal',
+    'TEMBOX',
   ],
   authors: [{ name: 'Sagit Faturrakhman' }],
   creator: 'TEMBOX Engineering Team',
   icons: {
     icon: '/favicon.svg',
     apple: '/Favicon.png',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   verification: {
     google: [
@@ -117,23 +137,23 @@ export const metadata: Metadata = {
     locale: 'id_ID',
     url: 'https://ice-tembox.vercel.app',
     siteName: 'TEMBOX',
-    title: 'TEMBOX — Smart Monitoring for Fresher Catch',
+    title: 'TEMBOX — Pemantau Suhu Palka & Box Pendingin Ikan IoT',
     description:
-      'Solusi cerdas pemantauan suhu palka es berbasis IoT untuk menjaga kesegaran ikan tangkapan nelayan.',
+      'Solusi cerdas pemantauan suhu palka es dan box pendingin ikan berbasis IoT untuk menjaga kesegaran ikan tangkapan nelayan.',
     images: [
       {
         url: '/Penangkap-ikan.jpg',
         width: 1200,
         height: 630,
-        alt: 'TEMBOX IoT Marine Cold Chain',
+        alt: 'TEMBOX IoT Marine Cold Chain Palka Ikan',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'TEMBOX — Smart Monitoring for Fresher Catch',
+    title: 'TEMBOX — Pemantau Suhu Palka & Box Pendingin Ikan IoT',
     description:
-      'Solusi cerdas pemantauan suhu palka es berbasis IoT untuk menjaga kesegaran ikan tangkapan nelayan.',
+      'Solusi cerdas pemantauan suhu palka es dan box pendingin ikan berbasis IoT untuk menjaga kesegaran ikan tangkapan nelayan.',
     images: ['/Penangkap-ikan.jpg'],
   },
 };
@@ -143,8 +163,52 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const globalJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': 'https://ice-tembox.vercel.app/#website',
+        url: 'https://ice-tembox.vercel.app',
+        name: 'TEMBOX',
+        alternateName: [
+          'Ice TEMBOX',
+          'TEMBOX Box Pendingin Ikan',
+          'Monitoring Palka Ikan TEMBOX',
+        ],
+        description:
+          'Sistem pemantau suhu palka ikan dan box pendingin coolbox nelayan berbasis IoT.',
+        inLanguage: 'id-ID',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate:
+              'https://ice-tembox.vercel.app/pencarian/{search_term_string}',
+          },
+          'query-input': 'required name=search_term_string',
+        },
+      },
+      {
+        '@type': 'Organization',
+        '@id': 'https://ice-tembox.vercel.app/#organization',
+        name: 'TEMBOX',
+        url: 'https://ice-tembox.vercel.app',
+        logo: 'https://ice-tembox.vercel.app/LogoTembox-Horizontal.png',
+        description:
+          'Penyedia sistem IoT pemantau suhu palka ikan dan cold-chain maritim Indonesia.',
+      },
+    ],
+  };
+
   return (
     <html lang="id" className={plusJakartaSans.variable} suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(globalJsonLd) }}
+        />
+      </head>
       <body className={plusJakartaSans.className} suppressHydrationWarning>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         <PersistentBackgroundVideo />
