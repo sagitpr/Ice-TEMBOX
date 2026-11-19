@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose/jwt/verify';
 
 /**
- * Server-Side Route Guard Middleware.
- * Protects private areas (/dashboard, /pengaturan, /checkout, /monitoring, /notifikasi)
- * and redirects unauthenticated users to /login?redirect=<pathname> before page rendering.
+ * Server-Side Cryptographic Route Guard Middleware.
+ * Strictly verifies HS256 JWT signature and claims for all protected routes.
+ * Evicts invalid or forged cookies and redirects to /login.
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protected paths regex or prefix checks
   const isProtectedPath =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/pengaturan') ||
@@ -19,30 +19,40 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/aktivitas');
 
   if (isProtectedPath) {
-    // 1. Check custom session token cookie
-    const temboxToken = request.cookies.get('tembox_auth_token')?.value;
+    const token = request.cookies.get('tembox_auth_token')?.value;
+    let isValid = false;
 
-    // 2. Check Authorization header
-    const authHeader = request.headers.get('authorization');
+    if (token && process.env.JWT_SECRET) {
+      try {
+        const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
+        const { payload } = await jwtVerify(token, secretKey, {
+          algorithms: ['HS256'],
+        });
 
-    // 3. Check standard Supabase auth cookies (sb-<project>-auth-token or sb-access-token)
-    const allCookies = request.cookies.getAll();
-    const hasSupabaseCookie = allCookies.some(
-      (c) =>
-        (c.name.startsWith('sb-') && c.name.endsWith('-auth-token')) ||
-        c.name === 'sb-access-token'
-    );
+        if (payload && payload.sub && payload.email) {
+          isValid = true;
+        }
+      } catch {
+        isValid = false;
+      }
+    }
 
-    const isAuthenticated = Boolean(
-      (temboxToken && temboxToken.trim().length > 0) ||
-      (authHeader && authHeader.toLowerCase().startsWith('bearer ') && authHeader.substring(7).trim().length > 0) ||
-      hasSupabaseCookie
-    );
-
-    if (!isAuthenticated) {
+    if (!isValid) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+
+      const response = NextResponse.redirect(loginUrl);
+
+      // Invalidate forged or expired session cookie
+      response.cookies.set('tembox_auth_token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 0,
+      });
+
+      return response;
     }
   }
 

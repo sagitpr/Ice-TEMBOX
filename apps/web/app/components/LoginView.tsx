@@ -31,6 +31,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
     rememberMe,
     setRememberMe,
     loginLoading,
+    loginErrorMsg,
     handleLoginSubmit,
   } = useAuthLogic();
 
@@ -43,6 +44,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
       <div className="login-form-box" style={{ position: 'relative', zIndex: 10 }}>
         <h2 className="login-title">Selamat Datang</h2>
         <p className="login-desc">Masuk untuk melanjutkan ke sistem TEMBOX.</p>
+
+        {loginErrorMsg && (
+          <div
+            style={{
+              backgroundColor: '#FEF2F2',
+              border: '1px solid #FCA5A5',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              marginBottom: '16px',
+              color: '#B91C1C',
+              fontSize: '13px',
+              lineHeight: 1.4,
+            }}
+          >
+            {loginErrorMsg}
+          </div>
+        )}
 
         <form onSubmit={onSubmit}>
           <div className="form-group">

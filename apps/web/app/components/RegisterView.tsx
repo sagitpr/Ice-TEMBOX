@@ -2,9 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, ArrowLeft, Check, ShieldCheck } from './Icons';
-import OtpInput from './OtpInput';
+import { User, Mail, Lock, ArrowLeft, CheckCircle, ShieldCheck } from './Icons';
 import { useAuthLogic } from '../../hooks/useAuthLogic';
 import AuthBottomWaves from '../../components/ui/AuthBottomWaves';
 
@@ -21,14 +19,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   onBackHome,
   hideLeftPane = false,
 }) => {
-  const router = useRouter();
   const {
-    registerStep,
-    setRegisterStep,
+    googleToken,
+    googleEmail,
     registerFullName,
     setRegisterFullName,
-    registerEmail,
-    setRegisterEmail,
     registerPassword,
     setRegisterPassword,
     registerConfirmPassword,
@@ -37,47 +32,136 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
     setShowRegisterPassword,
     registerTerms,
     setRegisterTerms,
-    registerOtp,
-    setRegisterOtp,
-    registerOtpError,
-    setRegisterOtpError,
     registerLoading,
     registerErrorMsg,
-    handleRegisterSubmitForm,
-    handleVerifyOtp,
-    handleResendOtp,
+    handleInitiateGoogleVerification,
+    handleRegisterSubmit,
   } = useAuthLogic();
 
-  const onVerifyOtpSubmit = (e: React.FormEvent) => {
-    handleVerifyOtp(e, onSuccess);
+  const onSubmitStep2 = (e: React.FormEvent) => {
+    handleRegisterSubmit(e, onSuccess);
   };
 
   const rightFormPane = (
     <div className="login-right-pane" style={{ background: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
       <div className="login-form-box" style={{ position: 'relative', zIndex: 10 }}>
-        {/* STEP 1: Registration Input Form */}
-        {registerStep === 'form' && (
-          <>
-            <h2 className="login-title">Buat Akun</h2>
-            <p className="login-desc">Mulai menggunakan sistem monitoring TEMBOX.</p>
+        {/* Error Banner */}
+        {registerErrorMsg && (
+          <div
+            style={{
+              backgroundColor: '#FEF2F2',
+              border: '1px solid #FCA5A5',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              marginBottom: '16px',
+              color: '#B91C1C',
+              fontSize: '13px',
+              lineHeight: 1.4,
+            }}
+          >
+            {registerErrorMsg}
+          </div>
+        )}
 
-            {registerErrorMsg && (
-              <div
-                style={{
-                  backgroundColor: '#FEF2F2',
-                  border: '1px solid #FCA5A5',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  marginBottom: '16px',
-                  color: '#B91C1C',
-                  fontSize: '13px',
-                }}
-              >
-                {registerErrorMsg}
+        {/* STEP 1: Verify Google Identity First */}
+        {!googleToken ? (
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '9999px', background: '#F0F9FF', border: '1px solid #BAE6FD', color: '#0284C7', fontSize: '11px', fontWeight: 700, marginBottom: '12px' }}>
+              <ShieldCheck size={14} color="#0284C7" />
+              <span>Langkah 1 dari 2 &bull; Verifikasi Identitas</span>
+            </div>
+
+            <h2 className="login-title">Daftar Akun Baru</h2>
+            <p className="login-desc" style={{ marginBottom: '20px' }}>
+              Verifikasi kepemilikan akun Google Anda untuk mengikat identitas resmi armada sebelum membuat password.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleInitiateGoogleVerification}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                padding: '12px 18px',
+                borderRadius: '8px',
+                backgroundColor: '#FFFFFF',
+                border: '1.5px solid #CBD5E1',
+                color: '#0F172A',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24Z" />
+                <path fill="#FBBC05" d="M5.28 14.27a7.18 7.18 0 0 1 0-4.54V6.58H1.25a11.98 11.98 0 0 0 0 10.84l4.03-3.15Z" />
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z" />
+              </svg>
+              <span>Verifikasi Email Google Anda</span>
+            </button>
+
+            <div style={{ marginTop: '16px', padding: '12px', borderRadius: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '11.5px', color: '#64748B', lineHeight: 1.5 }}>
+              <strong>Mengapa verifikasi Google?</strong> Verifikasi menjamin validitas identitas pemilik armada. Setelah terikat, Anda dapat login harian murni dengan Email & Password tanpa login pihak ketiga.
+            </div>
+          </div>
+        ) : (
+          /* STEP 2: Create Password with Locked Google Email */
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '9999px', background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#166534', fontSize: '11px', fontWeight: 700, marginBottom: '12px' }}>
+              <CheckCircle size={14} color="#16A34A" />
+              <span>Langkah 2 dari 2 &bull; Buat Password Aplikasi</span>
+            </div>
+
+            <h2 className="login-title">Lengkapi Pendaftaran</h2>
+            <p className="login-desc" style={{ marginBottom: '16px' }}>
+              Email Google Anda telah terverifikasi. Tentukan nama dan password login aplikasi Anda.
+            </p>
+
+            {/* Google Verified Card */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle size={16} color="#16A34A" />
+                <div>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#14532D', display: 'block' }}>
+                    Google Terverifikasi
+                  </span>
+                  <span style={{ fontSize: '11.5px', color: '#166534', fontFamily: 'monospace' }}>
+                    {googleEmail}
+                  </span>
+                </div>
               </div>
-            )}
+              <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', backgroundColor: '#DCFCE7', color: '#15803D' }}>
+                Terkunci
+              </span>
+            </div>
 
-            <form onSubmit={handleRegisterSubmitForm}>
+            <form onSubmit={onSubmitStep2}>
+              {/* Locked Email Input */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="regEmail">
+                  Email Akun (Terkunci)
+                </label>
+                <div className="input-icon-wrap">
+                  <Mail size={16} className="input-icon" />
+                  <input
+                    type="email"
+                    id="regEmail"
+                    className="form-input"
+                    value={googleEmail}
+                    readOnly
+                    disabled
+                    style={{ backgroundColor: '#F8FAFC', color: '#64748B', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* Full Name */}
               <div className="form-group">
                 <label className="form-label" htmlFor="regFullName">
                   Nama Lengkap
@@ -88,7 +172,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     type="text"
                     id="regFullName"
                     className="form-input"
-                    placeholder="Nama Lengkap"
+                    placeholder="Nama Lengkap Pemilik / Operator"
                     required
                     value={registerFullName}
                     onChange={(e) => setRegisterFullName(e.target.value)}
@@ -96,27 +180,10 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="regEmail">
-                  Email
-                </label>
-                <div className="input-icon-wrap">
-                  <Mail size={16} className="input-icon" />
-                  <input
-                    type="email"
-                    id="regEmail"
-                    className="form-input"
-                    placeholder="alamat@email.com"
-                    required
-                    value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-
+              {/* New Password */}
               <div className="form-group">
                 <label className="form-label" htmlFor="regPassword">
-                  Password
+                  Password Aplikasi
                 </label>
                 <div className="input-icon-wrap">
                   <Lock size={16} className="input-icon" />
@@ -124,24 +191,23 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     type={showRegisterPassword ? 'text' : 'password'}
                     id="regPassword"
                     className="form-input"
-                    placeholder="Minimal 8 karakter"
+                    placeholder="Min. 8 karakter (huruf & angka)"
                     required
                     value={registerPassword}
                     onChange={(e) => setRegisterPassword(e.target.value)}
                   />
                   <button
                     type="button"
-                    className="input-toggle-pwd"
+                    className="password-toggle-btn"
                     onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                    aria-label="Toggle password visibility"
+                    tabIndex={-1}
                   >
-                    <span style={{ fontSize: '11px', color: '#64748B' }}>
-                      {showRegisterPassword ? 'Hide' : 'Show'}
-                    </span>
+                    {showRegisterPassword ? 'Sembunyikan' : 'Lihat'}
                   </button>
                 </div>
               </div>
 
+              {/* Confirm Password */}
               <div className="form-group">
                 <label className="form-label" htmlFor="regConfirmPassword">
                   Konfirmasi Password
@@ -152,7 +218,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     type={showRegisterPassword ? 'text' : 'password'}
                     id="regConfirmPassword"
                     className="form-input"
-                    placeholder="Ulangi password"
+                    placeholder="Ulangi password aplikasi"
                     required
                     value={registerConfirmPassword}
                     onChange={(e) => setRegisterConfirmPassword(e.target.value)}
@@ -160,167 +226,59 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 </div>
               </div>
 
-              <div className="form-row-between" style={{ marginBottom: '18px' }}>
-                <label className="checkbox-label" style={{ fontSize: '12px' }}>
+              {/* Terms Checkbox */}
+              <div className="form-row-actions" style={{ marginBottom: '16px' }}>
+                <label className="remember-label">
                   <input
                     type="checkbox"
-                    id="regTerms"
-                    required
+                    className="remember-checkbox"
                     checked={registerTerms}
                     onChange={(e) => setRegisterTerms(e.target.checked)}
+                    required
                   />
-                  <span>Saya menyetujui syarat &amp; ketentuan TEMBOX</span>
+                  <span style={{ fontSize: '12px' }}>
+                    Saya menyetujui syarat &amp; ketentuan TEMBOX
+                  </span>
                 </label>
               </div>
 
-              <button type="submit" className="btn-primary-block" disabled={registerLoading}>
-                <span>{registerLoading ? 'Memproses...' : 'Lanjutkan Verifikasi'}</span>
+              <button type="submit" className="btn-login-submit" disabled={registerLoading}>
+                {registerLoading ? 'Mendaftarkan Akun...' : 'Selesaikan Pendaftaran & Buat Akun'}
               </button>
             </form>
-
-            <p className="login-footer-text">
-              Sudah punya akun?{' '}
-              {onNavigateLogin ? (
-                <button
-                  type="button"
-                  onClick={onNavigateLogin}
-                  className="form-link"
-                  style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
-                >
-                  Masuk
-                </button>
-              ) : (
-                <Link href="/login" className="form-link">
-                  Masuk
-                </Link>
-              )}
-            </p>
-          </>
-        )}
-
-        {/* STEP 2: 6-Digit OTP Verification Form */}
-        {registerStep === 'otp' && (
-          <>
-            <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-              <div
-                style={{
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '50%',
-                  background: '#EAF8FF',
-                  color: '#0284C7',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '12px',
-                }}
-              >
-                <ShieldCheck size={28} />
-              </div>
-              <h2 className="login-title" style={{ fontSize: '24px' }}>
-                Verifikasi Email
-              </h2>
-              <p className="login-desc" style={{ marginBottom: '0' }}>
-                Kode OTP 6 digit telah dikirim ke{' '}
-                <strong style={{ color: '#0B2D42' }}>{registerEmail}</strong>.
-              </p>
-            </div>
-
-            <form onSubmit={onVerifyOtpSubmit}>
-              <div style={{ marginBottom: '20px' }}>
-                <OtpInput
-                  value={registerOtp}
-                  onChange={(val) => {
-                    setRegisterOtp(val);
-                    setRegisterOtpError('');
-                  }}
-                  error={registerOtpError}
-                  onResend={handleResendOtp}
-                />
-              </div>
-
-              <button type="submit" className="btn-primary-block" disabled={registerLoading}>
-                <span>{registerLoading ? 'Memverifikasi...' : 'Verifikasi & Aktifkan Akun'}</span>
-              </button>
-            </form>
-
-            <div style={{ marginTop: '20px', textAlign: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setRegisterStep('form')}
-                style={{
-                  fontSize: '12.5px',
-                  color: '#64748B',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <ArrowLeft size={13} />
-                <span>Ubah data pendaftaran</span>
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* STEP 3: Success Confirmation */}
-        {registerStep === 'success' && (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div
-              style={{
-                width: '58px',
-                height: '58px',
-                borderRadius: '50%',
-                background: '#EAF8FF',
-                color: '#0284C7',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '16px',
-              }}
-            >
-              <Check size={28} />
-            </div>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-ocean)', marginBottom: '6px' }}>
-              Akun Berhasil Diaktifkan!
-            </h3>
-            <p style={{ fontSize: '13.5px', color: '#64748B', marginBottom: '24px' }}>
-              Selamat datang di TEMBOX. Akun Anda siap digunakan untuk memantau data suhu palka secara real-time.
-            </p>
-            <button
-              type="button"
-              className="btn-primary-block"
-              onClick={() => {
-                if (onSuccess) {
-                  onSuccess();
-                } else {
-                  router.push('/dashboard');
-                }
-              }}
-            >
-              <span>Lanjut ke Dashboard</span>
-            </button>
           </div>
         )}
 
-        {/* Return to Home link */}
+        <p className="auth-switch-text" style={{ marginTop: '20px' }}>
+          Sudah punya akun terdaftar?{' '}
+          {onNavigateLogin ? (
+            <a
+              href="/login"
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigateLogin();
+              }}
+              className="auth-switch-link"
+            >
+              Masuk di sini
+            </a>
+          ) : (
+            <Link href="/login" className="auth-switch-link">
+              Masuk di sini
+            </Link>
+          )}
+        </p>
+
         <div style={{ marginTop: '20px', textAlign: 'center' }}>
           {onBackHome ? (
-            <button
-              type="button"
-              onClick={onBackHome}
-              className="auth-back-link"
-            >
+            <button type="button" onClick={onBackHome} className="auth-back-link">
               <ArrowLeft size={14} />
-              <span>Kembali ke TEMBOX</span>
+              <span>Kembali ke Beranda</span>
             </button>
           ) : (
             <Link href="/" className="auth-back-link">
               <ArrowLeft size={14} />
-              <span>Kembali ke TEMBOX</span>
+              <span>Kembali ke Beranda</span>
             </Link>
           )}
         </div>
@@ -335,7 +293,6 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
 
   return (
     <div className="login-view-wrapper" style={{ display: 'flex' }}>
-      {/* Left Hero Pane: video is powered seamlessly by PersistentBackgroundVideo */}
       <div
         className="login-left-pane"
         style={{
@@ -360,7 +317,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             </span>
           </Link>
           <p className="login-brand-tagline">
-            Bergabunglah dengan ekosistem pemantauan hasil tangkapan laut modern.
+            Sistem IoT monitoring palka ikan &amp; cold-chain maritim cerdas.
           </p>
         </div>
 

@@ -14,12 +14,15 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.18",
     "next": "^15.1.0",
     "nodemailer": "^10.6.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/nodemailer": "^8.0.2"
   }
 }

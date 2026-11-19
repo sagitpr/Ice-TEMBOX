@@ -38,6 +38,33 @@ const PengaturanView = dynamic(() => import('../components/PengaturanView'), {
 export default function DashboardPage() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Client Session Verification Gate (Ensures zero rendering until cryptographically verified)
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/auth/session')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data && data.authenticated) {
+          setIsAuthenticated(true);
+          setSessionChecked(true);
+        } else {
+          const redirect = encodeURIComponent(window.location.pathname + window.location.hash);
+          window.location.href = `/login?redirect=${redirect}`;
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        window.location.href = '/login';
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Real-time IoT hardware telemetry & Supabase live synchronization
   const telemetry = useTelemetryRealtime();
@@ -83,6 +110,24 @@ export default function DashboardPage() {
     setCurrentTab(tab);
     window.location.hash = `#/${tab}`;
   };
+
+  if (!sessionChecked || !isAuthenticated) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#FFFFFF',
+        }}
+      >
+        <div style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>
+          Memverifikasi sesi aman...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

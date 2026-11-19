@@ -1,58 +1,58 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { verifyUserJwt } from '../../../../modules/auth/jwt';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 /**
- * Server-Side Session Synchronization Endpoint.
- * Manages secure HttpOnly session cookies for middleware and server route guards.
+ * GET /api/auth/session
+ * Cryptographically verifies current HTTP-Only session cookie.
  */
-
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    const body = await request.json().catch(() => ({}));
-    const { user, token } = body;
+    const cookieStore = await cookies();
+    const token = cookieStore.get('tembox_auth_token')?.value;
 
-    const email = user?.email || '';
-    const cleanUserId = (email.split('@')[0] || user?.userId || 'user')
-      .replace(/[^a-zA-Z0-9]/g, '')
-      .toLowerCase();
+    if (!token) {
+      return NextResponse.json({ authenticated: false, user: null });
+    }
 
-    const sessionToken =
-      token || `tbx_token_${cleanUserId}_${Date.now().toString(36)}`;
+    const payload = await verifyUserJwt(token);
+    if (!payload || !payload.sub || !payload.email) {
+      return NextResponse.json({ authenticated: false, user: null });
+    }
 
-    const response = NextResponse.json({
-      success: true,
+    return NextResponse.json({
       authenticated: true,
-      token: sessionToken,
+      user: {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        role: payload.role || 'user',
+      },
     });
-
-    // Set secure HttpOnly cookie for server middleware
-    response.cookies.set('tembox_auth_token', sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
-    });
-
-    return response;
-  } catch (error: unknown) {
-    console.error('[Session API Error]:', error);
-    return NextResponse.json(
-      { error: 'Gagal mengatur cookie sesi server.' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ authenticated: false, user: null });
   }
 }
 
+/**
+ * DELETE /api/auth/session
+ * Logs out user by removing the secure HTTP-Only session cookie.
+ */
 export async function DELETE() {
   const response = NextResponse.json({
     success: true,
-    message: 'Sesi server berhasil dihapus.',
+    message: 'Sesi berhasil diakhiri.',
   });
 
-  // Clear session cookie
-  response.cookies.delete({
-    name: 'tembox_auth_token',
+  response.cookies.set('tembox_auth_token', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
     path: '/',
+    maxAge: 0,
   });
 
   return response;

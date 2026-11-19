@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { setStoredAuthSession } from '../modules/auth/useAuthSession';
 
@@ -14,99 +14,126 @@ export function useAuthLogic() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginErrorMsg, setLoginErrorMsg] = useState('');
-  const loginTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ----------------------------------------------------
-  // REGISTER & OTP STATE
+  // 2-STEP REGISTRATION WITH GOOGLE VERIFIED BINDING
   // ----------------------------------------------------
-  const [registerStep, setRegisterStep] = useState<'form' | 'otp' | 'success'>('form');
+  const [googleToken, setGoogleToken] = useState('');
+  const [googleEmail, setGoogleEmail] = useState('');
   const [registerFullName, setRegisterFullName] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [registerTerms, setRegisterTerms] = useState(false);
-  const [registerOtp, setRegisterOtp] = useState('');
-  const [registerOtpError, setRegisterOtpError] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerErrorMsg, setRegisterErrorMsg] = useState('');
-  const registerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cleanup timers on unmount
+  // Detect Google verified registration token from URL search params on mount
   useEffect(() => {
-    return () => {
-      if (loginTimerRef.current) clearTimeout(loginTimerRef.current);
-      if (registerTimerRef.current) clearTimeout(registerTimerRef.current);
-    };
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get('token');
+    const emailParam = params.get('email');
+    const nameParam = params.get('name');
+    const errorParam = params.get('error');
+
+    if (tokenParam && emailParam) {
+      setGoogleToken(tokenParam);
+      setGoogleEmail(emailParam);
+      if (nameParam) {
+        setRegisterFullName(nameParam);
+      }
+    }
+
+    if (errorParam) {
+      setRegisterErrorMsg(errorParam);
+    }
   }, []);
 
-  // Login submission
-  const handleLoginSubmit = (e: React.FormEvent, onSuccess?: () => void) => {
+  // ----------------------------------------------------
+  // LOGIN SUBMIT (Real API verification - No mock / No fallback)
+  // ----------------------------------------------------
+  const handleLoginSubmit = async (e: React.FormEvent, onSuccess?: () => void) => {
     e.preventDefault();
     setLoginErrorMsg('');
     setLoginLoading(true);
 
-    if (loginTimerRef.current) clearTimeout(loginTimerRef.current);
-    loginTimerRef.current = setTimeout(() => {
-      setLoginLoading(false);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: loginEmail.trim().toLowerCase(),
+          password: loginPassword,
+        }),
+      });
 
-      // Resolve full profile name from cache or format nicely
-      let resolvedName = '';
-      if (typeof window !== 'undefined') {
-        try {
-          const profileRaw = localStorage.getItem('tembox_user_profile');
-          if (profileRaw) {
-            const parsedProfile = JSON.parse(profileRaw);
-            if (parsedProfile.fullName) {
-              resolvedName = parsedProfile.fullName;
-            }
-          }
-        } catch {}
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setLoginErrorMsg(data.error || 'Email atau password salah.');
+        setLoginLoading(false);
+        return;
       }
 
-      if (!resolvedName) {
-        const prefix = loginEmail.split('@')[0] || '';
-        resolvedName = prefix
-          .split(/[._-]/)
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-          .join(' ') || 'Pengguna TEMBOX';
-      }
-
-      const cleanUserId = (loginEmail.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'nelayan';
-
-      // Persist authenticated session centrally
+      // Store authenticated session cache
       setStoredAuthSession({
-        id: `usr_${cleanUserId}`,
-        userId: `usr_${cleanUserId}`,
-        name: resolvedName,
-        email: loginEmail,
+        id: data.user.id,
+        userId: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
       });
 
       if (onSuccess) {
         onSuccess();
       } else {
-        const redirectParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null;
-        if (redirectParam) {
-          router.push(redirectParam);
-        } else {
-          router.push('/dashboard');
-        }
+        const redirectParam = typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('redirect')
+          : null;
+        router.push(redirectParam || '/dashboard');
       }
-    }, 350);
+    } catch (err: unknown) {
+      console.error('[Login Submission Error]:', err);
+      setLoginErrorMsg('Gagal terhubung ke server autentikasi.');
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
-  // Register Form submission (proceed to OTP only on successful dispatch)
-  const handleRegisterSubmitForm = async (e: React.FormEvent) => {
+  // ----------------------------------------------------
+  // STEP 1: TRIGGER GOOGLE VERIFICATION
+  // ----------------------------------------------------
+  const handleInitiateGoogleVerification = () => {
+    setRegisterErrorMsg('');
+    window.location.href = '/api/auth/verify-google';
+  };
+
+  // ----------------------------------------------------
+  // STEP 2: FINALIZE REGISTRATION WITH APP PASSWORD
+  // ----------------------------------------------------
+  const handleRegisterSubmit = async (e: React.FormEvent, onSuccess?: () => void) => {
     e.preventDefault();
     setRegisterErrorMsg('');
 
-    if (registerPassword !== registerConfirmPassword) {
-      setRegisterErrorMsg('Password dan Konfirmasi Password tidak cocok!');
+    if (!googleToken) {
+      setRegisterErrorMsg('Akun Google belum diverifikasi. Silakan klik tombol verifikasi terlebih dahulu.');
       return;
     }
 
-    if (registerPassword.length < 8) {
-      setRegisterErrorMsg('Password minimal harus 8 karakter!');
+    if (!registerFullName.trim()) {
+      setRegisterErrorMsg('Nama lengkap wajib diisi.');
+      return;
+    }
+
+    if (registerPassword !== registerConfirmPassword) {
+      setRegisterErrorMsg('Password dan konfirmasi password tidak cocok.');
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(registerPassword)) {
+      setRegisterErrorMsg('Password minimal 8 karakter dan harus kombinasi huruf serta angka.');
       return;
     }
 
@@ -115,193 +142,51 @@ export function useAuthLogic() {
       return;
     }
 
-    // Cache user profile for immediate retrieval upon login
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(
-          'tembox_user_profile',
-          JSON.stringify({ fullName: registerFullName.trim(), email: registerEmail.trim() })
-        );
-      } catch {}
-    }
-
     setRegisterLoading(true);
 
     try {
-      // Safe Google reCAPTCHA v3 execution (non-blocking fallback)
-      let recaptchaToken = '';
-      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-      if (typeof window !== 'undefined' && siteKey) {
-        try {
-          const win = window as unknown as {
-            grecaptcha?: {
-              ready: (cb: () => void) => void;
-              execute: (key: string, options: { action: string }) => Promise<string>;
-            };
-          };
-          if (win.grecaptcha && typeof win.grecaptcha.execute === 'function') {
-            await new Promise<void>((resolve) => {
-              win.grecaptcha!.ready(() => resolve());
-            });
-            recaptchaToken = await win.grecaptcha.execute(siteKey, { action: 'send_otp' });
-          }
-        } catch (recaptchaErr) {
-          console.warn('[reCAPTCHA v3] Gagal mengeksekusi reCAPTCHA, melanjutkan dengan token kosong:', recaptchaErr);
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: googleToken,
+          fullName: registerFullName.trim(),
+          password: registerPassword,
+          confirmPassword: registerConfirmPassword,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        if (data.tokenExpired) {
+          setGoogleToken('');
+          setGoogleEmail('');
         }
-      }
-
-      // Send branded OTP verification email via SMTP and await response
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: registerEmail.trim(),
-          recipientName: registerFullName.trim(),
-          recaptchaToken,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      // Tangkap pesan error dari semua format (error / message / HTTP status)
-      if (!res.ok || data.success === false) {
-        throw new Error(data.error || data.message || `Gagal mengirim OTP (Status ${res.status})`);
-      }
-
-      setRegisterStep('otp');
-    } catch (err: unknown) {
-      console.error('Error saat menghubungi endpoint send-otp:', err);
-      const errMsg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan saat mengirim kode OTP.';
-      setRegisterErrorMsg(errMsg);
-    } finally {
-      setRegisterLoading(false);
-    }
-  };
-
-  // Resend OTP handler for OTP input screen
-  const handleResendOtp = async () => {
-    setRegisterOtp('');
-    setRegisterOtpError('');
-    setRegisterLoading(true);
-
-    try {
-      let recaptchaToken = '';
-      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-      if (typeof window !== 'undefined' && siteKey) {
-        try {
-          const win = window as unknown as {
-            grecaptcha?: {
-              ready: (cb: () => void) => void;
-              execute: (key: string, options: { action: string }) => Promise<string>;
-            };
-          };
-          if (win.grecaptcha && typeof win.grecaptcha.execute === 'function') {
-            await new Promise<void>((resolve) => {
-              win.grecaptcha!.ready(() => resolve());
-            });
-            recaptchaToken = await win.grecaptcha.execute(siteKey, { action: 'send_otp' });
-          }
-        } catch (recaptchaErr) {
-          console.warn('[reCAPTCHA v3] Gagal mengeksekusi reCAPTCHA saat resend:', recaptchaErr);
-        }
-      }
-
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: registerEmail.trim(),
-          recipientName: registerFullName.trim(),
-          recaptchaToken,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || data.success === false) {
-        throw new Error(data.error || data.message || `Gagal mengirim ulang kode OTP (Status ${res.status})`);
-      }
-    } catch (err: unknown) {
-      console.error('Error saat kirim ulang OTP:', err);
-      const errMsg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan saat mengirim ulang kode OTP.';
-      setRegisterOtpError(errMsg);
-    } finally {
-      setRegisterLoading(false);
-    }
-  };
-
-  // OTP Verification & Automatic Welcome Email Trigger
-  const handleVerifyOtp = async (e: React.FormEvent, onSuccess?: () => void) => {
-    e.preventDefault();
-    setRegisterOtpError('');
-
-    if (registerOtp.length < 6) {
-      setRegisterOtpError('Masukkan 6 digit kode OTP yang lengkap.');
-      return;
-    }
-
-    setRegisterLoading(true);
-
-    try {
-      // Trigger server-side OTP validation and automatic Welcome Email dispatch
-      const res = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: registerEmail,
-          recipientName: registerFullName,
-          otpCode: registerOtp,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.success === false) {
-        setRegisterOtpError(data.error || data.message || `Verifikasi OTP gagal (Status ${res.status}).`);
+        setRegisterErrorMsg(data.error || 'Pendaftaran gagal.');
         setRegisterLoading(false);
         return;
       }
-    } catch (err: unknown) {
-      console.error('Verifikasi OTP error:', err);
-      const errMsg = err instanceof Error ? err.message : 'Terjadi kesalahan saat memverifikasi OTP.';
-      setRegisterOtpError(errMsg);
-      setRegisterLoading(false);
-      return;
-    }
 
-    setRegisterLoading(false);
-    setRegisterStep('success');
+      // Store authenticated session cache
+      setStoredAuthSession({
+        id: data.user.id,
+        userId: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+      });
 
-    // Persist authenticated session centrally
-    const cleanUserId = (registerEmail.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'nelayan';
-    setStoredAuthSession({
-      id: `usr_${cleanUserId}`,
-      userId: `usr_${cleanUserId}`,
-      name: registerFullName.trim() || registerEmail.split('@')[0] || 'Pengguna TEMBOX',
-      email: registerEmail,
-    });
-
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      const redirectParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null;
-      if (redirectParam) {
-        router.push(redirectParam);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/dashboard');
       }
+    } catch (err: unknown) {
+      console.error('[Register Submission Error]:', err);
+      setRegisterErrorMsg('Terjadi kesalahan jaringan saat mendaftarkan akun.');
+    } finally {
+      setRegisterLoading(false);
     }
-  };
-
-  const resetRegisterState = () => {
-    setRegisterStep('form');
-    setRegisterFullName('');
-    setRegisterEmail('');
-    setRegisterPassword('');
-    setRegisterConfirmPassword('');
-    setShowRegisterPassword(false);
-    setRegisterTerms(false);
-    setRegisterOtp('');
-    setRegisterOtpError('');
-    setRegisterErrorMsg('');
-    setRegisterLoading(false);
   };
 
   return {
@@ -319,13 +204,11 @@ export function useAuthLogic() {
     setLoginErrorMsg,
     handleLoginSubmit,
 
-    // Register
-    registerStep,
-    setRegisterStep,
+    // 2-Step Registration
+    googleToken,
+    googleEmail,
     registerFullName,
     setRegisterFullName,
-    registerEmail,
-    setRegisterEmail,
     registerPassword,
     setRegisterPassword,
     registerConfirmPassword,
@@ -334,15 +217,10 @@ export function useAuthLogic() {
     setShowRegisterPassword,
     registerTerms,
     setRegisterTerms,
-    registerOtp,
-    setRegisterOtp,
-    registerOtpError,
-    setRegisterOtpError,
     registerLoading,
     registerErrorMsg,
-    handleRegisterSubmitForm,
-    handleVerifyOtp,
-    handleResendOtp,
-    resetRegisterState,
+    setRegisterErrorMsg,
+    handleInitiateGoogleVerification,
+    handleRegisterSubmit,
   };
 }

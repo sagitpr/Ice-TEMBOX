@@ -62,32 +62,19 @@ export function setStoredAuthSession(userData: Partial<AuthUser> & { email: stri
     userId: finalId,
     name: finalName,
     email: userData.email,
-    token: userData.token || `tbx_token_${Math.random().toString(36).substring(2)}_${Date.now().toString(36)}`,
     loginAt: userData.loginAt || new Date().toISOString(),
   };
 
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-      // Save full profile cache for seamless name retrieval
       localStorage.setItem('tembox_user_profile', JSON.stringify({ fullName: session.name, email: session.email }));
-      
-      const isSecure = window.location.protocol === 'https:';
-      const secureFlag = isSecure ? '; Secure' : '';
-      document.cookie = `${COOKIE_KEY}=${session.token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
-
-      // Synchronize HttpOnly server session cookie for middleware
-      fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: session, token: session.token }),
-      }).catch((syncErr) => console.warn('Server session cookie sync note:', syncErr));
 
       // Broadcast auth change event to all components & tabs
       window.dispatchEvent(new CustomEvent('tembox:auth-changed', { detail: session }));
       window.dispatchEvent(new CustomEvent('tembox:session_updated', { detail: session }));
     } catch (err) {
-      console.warn('Gagal menyimpan sesi browser:', err);
+      console.warn('Gagal menyimpan cache sesi browser:', err);
     }
   }
 
