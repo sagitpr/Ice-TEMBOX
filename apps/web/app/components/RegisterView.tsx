@@ -98,7 +98,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                     type="text"
                     id="regFullName"
                     className="form-input"
-                    placeholder="Nama Lengkap Pemilik / Operator"
+                    placeholder="Nama Lengkap"
                     required
                     value={registerFullName}
                     onChange={(e) => setRegisterFullName(e.target.value)}

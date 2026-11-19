@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -26,6 +26,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   const [step, setStep] = useState<'email' | 'reset' | 'success'>('email');
   const [email, setEmail] = useState('');
   const [recaptchaToken, setRecaptchaToken] = useState('');
+  const recaptchaRef = useRef<ReCAPTCHA | null>(null);
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -65,15 +66,21 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
 
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok || data.success === false) {
-        throw new Error(data.error || data.message || `Gagal mengirim OTP (Status ${res.status})`);
+      if (!res.ok || res.status !== 200 || data.success === false) {
+        recaptchaRef.current?.reset();
+        setRecaptchaToken('');
+        const errMsg = data.error || data.message || `Gagal mengirim OTP (Status ${res.status})`;
+        setErrorMsg(errMsg);
+        return;
       }
 
-      // Only advance to step 'reset' after email is verified as successfully dispatched
+      // Only advance to step 'reset' after HTTP 200
       setStep('reset');
       setSuccessMsg(data.message || `Kode OTP 6 digit telah dikirim ke ${cleanEmail}.`);
     } catch (err: unknown) {
       console.error('[Forgot Password Request Error]:', err);
+      recaptchaRef.current?.reset();
+      setRecaptchaToken('');
       const msg = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan saat mengirim kode verifikasi.';
       setErrorMsg(msg);
     } finally {
@@ -143,8 +150,8 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'PUT',
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: cleanEmail,
@@ -225,6 +232,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
               {/* Google reCAPTCHA v2 Checkbox */}
               <div style={{ margin: '14px 0 16px', display: 'flex', justifyContent: 'center' }}>
                 <ReCAPTCHA
+                  ref={recaptchaRef}
                   sitekey={siteKey}
                   onChange={(token) => setRecaptchaToken(token || '')}
                   onExpired={() => setRecaptchaToken('')}

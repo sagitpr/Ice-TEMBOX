@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { getMailTransporter } from '../../../../modules/email/email.service';
 import { buildOtpVerificationEmail } from '../../../../modules/email/otpEmail.template';
 import { createAndSaveOtp, deleteOtp, verifyAndConsumeOtp } from '../../../../modules/auth/otp.service';
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/auth/forgot-password
  * Handles requesting an OTP for resetting password.
- * Generates a 6-digit OTP, stores it in Supabase, and dispatches via SMTP.
+ * Checks account existence & status, generates 6-digit OTP, stores it in Supabase, and dispatches via SMTP.
  */
 export async function POST(request: Request) {
   try {
@@ -37,7 +38,48 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Verify SMTP server configuration
+    // 1. Verify Database and Check Account Existence & Status
+    const hasSupabase = Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    if (!hasSupabase) {
+      return NextResponse.json(
+        { error: 'Layanan autentikasi database belum terkonfigurasi pada server.' },
+        { status: 500 }
+      );
+    }
+
+    const admin = getSupabaseAdmin();
+    const { data: profile, error: profileErr } = await admin
+      .from('profiles')
+      .select('id, email, full_name, email_verified')
+      .eq('email', cleanEmail)
+      .maybeSingle();
+
+    if (profileErr) {
+      console.error('[Forgot Password] Profile lookup error:', profileErr.message);
+      return NextResponse.json(
+        { error: 'Terjadi gangguan sistem saat memeriksa akun.' },
+        { status: 500 }
+      );
+    }
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Email tidak terdaftar dalam sistem.' },
+        { status: 404 }
+      );
+    }
+
+    if (profile.email_verified === false) {
+      return NextResponse.json(
+        { error: 'Akun belum diaktivasi. Silakan selesaikan verifikasi pendaftaran.' },
+        { status: 403 }
+      );
+    }
+
+    // 2. Verify SMTP server configuration
     const smtpUser = process.env.SMTP_USER?.trim();
     const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '');
 
@@ -50,7 +92,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Generate and persist 6-digit OTP into Supabase with 'reset_password' purpose
+    // 3. Generate and persist 6-digit OTP into Supabase with 'reset_password' purpose
     let otpCode: string;
     try {
       const otpRecord = await createAndSaveOtp(cleanEmail, 'reset_password');
@@ -64,11 +106,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Dispatch branded email with OTP code via Nodemailer SMTP
+    // 4. Dispatch branded email with OTP code via Nodemailer SMTP
     let info: any;
     try {
       const transporter = getMailTransporter();
-      const recipientName = cleanEmail.split('@')[0];
+      const recipientName = profile.full_name || cleanEmail.split('@')[0];
       const htmlContent = buildOtpVerificationEmail({
         otpCode,
         recipientName,
@@ -80,7 +122,7 @@ export async function POST(request: Request) {
         from: `"TEMBOX Security" <${smtpUser}>`,
         to: cleanEmail,
         subject: 'Kode OTP Reset Password Akun TEMBOX',
-        text: `Halo ${recipientName},\n\nKode OTP reset password TEMBOX Anda adalah: ${otpCode}\n\nKode ini berlaku selama 10 menit. Masukkan kode ini untuk mengatur ulang password akun Anda.\n\nDemi keamanan akun Anda, jangan berikan kode ini kepada siapa pun. Jika Anda tidak merasa meminta reset password, abaikan email ini.\n\nSalam,\nTim Keamanan TEMBOX`,
+        text: `Halo ${recipientName},\n\nKode OTP reset password TEMBOX Anda adalah: ${otpCode}\n\nKode ini berlaku selama 5 menit. Masukkan kode ini untuk mengatur ulang password akun Anda.\n\nDemi keamanan akun Anda, jangan berikan kode ini kepada siapa pun. Jika Anda tidak merasa meminta reset password, abaikan email ini.\n\nSalam,\nTim Keamanan TEMBOX`,
         html: htmlContent,
       };
 
@@ -103,7 +145,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Validate recipient acceptance by SMTP
+    // 5. Validate recipient acceptance by SMTP
     const isAccepted = Array.isArray(info?.accepted) && info.accepted.some(
       (addr: string) => String(addr).toLowerCase().trim() === cleanEmail
     );
@@ -149,30 +191,69 @@ export async function PUT(request: Request) {
     const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
 
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      const errMsg = 'Alamat email tidak valid.';
       return NextResponse.json(
-        { success: false, error: errMsg, message: errMsg },
+        { error: 'Alamat email tidak valid.' },
         { status: 400 }
       );
     }
 
     if (!otpCode || otpCode.length < 6) {
-      const errMsg = 'Masukkan 6 digit kode OTP yang lengkap.';
       return NextResponse.json(
-        { success: false, error: errMsg, message: errMsg },
+        { error: 'Masukkan 6 digit kode OTP yang lengkap.' },
         { status: 400 }
       );
     }
 
     if (!newPassword || newPassword.length < 8) {
-      const errMsg = 'Password baru minimal harus 8 karakter.';
       return NextResponse.json(
-        { success: false, error: errMsg, message: errMsg },
+        { error: 'Password baru minimal harus 8 karakter.' },
         { status: 400 }
       );
     }
 
-    // 1. Cryptographically verify and consume OTP for 'reset_password'
+    const hasSupabase = Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    if (!hasSupabase) {
+      return NextResponse.json(
+        { error: 'Layanan autentikasi database belum terkonfigurasi pada server.' },
+        { status: 500 }
+      );
+    }
+
+    const admin = getSupabaseAdmin();
+
+    // 1. Check account existence & activation status
+    const { data: profile, error: profileErr } = await admin
+      .from('profiles')
+      .select('id, email, password_hash, email_verified')
+      .eq('email', cleanEmail)
+      .maybeSingle();
+
+    if (profileErr) {
+      console.error('[Reset Password] Profile query error:', profileErr.message);
+      return NextResponse.json(
+        { error: 'Terjadi kesalahan sistem saat memverifikasi akun.' },
+        { status: 500 }
+      );
+    }
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Email tidak terdaftar dalam sistem.' },
+        { status: 404 }
+      );
+    }
+
+    if (profile.email_verified === false) {
+      return NextResponse.json(
+        { error: 'Akun belum diaktivasi. Silakan selesaikan verifikasi pendaftaran.' },
+        { status: 403 }
+      );
+    }
+
+    // 2. Cryptographically verify and consume OTP for 'reset_password'
     const verification = await verifyAndConsumeOtp(cleanEmail, otpCode, 'reset_password');
     if (!verification.valid) {
       const errMsg = verification.error || 'Kode OTP tidak valid atau telah kedaluwarsa.';
@@ -187,24 +268,38 @@ export async function PUT(request: Request) {
       );
     }
 
-    // 2. Update user's password in Supabase Auth if user exists
+    // 3. Hash new password and update profiles table
+    const newHash = await bcrypt.hash(newPassword, 12);
+    const { error: updateErr } = await admin
+      .from('profiles')
+      .update({
+        password_hash: newHash,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', profile.id);
+
+    if (updateErr) {
+      console.error('[Reset Password] Failed to update password_hash:', updateErr.message);
+      return NextResponse.json(
+        { error: 'Gagal memperbarui password pada database.' },
+        { status: 500 }
+      );
+    }
+
+    // 4. Also update Supabase Auth user password if exists
     try {
-      const admin = getSupabaseAdmin();
       const { data: usersData } = await admin.auth.admin.listUsers();
       const targetUser = usersData?.users?.find(
         (u) => u.email?.toLowerCase().trim() === cleanEmail
       );
 
       if (targetUser) {
-        const { error: updateAuthErr } = await admin.auth.admin.updateUserById(targetUser.id, {
+        await admin.auth.admin.updateUserById(targetUser.id, {
           password: newPassword,
         });
-        if (updateAuthErr) {
-          console.warn('[Forgot Password] Supabase Auth update warning:', updateAuthErr.message);
-        }
       }
     } catch (authErr) {
-      console.warn('[Forgot Password] Supabase Auth update exception note:', authErr);
+      console.warn('[Reset Password] Supabase Auth update warning note:', authErr);
     }
 
     return NextResponse.json({
@@ -215,7 +310,7 @@ export async function PUT(request: Request) {
     console.error('[Forgot Password Reset Error]:', err);
     const errMsg = err instanceof Error ? err.message : 'Gagal memperbarui password akun.';
     return NextResponse.json(
-      { success: false, error: errMsg, message: errMsg },
+      { error: errMsg },
       { status: 500 }
     );
   }

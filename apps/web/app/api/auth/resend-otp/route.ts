@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getMailTransporter } from '../../../../modules/email/email.service';
 import { buildOtpVerificationEmail } from '../../../../modules/email/otpEmail.template';
 import { createAndSaveOtp, deleteOtp } from '../../../../modules/auth/otp.service';
+import { getSupabaseAdmin } from '../../../../modules/supabase/supabaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,43 @@ export async function POST(request: Request) {
         { success: false, status: 'invalid_email', error: errMsg, message: errMsg },
         { status: 400 }
       );
+    }
+
+    // Check account existence if resending for reset_password
+    if (purpose === 'reset_password') {
+      const hasSupabase = Boolean(
+        process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+      if (hasSupabase) {
+        const admin = getSupabaseAdmin();
+        const { data: profile, error: profileErr } = await admin
+          .from('profiles')
+          .select('id, email, email_verified')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+
+        if (profileErr) {
+          console.error('[Resend OTP] Profile query error:', profileErr.message);
+          return NextResponse.json(
+            { error: 'Terjadi gangguan sistem saat memeriksa akun.' },
+            { status: 500 }
+          );
+        }
+
+        if (!profile) {
+          return NextResponse.json(
+            { error: 'Email tidak terdaftar dalam sistem.' },
+            { status: 404 }
+          );
+        }
+
+        if (profile.email_verified === false) {
+          return NextResponse.json(
+            { error: 'Akun belum diaktivasi. Silakan selesaikan verifikasi pendaftaran.' },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // 1. Validate SMTP credentials
