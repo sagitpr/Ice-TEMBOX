@@ -204,7 +204,7 @@ export const RiwayatPembelianView: React.FC = () => {
             <span>Segarkan</span>
           </button>
           <Link
-            href="/katalog"
+            href="/market"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -284,7 +284,7 @@ export const RiwayatPembelianView: React.FC = () => {
             Pesanan unit IoT TEMBOX yang Anda beli melalui katalog produk akan tercatat secara otomatis di sini lengkap dengan nomor invoice dan panduan pairing.
           </p>
           <Link
-            href="/katalog"
+            href="/market"
             style={{
               display: 'inline-flex',
               alignItems: 'center',

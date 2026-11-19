@@ -396,7 +396,7 @@ export default async function SolusiCategoryPage({
             </p>
             <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
               <Link
-                href="/katalog"
+                href="/market"
                 style={{
                   display: 'inline-block',
                   backgroundColor: '#38BDF8',
@@ -549,7 +549,7 @@ export default async function SolusiCategoryPage({
                 </h3>
               </div>
               <Link
-                href="/katalog"
+                href="/market"
                 style={{
                   display: 'inline-block',
                   backgroundColor: '#38BDF8',

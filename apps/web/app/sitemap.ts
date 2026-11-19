@@ -28,7 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/katalog`,
+      url: `${baseUrl}/market`,
       lastModified: now,
       changeFrequency: 'daily',
       priority: 0.95,
@@ -40,12 +40,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     ...solutionPages,
-    {
-      url: `${baseUrl}/market`,
-      lastModified: now,
-      changeFrequency: 'daily',
-      priority: 0.85,
-    },
     {
       url: `${baseUrl}/about`,
       lastModified: now,

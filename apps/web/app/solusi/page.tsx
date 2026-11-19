@@ -130,7 +130,7 @@ export default function SolusiIndexPage() {
               Pilih spesifikasi varian TEMBOX Mini, Pro, atau Enterprise sesuai kapasitas palka kapal dan kebutuhan pemantauan Anda.
             </p>
             <Link
-              href="/katalog"
+              href="/market"
               style={{
                 display: 'inline-block',
                 backgroundColor: '#38BDF8',
