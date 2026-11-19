@@ -7,11 +7,20 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: ['/api/', '/dashboard/'],
+        allow: [
+          '/',
+          '/katalog',
+          '/solusi',
+          '/solusi/*',
+          '/market',
+          '/about',
+          '/contact',
+          '/login',
+          '/register',
+        ],
+        disallow: ['/api/', '/dashboard', '/dashboard/*', '/checkout', '/checkout/*', '/transaksi'],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };
 }
-

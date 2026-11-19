@@ -1,10 +1,25 @@
 import type { MetadataRoute } from 'next';
 
+export const POPULAR_SOLUTIONS = [
+  'kapal-nelayan-tradisional',
+  'cold-storage-perikanan',
+  'transportasi-rantai-dingin',
+  'koperasi-pelelangan-ikan',
+] as const;
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-tembox.vercel.app';
   const now = new Date();
 
-  // Core static navigation pages
+  // Solution Category Pages
+  const solutionPages: MetadataRoute.Sitemap = POPULAR_SOLUTIONS.map((slug) => ({
+    url: `${baseUrl}/solusi/${slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.9,
+  }));
+
+  // Core Static Navigation Pages
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}`,
@@ -13,22 +28,35 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
+      url: `${baseUrl}/katalog`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/solusi`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    ...solutionPages,
+    {
       url: `${baseUrl}/market`,
       lastModified: now,
       changeFrequency: 'daily',
-      priority: 0.9,
+      priority: 0.85,
     },
     {
       url: `${baseUrl}/about`,
       lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.85,
+      changeFrequency: 'monthly',
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/contact`,
       lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.85,
+      changeFrequency: 'monthly',
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/login`,

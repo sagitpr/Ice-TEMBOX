@@ -35,6 +35,11 @@ const PengaturanView = dynamic(() => import('../components/PengaturanView'), {
   loading: () => <div style={{ minHeight: '300px', borderBottom: '1px solid #E2E8F0' }} />,
 });
 
+const RiwayatPembelianView = dynamic(() => import('../components/RiwayatPembelianView'), {
+  ssr: false,
+  loading: () => <div style={{ minHeight: '300px', borderBottom: '1px solid #E2E8F0' }} />,
+});
+
 export default function DashboardPage() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -91,14 +96,15 @@ export default function DashboardPage() {
 
   // Instant sync with URL hash
   useEffect(() => {
+    const validTabs = ['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan', 'transaksi'];
     const hash = window.location.hash.replace('#/', '').replace('#', '');
-    if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(hash)) {
+    if (validTabs.includes(hash)) {
       setCurrentTab(hash);
     }
 
     const handleHash = () => {
       const h = window.location.hash.replace('#/', '').replace('#', '');
-      if (['dashboard', 'monitoring', 'notifikasi', 'aktivitas', 'pengaturan'].includes(h)) {
+      if (validTabs.includes(h)) {
         setCurrentTab(h);
       }
     };
@@ -239,6 +245,8 @@ export default function DashboardPage() {
           {currentTab === 'notifikasi' && <NotifikasiView onNavigateTab={handleSelectTab} />}
 
           {currentTab === 'aktivitas' && <AktivitasView telemetryLogs={telemetry.telemetryLogs} />}
+
+          {currentTab === 'transaksi' && <RiwayatPembelianView />}
 
           {currentTab === 'pengaturan' && <PengaturanView />}
         </div>

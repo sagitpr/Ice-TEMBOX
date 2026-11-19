@@ -2,8 +2,16 @@ import nodemailer from 'nodemailer';
 import { buildOtpVerificationEmail } from './otpEmail.template';
 import { buildContactAutoReplyEmail } from './contactAutoReply.template';
 import { buildWelcomeEmail } from './welcomeEmail.template';
+import { buildBuyerInvoiceEmail, type BuyerInvoiceEmailOptions } from './buyerInvoiceEmail.template';
+import { buildAdminOrderNotificationEmail, type AdminOrderNotificationEmailOptions } from './adminOrderNotification.template';
 
-export { buildOtpVerificationEmail, buildContactAutoReplyEmail, buildWelcomeEmail };
+export {
+  buildOtpVerificationEmail,
+  buildContactAutoReplyEmail,
+  buildWelcomeEmail,
+  buildBuyerInvoiceEmail,
+  buildAdminOrderNotificationEmail,
+};
 
 let mailTransporterInstance: nodemailer.Transporter | null = null;
 let lastTransporterKey: string | null = null;
@@ -286,6 +294,62 @@ export async function sendWelcomeEmail({
     return true;
   } catch (error) {
     console.error(`[SMTP ERROR] Failed to send welcome email to user (${toEmail}):`, error);
+    return false;
+  }
+}
+
+/**
+ * Dispatches a comprehensive HTML invoice & thank you email to the buyer upon successful payment.
+ */
+export async function sendBuyerInvoiceEmail(
+  toEmail: string,
+  options: BuyerInvoiceEmailOptions
+): Promise<boolean> {
+  try {
+    const transporter = getMailTransporter();
+    const fromEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
+    const htmlContent = buildBuyerInvoiceEmail(options);
+
+    const mailOptions = {
+      from: `"TEMBOX Billing & Orders" <${fromEmail}>`,
+      to: toEmail,
+      subject: `[LUNAS] Bukti Pembayaran & Invoice Pesanan TEMBOX #${options.orderCode}`,
+      html: htmlContent,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[SMTP] Buyer invoice email successfully sent to ${toEmail}:`, info?.messageId);
+    return true;
+  } catch (error) {
+    console.error(`[SMTP ERROR] Failed to send buyer invoice email (${toEmail}):`, error);
+    return false;
+  }
+}
+
+/**
+ * Dispatches an automated internal notification to the TEMBOX admin/owner email for fulfillment.
+ */
+export async function sendAdminOrderNotificationEmail(
+  options: AdminOrderNotificationEmailOptions
+): Promise<boolean> {
+  const adminEmail = process.env.ADMIN_ORDER_EMAIL?.trim() || process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
+  try {
+    const transporter = getMailTransporter();
+    const fromEmail = process.env.SMTP_USER?.trim() || 'temboxofficial.id@gmail.com';
+    const htmlContent = buildAdminOrderNotificationEmail(options);
+
+    const mailOptions = {
+      from: `"TEMBOX Order Bot" <${fromEmail}>`,
+      to: adminEmail,
+      subject: `[PESANAN BARU] #${options.orderCode} - ${options.buyerName} (Rp ${Number(options.totalAmount).toLocaleString('id-ID')})`,
+      html: htmlContent,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[SMTP] Admin order notification sent to ${adminEmail}:`, info?.messageId);
+    return true;
+  } catch (error) {
+    console.error(`[SMTP ERROR] Failed to send admin order notification (${adminEmail}):`, error);
     return false;
   }
 }

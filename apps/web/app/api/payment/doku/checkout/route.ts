@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createDokuCheckoutSession } from '../../../../../modules/payment/doku.service';
 import { requireServerAuth } from '../../../../../modules/auth/serverAuth';
+import { getSupabaseAdmin } from '../../../../../modules/supabase/supabaseAdmin';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -35,10 +39,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate strict user-isolated invoice number using cryptographically verified user ID
-    const cleanUserId = verifiedUser.id.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    // Generate strict invoice number
     const timestamp = Date.now();
-    const invoiceNumber = `INV-TEMBOX-${cleanUserId}-${timestamp}`;
+    const invoiceNumber = `INV-TBX-${timestamp}`;
 
     const customerEmail =
       verifiedUser.email ||
@@ -46,13 +49,49 @@ export async function POST(request: Request) {
         ? shippingAddress.email
         : 'pelanggan@ice-tembox.id');
 
-    const productName = product?.name || 'TEMBOX IoT Unit';
+    const productName = product?.name || 'TEMBOX IoT Cold-Chain Unit';
+    const unitPrice = product?.price || totalAmount;
+    const items = [
+      {
+        id: product?.id || 'pro',
+        name: productName,
+        quantity: Number(quantity) || 1,
+        price: Number(unitPrice),
+        variant: product?.name || 'Pro',
+      },
+    ];
+
+    // Pre-persist pending order to Supabase orders table
+    const hasSupabase = Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    if (hasSupabase) {
+      try {
+        const admin = getSupabaseAdmin();
+        const userId = verifiedUser.id.startsWith('usr_') ? null : verifiedUser.id;
+        await admin.from('orders').insert({
+          order_code: invoiceNumber,
+          user_id: userId,
+          buyer_name: shippingAddress.fullName || verifiedUser.name,
+          buyer_email: customerEmail,
+          buyer_phone: shippingAddress.phone || '',
+          shipping_address: shippingAddress,
+          items: items,
+          total_amount: totalAmount,
+          payment_status: 'pending',
+          payment_method: 'doku',
+        });
+      } catch (dbErr) {
+        console.warn('[DOKU Checkout] Note saving pending order to DB:', dbErr);
+      }
+    }
 
     const result = await createDokuCheckoutSession({
       invoiceNumber,
       amount: totalAmount,
       customer: {
-        id: cleanUserId,
+        id: verifiedUser.id,
         name: shippingAddress.fullName || verifiedUser.name,
         email: customerEmail,
         phone: shippingAddress.phone,

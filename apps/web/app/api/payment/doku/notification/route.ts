@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { verifyDokuNotificationSignature } from '../../../../../modules/payment/doku.service';
+import { fulfillOrderPayment } from '../../../../../modules/payment/orderFulfillment.service';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -28,7 +32,7 @@ export async function POST(request: Request) {
       }
     }
 
-    let parsedBody: Record<string, unknown> = {};
+    let parsedBody: Record<string, any> = {};
     try {
       parsedBody = JSON.parse(rawBody);
     } catch {
@@ -36,6 +40,35 @@ export async function POST(request: Request) {
     }
 
     console.log('DOKU Notification Received:', parsedBody);
+
+    // Extract invoice number and status
+    const orderObj = parsedBody.order || {};
+    const transactionObj = parsedBody.transaction || {};
+    const invoiceNumber =
+      orderObj.invoice_number ||
+      parsedBody.invoice_number ||
+      transactionObj.invoice_number;
+
+    const transactionStatus =
+      transactionObj.status ||
+      parsedBody.transaction_status ||
+      parsedBody.status;
+
+    // Fulfill order if payment is SUCCESS / PAID
+    if (
+      invoiceNumber &&
+      (String(transactionStatus).toUpperCase() === 'SUCCESS' ||
+        String(transactionStatus).toUpperCase() === 'PAID' ||
+        String(transactionStatus).toUpperCase() === 'COMPLETED')
+    ) {
+      const amount = Number(orderObj.amount || parsedBody.amount || 0);
+      await fulfillOrderPayment({
+        orderCode: String(invoiceNumber),
+        paymentMethod: 'doku',
+        paidAmount: amount,
+        paymentDetails: parsedBody,
+      });
+    }
 
     // Return 200 OK to acknowledge receipt to DOKU
     return NextResponse.json({ status: 'OK' }, { status: 200 });

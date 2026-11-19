@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Settings,
   X,
+  FileText,
 } from './Icons';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'monitoring', label: 'Monitoring Suhu', icon: Thermometer, href: '/dashboard#/monitoring' },
     { id: 'notifikasi', label: 'Notifikasi', icon: Bell, href: '/dashboard#/notifikasi' },
     { id: 'aktivitas', label: 'Log Aktivitas', icon: ClipboardList, href: '/dashboard#/aktivitas' },
+    { id: 'transaksi', label: 'Riwayat Pembelian', icon: FileText, href: '/dashboard#/transaksi' },
     { id: 'pengaturan', label: 'Pengaturan', icon: Settings, href: '/dashboard#/pengaturan' },
   ];
 
