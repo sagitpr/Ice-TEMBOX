@@ -14,7 +14,7 @@ interface OtpStoreRecord {
 // In-memory fallback cache (prevents service downtime if database table is not yet migrated)
 const memoryOtpCache = new Map<string, OtpStoreRecord>();
 
-const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes (sesuai spesifikasi keamanan)
 const MAX_ATTEMPTS = 5;
 const OTP_PEPPER = process.env.SUPABASE_SECRET_KEY || process.env.SMTP_PASS?.replace(/\s+/g, '') || 'tembox-otp-salt-2026';
 
@@ -170,7 +170,7 @@ export async function verifyAndConsumeOtp(
     memoryOtpCache.delete(cacheKey);
     return {
       valid: false,
-      error: 'Kode OTP telah kedaluwarsa (berlaku maksimal 10 menit). Silakan minta kode baru.',
+      error: 'Kode OTP telah kedaluwarsa (berlaku maksimal 5 menit). Silakan minta kode baru.',
     };
   }
 

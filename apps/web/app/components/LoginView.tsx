@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { User, Lock, ArrowLeft } from './Icons';
 import { useAuthLogic } from '../../hooks/useAuthLogic';
 import AuthBottomWaves from '../../components/ui/AuthBottomWaves';
@@ -30,10 +31,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setShowLoginPassword,
     rememberMe,
     setRememberMe,
+    loginRecaptchaToken,
+    setLoginRecaptchaToken,
     loginLoading,
     loginErrorMsg,
     handleLoginSubmit,
   } = useAuthLogic();
+
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LewkCcuAAAAAE8F5Fk7SQ6Gl4xNdHT31yGPAHuR';
 
   const onSubmit = (e: React.FormEvent) => {
     handleLoginSubmit(e, onSuccess);
@@ -135,7 +140,24 @@ export const LoginView: React.FC<LoginViewProps> = ({
             )}
           </div>
 
-          <button type="submit" className="btn-login-submit" disabled={loginLoading}>
+          {/* Google reCAPTCHA v2 Checkbox */}
+          <div style={{ margin: '14px 0 16px', display: 'flex', justifyContent: 'center' }}>
+            <ReCAPTCHA
+              sitekey={siteKey}
+              onChange={(token) => setLoginRecaptchaToken(token || '')}
+              onExpired={() => setLoginRecaptchaToken('')}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="btn-login-submit"
+            disabled={loginLoading || !loginRecaptchaToken}
+            style={{
+              opacity: loginLoading || !loginRecaptchaToken ? 0.7 : 1,
+              cursor: loginLoading || !loginRecaptchaToken ? 'not-allowed' : 'pointer',
+            }}
+          >
             {loginLoading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>

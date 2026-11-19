@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { setStoredAuthSession } from '../modules/auth/useAuthSession';
 
@@ -12,51 +12,38 @@ export function useAuthLogic() {
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginRecaptchaToken, setLoginRecaptchaToken] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginErrorMsg, setLoginErrorMsg] = useState('');
 
   // ----------------------------------------------------
-  // 2-STEP REGISTRATION WITH GOOGLE VERIFIED BINDING
+  // REGISTRATION & OTP STATE
   // ----------------------------------------------------
-  const [googleToken, setGoogleToken] = useState('');
-  const [googleEmail, setGoogleEmail] = useState('');
+  const [registerStep, setRegisterStep] = useState<'form' | 'otp' | 'success'>('form');
   const [registerFullName, setRegisterFullName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [registerTerms, setRegisterTerms] = useState(false);
+  const [registerRecaptchaToken, setRegisterRecaptchaToken] = useState('');
+  const [registerOtp, setRegisterOtp] = useState('');
+  const [registerOtpError, setRegisterOtpError] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerErrorMsg, setRegisterErrorMsg] = useState('');
 
-  // Detect Google verified registration token from URL search params on mount
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get('token');
-    const emailParam = params.get('email');
-    const nameParam = params.get('name');
-    const errorParam = params.get('error');
-
-    if (tokenParam && emailParam) {
-      setGoogleToken(tokenParam);
-      setGoogleEmail(emailParam);
-      if (nameParam) {
-        setRegisterFullName(nameParam);
-      }
-    }
-
-    if (errorParam) {
-      setRegisterErrorMsg(errorParam);
-    }
-  }, []);
-
   // ----------------------------------------------------
-  // LOGIN SUBMIT (Real API verification - No mock / No fallback)
+  // LOGIN SUBMIT (Real API verification with reCAPTCHA v2)
   // ----------------------------------------------------
   const handleLoginSubmit = async (e: React.FormEvent, onSuccess?: () => void) => {
     e.preventDefault();
     setLoginErrorMsg('');
+
+    if (!loginRecaptchaToken) {
+      setLoginErrorMsg('Silakan centang verifikasi "I\'m not a robot" terlebih dahulu.');
+      return;
+    }
+
     setLoginLoading(true);
 
     try {
@@ -66,6 +53,7 @@ export function useAuthLogic() {
         body: JSON.stringify({
           email: loginEmail.trim().toLowerCase(),
           password: loginPassword,
+          recaptchaToken: loginRecaptchaToken,
         }),
       });
 
@@ -102,22 +90,14 @@ export function useAuthLogic() {
   };
 
   // ----------------------------------------------------
-  // STEP 1: TRIGGER GOOGLE VERIFICATION
+  // REGISTER SUBMIT (Form Step -> Send 6-digit OTP)
   // ----------------------------------------------------
-  const handleInitiateGoogleVerification = () => {
-    setRegisterErrorMsg('');
-    window.location.href = '/api/auth/verify-google';
-  };
-
-  // ----------------------------------------------------
-  // STEP 2: FINALIZE REGISTRATION WITH APP PASSWORD
-  // ----------------------------------------------------
-  const handleRegisterSubmit = async (e: React.FormEvent, onSuccess?: () => void) => {
+  const handleRegisterSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterErrorMsg('');
 
-    if (!googleToken) {
-      setRegisterErrorMsg('Akun Google belum diverifikasi. Silakan klik tombol verifikasi terlebih dahulu.');
+    if (!registerRecaptchaToken) {
+      setRegisterErrorMsg('Silakan centang verifikasi "I\'m not a robot" terlebih dahulu.');
       return;
     }
 
@@ -149,24 +129,94 @@ export function useAuthLogic() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token: googleToken,
           fullName: registerFullName.trim(),
+          email: registerEmail.trim().toLowerCase(),
           password: registerPassword,
           confirmPassword: registerConfirmPassword,
+          recaptchaToken: registerRecaptchaToken,
         }),
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        if (data.tokenExpired) {
-          setGoogleToken('');
-          setGoogleEmail('');
-        }
-        setRegisterErrorMsg(data.error || 'Pendaftaran gagal.');
+        setRegisterErrorMsg(data.error || 'Pendaftaran akun gagal.');
         setRegisterLoading(false);
         return;
       }
+
+      setRegisterStep('otp');
+    } catch (err: unknown) {
+      console.error('[Register Submission Error]:', err);
+      setRegisterErrorMsg('Terjadi kesalahan jaringan saat mengirim kode OTP.');
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  // ----------------------------------------------------
+  // RESEND OTP
+  // ----------------------------------------------------
+  const handleResendOtp = async () => {
+    setRegisterOtp('');
+    setRegisterOtpError('');
+    setRegisterLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: registerEmail.trim().toLowerCase(),
+          recipientName: registerFullName.trim(),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRegisterOtpError(data.error || 'Gagal mengirim ulang kode OTP.');
+      }
+    } catch {
+      setRegisterOtpError('Gagal mengirim ulang kode OTP.');
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  // ----------------------------------------------------
+  // VERIFY OTP (OTP Step -> Activate Account & Session)
+  // ----------------------------------------------------
+  const handleVerifyOtp = async (e: React.FormEvent, onSuccess?: () => void) => {
+    e.preventDefault();
+    setRegisterOtpError('');
+
+    if (registerOtp.trim().length < 6) {
+      setRegisterOtpError('Masukkan 6 digit kode OTP yang lengkap.');
+      return;
+    }
+
+    setRegisterLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: registerEmail.trim().toLowerCase(),
+          recipientName: registerFullName.trim(),
+          otpCode: registerOtp.trim(),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setRegisterOtpError(data.error || 'Kode verifikasi OTP tidak valid.');
+        setRegisterLoading(false);
+        return;
+      }
+
+      setRegisterStep('success');
 
       // Store authenticated session cache
       setStoredAuthSession({
@@ -182,8 +232,8 @@ export function useAuthLogic() {
         router.push('/dashboard');
       }
     } catch (err: unknown) {
-      console.error('[Register Submission Error]:', err);
-      setRegisterErrorMsg('Terjadi kesalahan jaringan saat mendaftarkan akun.');
+      console.error('[Verify OTP Error]:', err);
+      setRegisterOtpError('Terjadi kesalahan saat memverifikasi kode OTP.');
     } finally {
       setRegisterLoading(false);
     }
@@ -199,16 +249,20 @@ export function useAuthLogic() {
     setShowLoginPassword,
     rememberMe,
     setRememberMe,
+    loginRecaptchaToken,
+    setLoginRecaptchaToken,
     loginLoading,
     loginErrorMsg,
     setLoginErrorMsg,
     handleLoginSubmit,
 
-    // 2-Step Registration
-    googleToken,
-    googleEmail,
+    // Registration & OTP
+    registerStep,
+    setRegisterStep,
     registerFullName,
     setRegisterFullName,
+    registerEmail,
+    setRegisterEmail,
     registerPassword,
     setRegisterPassword,
     registerConfirmPassword,
@@ -217,10 +271,17 @@ export function useAuthLogic() {
     setShowRegisterPassword,
     registerTerms,
     setRegisterTerms,
+    registerRecaptchaToken,
+    setRegisterRecaptchaToken,
+    registerOtp,
+    setRegisterOtp,
+    registerOtpError,
+    setRegisterOtpError,
     registerLoading,
     registerErrorMsg,
     setRegisterErrorMsg,
-    handleInitiateGoogleVerification,
-    handleRegisterSubmit,
+    handleRegisterSubmitForm,
+    handleVerifyOtp,
+    handleResendOtp,
   };
 }

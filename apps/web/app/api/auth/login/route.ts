@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { getSupabaseAdmin } from '../../../../modules/supabase/supabaseAdmin';
 import { signUserJwt } from '../../../../modules/auth/jwt';
 import { checkLoginRateLimit, recordFailedLogin, resetLoginAttempts } from '../../../../modules/auth/rateLimiter';
+import { verifyRecaptchaToken } from '../../../../modules/auth/verifyRecaptcha';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = typeof body.password === 'string' ? body.password : '';
+    const recaptchaToken = typeof body.recaptchaToken === 'string' ? body.recaptchaToken : '';
 
     if (!email || !password) {
       return NextResponse.json(
@@ -28,10 +30,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // 1. Google reCAPTCHA v2 Checkbox Validation
+    const recaptchaCheck = await verifyRecaptchaToken(recaptchaToken);
+    if (!recaptchaCheck.success) {
+      return NextResponse.json(
+        { error: recaptchaCheck.error || 'Verifikasi reCAPTCHA gagal. Silakan centang kotak "I\'m not a robot".' },
+        { status: 400 }
+      );
+    }
+
     const clientIp = getClientIp(request);
     const rateLimitKey = `${clientIp}:${email}`;
 
-    // 1. Check Rate Limiter
+    // 2. Check Rate Limiter
     const rateLimitStatus = checkLoginRateLimit(rateLimitKey);
     if (!rateLimitStatus.allowed) {
       return NextResponse.json(
@@ -45,7 +56,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Strict Database Verification (No mock / No fallback)
+    // 3. Database Verification (No mock / No fallback)
     const hasSupabase = Boolean(
       process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
     );
@@ -62,7 +73,7 @@ export async function POST(request: Request) {
     // Look up user profile
     const { data: profile, error: profileErr } = await admin
       .from('profiles')
-      .select('id, full_name, email, role, password_hash, google_verified')
+      .select('id, full_name, email, role, password_hash, email_verified, google_verified')
       .eq('email', email)
       .maybeSingle();
 
@@ -82,17 +93,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Check Google Verification Binding
-    if (!profile.google_verified) {
-      return NextResponse.json(
-        {
-          error: 'Akun Anda belum menyelesaikan verifikasi Google. Silakan lengkapi pendaftaran akun Anda terlebih dahulu.',
-          unverified: true,
-        },
-        { status: 403 }
-      );
-    }
-
     // 4. Validate Password against Hash
     let isPasswordValid = false;
 
@@ -107,7 +107,6 @@ export async function POST(request: Request) {
 
       if (!authErr && authData?.user) {
         isPasswordValid = true;
-        // Self-heal: store bcrypt hash in profiles for high-performance direct checking
         try {
           const newHash = await bcrypt.hash(password, 12);
           await admin.from('profiles').update({ password_hash: newHash }).eq('id', profile.id);
@@ -137,7 +136,6 @@ export async function POST(request: Request) {
       email: profile.email,
       name: profile.full_name,
       role: profile.role || 'user',
-      google_verified: true,
     });
 
     const response = NextResponse.json({

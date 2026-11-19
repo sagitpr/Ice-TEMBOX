@@ -1,86 +1,124 @@
 import { NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '../../../../modules/supabase/supabaseAdmin';
 import { sendWelcomeEmail } from '../../../../modules/email/email.service';
 import { verifyAndConsumeOtp } from '../../../../modules/auth/otp.service';
+import { signUserJwt } from '../../../../modules/auth/jwt';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { email, recipientName, otpCode } = body;
+    const body = await request.json().catch(() => ({}));
+    const rawEmail = typeof body.email === 'string' ? body.email : '';
+    const cleanEmail = rawEmail.toLowerCase().trim();
+    const recipientName = typeof body.recipientName === 'string' ? body.recipientName.trim() : '';
+    const otpCode = typeof body.otpCode === 'string' ? body.otpCode.trim() : '';
 
-    if (!email || !email.includes('@')) {
-      const errMsg = 'Alamat email pengguna tidak valid.';
+    if (!cleanEmail || !cleanEmail.includes('@')) {
       return NextResponse.json(
-        { success: false, error: errMsg, message: errMsg },
+        { success: false, error: 'Alamat email tidak valid.' },
         { status: 400 }
       );
     }
 
-    if (!otpCode || String(otpCode).trim().length < 6) {
-      const errMsg = 'Kode OTP 6-digit tidak valid.';
+    if (!otpCode || otpCode.length < 6) {
       return NextResponse.json(
-        { success: false, error: errMsg, message: errMsg },
+        { success: false, error: 'Masukkan 6 digit kode OTP verifikasi yang lengkap.' },
         { status: 400 }
       );
     }
 
-    // Cryptographic validation against stored hash, expiry, max attempts & single-use consumption
-    const verification = await verifyAndConsumeOtp(email, String(otpCode).trim(), 'register');
+    // 1. Verify OTP against stored hash, expiry (5 min), max attempts & consumption
+    const verification = await verifyAndConsumeOtp(cleanEmail, otpCode, 'register');
     if (!verification.valid) {
-      const errMsg = verification.error || 'Verifikasi kode OTP gagal.';
       return NextResponse.json(
         {
           success: false,
-          error: errMsg,
-          message: errMsg,
+          error: verification.error || 'Kode verifikasi OTP salah atau telah kedaluwarsa.',
           remainingAttempts: verification.remainingAttempts,
         },
         { status: 400 }
       );
     }
 
-    const cleanName = (recipientName && String(recipientName).trim()) || email.split('@')[0] || 'Pengguna TEMBOX';
+    // 2. Update Database: email_verified = true
+    const hasSupabase = Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
-    // Dispatch official welcome email with isolated error boundary so SMTP issues never fail account verification
-    try {
-      await sendWelcomeEmail({
-        toEmail: email,
-        recipientName: cleanName,
-      });
-    } catch (emailErr) {
-      console.error('[Verify OTP] Gagal mengirimkan welcome email (verifikasi akun tetap berhasil):', emailErr);
+    let userId = `usr_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '')}`;
+    let finalName = recipientName || cleanEmail.split('@')[0] || 'Pengguna TEMBOX';
+    let role = 'user';
+
+    if (hasSupabase) {
+      const admin = getSupabaseAdmin();
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (profile) {
+        userId = profile.id;
+        finalName = profile.full_name || finalName;
+        role = profile.role || role;
+
+        await admin
+          .from('profiles')
+          .update({
+            email_verified: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', profile.id);
+      }
     }
 
-    const cleanUserId = (email.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'nelayan';
-    const sessionToken = `tbx_token_${cleanUserId}_${Date.now().toString(36)}`;
+    // 3. Send Welcome Email in background
+    try {
+      await sendWelcomeEmail({
+        toEmail: cleanEmail,
+        recipientName: finalName,
+      });
+    } catch (emailErr) {
+      console.warn('[Verify OTP] Warning sending welcome email:', emailErr);
+    }
+
+    // 4. Issue Production HS256 JWT
+    const sessionToken = await signUserJwt({
+      sub: userId,
+      email: cleanEmail,
+      name: finalName,
+      role,
+      google_verified: false,
+    });
 
     const response = NextResponse.json({
       success: true,
       message: 'Akun Anda berhasil diverifikasi. Selamat datang di TEMBOX.',
       user: {
-        id: `usr_${cleanUserId}`,
-        userId: `usr_${cleanUserId}`,
-        email,
-        name: cleanName,
-        verified: true,
-        token: sessionToken,
+        id: userId,
+        email: cleanEmail,
+        name: finalName,
+        role,
       },
     });
 
-    // Set secure HttpOnly session cookie for middleware route guards
+    // 5. Set HTTP-Only, Secure, SameSite=Lax Cookie
     response.cookies.set('tembox_auth_token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+      maxAge: 24 * 60 * 60, // 24 hours
     });
 
     return response;
   } catch (error: unknown) {
-    console.error('Verify OTP server error:', error);
+    console.error('[Verify OTP Server Error]:', error);
     const message = error instanceof Error ? error.message : 'Gagal memproses verifikasi OTP.';
     return NextResponse.json(
-      { success: false, error: message, message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

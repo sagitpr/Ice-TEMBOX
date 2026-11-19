@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { Mail, Lock, ArrowLeft, Check, KeyRound } from './Icons';
 import OtpInput from './OtpInput';
 import AuthBottomWaves from '../../components/ui/AuthBottomWaves';
@@ -24,6 +25,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   // Step 1: 'email' -> Step 2: 'reset' -> Step 3: 'success'
   const [step, setStep] = useState<'email' | 'reset' | 'success'>('email');
   const [email, setEmail] = useState('');
+  const [recaptchaToken, setRecaptchaToken] = useState('');
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -33,6 +35,8 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   const [resending, setResending] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LewkCcuAAAAAE8F5Fk7SQ6Gl4xNdHT31yGPAHuR';
 
   // Step 1: Submit email to request OTP via API
   const handleRequestOtp = async (e: React.FormEvent) => {
@@ -46,12 +50,17 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
       return;
     }
 
+    if (!recaptchaToken) {
+      setErrorMsg('Silakan centang verifikasi "I\'m not a robot" terlebih dahulu.');
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail }),
+        body: JSON.stringify({ email: cleanEmail, recaptchaToken }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -213,7 +222,25 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary-block" disabled={loading} style={{ marginTop: '8px' }}>
+              {/* Google reCAPTCHA v2 Checkbox */}
+              <div style={{ margin: '14px 0 16px', display: 'flex', justifyContent: 'center' }}>
+                <ReCAPTCHA
+                  sitekey={siteKey}
+                  onChange={(token) => setRecaptchaToken(token || '')}
+                  onExpired={() => setRecaptchaToken('')}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary-block"
+                disabled={loading || !recaptchaToken}
+                style={{
+                  marginTop: '8px',
+                  opacity: loading || !recaptchaToken ? 0.7 : 1,
+                  cursor: loading || !recaptchaToken ? 'not-allowed' : 'pointer',
+                }}
+              >
                 <span>{loading ? 'Mengirim Kode OTP...' : 'Kirim Kode Verifikasi'}</span>
               </button>
             </form>
