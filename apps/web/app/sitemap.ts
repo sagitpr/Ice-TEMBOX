@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { generateProgrammaticUrls } from './lib/seo-data';
 
 export const POPULAR_SOLUTIONS = [
   'kapal-nelayan-tradisional',
@@ -17,6 +18,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.9,
+  }));
+
+  // High-value programmatic SEO search pages for "ikan", "box", etc.
+  const searchPages: MetadataRoute.Sitemap = generateProgrammaticUrls().slice(0, 30).map((item) => ({
+    url: `${baseUrl}/pencarian/${item.slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: item.priority,
   }));
 
   // Core Static Navigation Pages
@@ -40,6 +49,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     ...solutionPages,
+    ...searchPages,
     {
       url: `${baseUrl}/about`,
       lastModified: now,

@@ -307,6 +307,23 @@ export const FOCUS_TOPICS = [
 export function resolveSeoTopic(rawSlug: string): SeoTopic {
   const cleanSlug = rawSlug.trim().toLowerCase();
 
+  // Alias shortcuts for high-converting commercial queries: "ikan", "box", "palka", "coolbox"
+  if (cleanSlug === 'ikan' || cleanSlug === 'ikan-segar' || cleanSlug === 'ikan-laut') {
+    return {
+      ...PRIMARY_TOPICS[0],
+      title: 'Solusi IoT Monitoring Palka Ikan & Kesegaran Hasil Tangkap',
+      subtitle: 'Standar Pengawasan Rantai Dingin Palka Ikan Nelayan Indonesia',
+    };
+  }
+
+  if (cleanSlug === 'box' || cleanSlug === 'box-ikan' || cleanSlug === 'coolbox-ikan' || cleanSlug === 'kotak-ikan') {
+    return {
+      ...PRIMARY_TOPICS[3],
+      title: 'Box Pendingin Ikan & Coolbox Palka Cerdas - TEMBOX IoT',
+      subtitle: 'Upgrade Kotak Penyimpanan dan Box Palka Nelayan Tanpa Mengubah Fisik Kapal',
+    };
+  }
+
   // 1. Direct match with Primary Topics
   const primaryMatch = PRIMARY_TOPICS.find((t) => t.slug === cleanSlug);
   if (primaryMatch) {
@@ -388,6 +405,11 @@ export function resolveSeoTopic(rawSlug: string): SeoTopic {
  */
 export function generateProgrammaticUrls(): { slug: string; priority: number }[] {
   const result: { slug: string; priority: number }[] = [];
+
+  // High-converting commercial search terms
+  result.push({ slug: 'box-ikan', priority: 0.9 });
+  result.push({ slug: 'ikan-segar', priority: 0.9 });
+  result.push({ slug: 'coolbox-ikan', priority: 0.85 });
 
   // 1. Primary Topics
   PRIMARY_TOPICS.forEach((t) => {

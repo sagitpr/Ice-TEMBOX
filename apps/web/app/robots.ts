@@ -12,6 +12,8 @@ export default function robots(): MetadataRoute.Robots {
           '/market',
           '/solusi',
           '/solusi/*',
+          '/pencarian',
+          '/pencarian/*',
           '/about',
           '/contact',
           '/login',

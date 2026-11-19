@@ -112,24 +112,45 @@ export default async function SearchKeywordPage({ params }: Props) {
           <p style={{ fontSize: '14.5px', color: '#CBD5E1', lineHeight: 1.7, marginBottom: '20px' }}>
             {topic.overview}
           </p>
-          <Link
-            href={`/kategori/${topic.slug}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: '#0284C7',
-              color: '#FFFFFF',
-              fontWeight: 700,
-              fontSize: '13.5px',
-              padding: '10px 20px',
-              borderRadius: '8px',
-              textDecoration: 'none',
-            }}
-          >
-            <span>Buka Panduan Lengkap</span>
-            <span>→</span>
-          </Link>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <Link
+              href="/market"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#0284C7',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: '13.5px',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+              }}
+            >
+              <span>Pesan Box / Unit TEMBOX</span>
+              <span>&rarr;</span>
+            </Link>
+            <Link
+              href="/solusi"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#E2E8F0',
+                fontWeight: 600,
+                fontSize: '13.5px',
+                padding: '10px 18px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+              }}
+            >
+              <span>Panduan Solusi Industri</span>
+              <span>&rarr;</span>
+            </Link>
+          </div>
         </div>
 
         {/* Explore Categories */}
